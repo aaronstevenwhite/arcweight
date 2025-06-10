@@ -44,7 +44,7 @@ pub trait Fst<W: Semiring>: Debug + Send + Sync {
     fn properties(&self) -> FstProperties;
     
     /// Create an iterator over arcs from a state
-    fn arcs<'a>(&'a self, state: StateId) -> Self::ArcIter<'a>;
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_>;
     
     /// Iterate over all states
     fn states(&self) -> impl Iterator<Item = StateId> {

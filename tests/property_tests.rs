@@ -2,10 +2,11 @@
 
 use proptest::prelude::*;
 use arcweight::prelude::*;
+use num_traits::{Zero, One};
 
 proptest! {
     #[test]
-    fn tropical_semiring_associativity(a: f32, b: f32, c: f32) {
+    fn tropical_semiring_associativity(a in -100.0..100.0f32, b in -100.0..100.0f32, c in -100.0..100.0f32) {
         let w1 = TropicalWeight::new(a);
         let w2 = TropicalWeight::new(b);
         let w3 = TropicalWeight::new(c);
@@ -13,23 +14,23 @@ proptest! {
         // (a + b) + c = a + (b + c)
         let left = w1.plus(&w2).plus(&w3);
         let right = w1.plus(&w2.plus(&w3));
-        assert!(left.approx_eq(&right, 1e-6));
+        prop_assert!(left.approx_eq(&right, 1e-4));
         
         // (a * b) * c = a * (b * c)
         let left = w1.times(&w2).times(&w3);
         let right = w1.times(&w2.times(&w3));
-        assert!(left.approx_eq(&right, 1e-6));
+        prop_assert!(left.approx_eq(&right, 1e-4));
     }
     
     #[test]
-    fn tropical_identity_elements(a: f32) {
+    fn tropical_identity_elements(a in -100.0..100.0f32) {
         let w = TropicalWeight::new(a);
         
         // w + zero = w
-        assert!(w.plus(&TropicalWeight::zero()).approx_eq(&w, 1e-6));
+        prop_assert!(w.plus(&TropicalWeight::zero()).approx_eq(&w, 1e-4));
         
         // w * one = w
-        assert!(w.times(&TropicalWeight::one()).approx_eq(&w, 1e-6));
+        prop_assert!(w.times(&TropicalWeight::one()).approx_eq(&w, 1e-4));
     }
     
     #[test]

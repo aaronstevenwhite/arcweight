@@ -46,6 +46,49 @@ impl SymbolTable {
         self.symbols.len()
     }
     
+    /// Number of symbols (alias for len)
+    pub fn size(&self) -> usize {
+        self.len()
+    }
+    
+    /// Find ID by symbol (alias for find_id)
+    pub fn find_symbol(&self, symbol: &str) -> Option<Label> {
+        self.find_id(symbol)
+    }
+    
+    /// Find symbol by ID (alias for find)
+    pub fn find_key(&self, id: Label) -> Option<&str> {
+        self.find(id)
+    }
+    
+    /// Check if contains symbol
+    pub fn contains_symbol(&self, symbol: &str) -> bool {
+        self.symbol_map.contains_key(symbol)
+    }
+    
+    /// Check if contains key (ID)
+    pub fn contains_key(&self, id: Label) -> bool {
+        (id as usize) < self.symbols.len()
+    }
+    
+    /// Clear all symbols
+    pub fn clear(&mut self) {
+        self.symbols.clear();
+        self.symbol_map.clear();
+        // Re-add epsilon
+        self.add_symbol("<eps>");
+    }
+    
+    /// Get all symbols
+    pub fn symbols(&self) -> impl Iterator<Item = &str> {
+        self.symbols.iter().map(|s| s.as_str())
+    }
+    
+    /// Get all keys (IDs)
+    pub fn keys(&self) -> impl Iterator<Item = Label> {
+        0..self.symbols.len() as Label
+    }
+    
     /// Check if empty
     pub fn is_empty(&self) -> bool {
         self.symbols.is_empty()

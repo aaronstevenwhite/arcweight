@@ -69,7 +69,7 @@ pub struct VectorArcIterator<'a, W: Semiring> {
     arcs: slice::Iter<'a, Arc<W>>,
 }
 
-impl<'a, W: Semiring> Iterator for VectorArcIterator<'a, W> {
+impl<W: Semiring> Iterator for VectorArcIterator<'_, W> {
     type Item = Arc<W>;
     
     fn next(&mut self) -> Option<Self::Item> {
@@ -77,7 +77,7 @@ impl<'a, W: Semiring> Iterator for VectorArcIterator<'a, W> {
     }
 }
 
-impl<'a, W: Semiring> ArcIterator<W> for VectorArcIterator<'a, W> {}
+impl<W: Semiring> ArcIterator<W> for VectorArcIterator<'_, W> {}
 
 impl<W: Semiring> Fst<W> for VectorFst<W> {
     type ArcIter<'a> = VectorArcIterator<'a, W> where W: 'a;
@@ -107,7 +107,7 @@ impl<W: Semiring> Fst<W> for VectorFst<W> {
         self.properties
     }
     
-    fn arcs<'a>(&'a self, state: StateId) -> Self::ArcIter<'a> {
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         let arcs = self.states
             .get(state as usize)
             .map(|s| s.arcs.iter())

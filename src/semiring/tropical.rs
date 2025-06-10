@@ -4,6 +4,7 @@ use super::traits::*;
 use ordered_float::OrderedFloat;
 use core::fmt;
 use core::ops::{Add, Mul};
+use core::str::FromStr;
 use num_traits::{One, Zero};
 
 /// Tropical weight (min, +) semiring
@@ -89,7 +90,7 @@ impl Semiring for TropicalWeight {
     }
     
     fn approx_eq(&self, other: &Self, epsilon: f64) -> bool {
-        if <Self as num_traits::Zero>::is_zero(&self) && <Self as num_traits::Zero>::is_zero(&other) {
+        if <Self as num_traits::Zero>::is_zero(self) && <Self as num_traits::Zero>::is_zero(other) {
             true
         } else {
             (self.0 - other.0).abs() < epsilon as f32
@@ -101,12 +102,24 @@ impl NaturallyOrderedSemiring for TropicalWeight {}
 
 impl DivisibleSemiring for TropicalWeight {
     fn divide(&self, other: &Self) -> Option<Self> {
-        if <Self as num_traits::Zero>::is_zero(&other) {
+        if <Self as num_traits::Zero>::is_zero(other) {
             None
-        } else if <Self as num_traits::Zero>::is_zero(&self) {
+        } else if <Self as num_traits::Zero>::is_zero(self) {
             Some(Self::zero())
         } else {
             Some(Self(self.0 - other.0))
+        }
+    }
+}
+
+impl FromStr for TropicalWeight {
+    type Err = std::num::ParseFloatError;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "∞" || s == "inf" || s == "infinity" {
+            Ok(Self::INFINITY)
+        } else {
+            s.parse::<f32>().map(Self::new)
         }
     }
 }

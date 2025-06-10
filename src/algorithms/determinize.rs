@@ -86,7 +86,7 @@ where
         let mut transitions: HashMap<Label, WeightedSubset<W>> = HashMap::new();
         let mut final_weight = W::zero();
         
-        for (&state, &ref weight) in &subset.states {
+        for (&state, weight) in &subset.states {
             // accumulate final weights
             if let Some(fw) = fst.final_weight(state) {
                 final_weight.plus_assign(&weight.times(fw));

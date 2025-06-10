@@ -48,8 +48,7 @@ impl<W: NaturallyOrderedSemiring> Eq for PathState<W> {}
 
 impl<W: NaturallyOrderedSemiring> PartialOrd for PathState<W> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // reverse order for min-heap behavior
-        other.weight.partial_cmp(&self.weight)
+        Some(self.cmp(other))
     }
 }
 

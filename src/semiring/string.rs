@@ -19,8 +19,8 @@ impl StringWeight {
         Self(bytes)
     }
     
-    /// Create from string
-    pub fn from_str(s: &str) -> Self {
+    /// Create from string slice
+    pub fn from_string(s: &str) -> Self {
         Self(s.as_bytes().to_vec())
     }
     

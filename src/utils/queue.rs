@@ -25,6 +25,28 @@ pub struct FifoQueue {
     queue: VecDeque<StateId>,
 }
 
+impl FifoQueue {
+    /// Create a new FIFO queue
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Get queue size
+    pub fn size(&self) -> usize {
+        self.queue.len()
+    }
+    
+    /// Get front element
+    pub fn front(&self) -> Option<&StateId> {
+        self.queue.front()
+    }
+    
+    /// Get back element
+    pub fn back(&self) -> Option<&StateId> {
+        self.queue.back()
+    }
+}
+
 impl Queue for FifoQueue {
     fn enqueue(&mut self, state: StateId) {
         self.queue.push_back(state);
@@ -47,6 +69,18 @@ impl Queue for FifoQueue {
 #[derive(Debug, Clone, Default)]
 pub struct LifoQueue {
     stack: Vec<StateId>,
+}
+
+impl LifoQueue {
+    /// Create a new LIFO queue
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Get stack size
+    pub fn size(&self) -> usize {
+        self.stack.len()
+    }
 }
 
 impl Queue for LifoQueue {
@@ -91,6 +125,12 @@ impl<P: Ord> PartialOrd for StateWithPriority<P> {
     }
 }
 
+impl<P: Ord> Default for StateQueue<P> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<P: Ord> StateQueue<P> {
     /// Create a new state queue
     pub fn new() -> Self {
@@ -102,6 +142,11 @@ impl<P: Ord> StateQueue<P> {
     /// Enqueue with priority
     pub fn enqueue_with_priority(&mut self, state: StateId, priority: P) {
         self.heap.push(StateWithPriority { state, priority });
+    }
+    
+    /// Get size of queue
+    pub fn size(&self) -> usize {
+        self.heap.len()
     }
 }
 
@@ -134,6 +179,11 @@ impl TopOrderQueue {
     /// Create from topological order
     pub fn from_order(order: Vec<StateId>) -> Self {
         Self { order, pos: 0 }
+    }
+    
+    /// Create a new empty topological order queue
+    pub fn new<W: crate::semiring::Semiring, F: crate::fst::Fst<W>>(_fst: &F) -> Self {
+        Self { order: Vec::new(), pos: 0 }
     }
 }
 

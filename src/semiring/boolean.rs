@@ -3,6 +3,7 @@
 use super::traits::*;
 use core::fmt;
 use core::ops::{Add, Mul};
+use core::str::FromStr;
 use num_traits::{One, Zero};
 
 /// Boolean weight (∨, ∧) semiring
@@ -82,5 +83,13 @@ impl NaturallyOrderedSemiring for BooleanWeight {}
 impl StarSemiring for BooleanWeight {
     fn star(&self) -> Self {
         Self::one()
+    }
+}
+
+impl FromStr for BooleanWeight {
+    type Err = std::str::ParseBoolError;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<bool>().map(Self::new)
     }
 }

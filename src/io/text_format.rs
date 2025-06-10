@@ -6,30 +6,36 @@ use crate::arc::Arc;
 use crate::utils::SymbolTable;
 use crate::{Result, Error};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Write};
-use std::fs::File;
-use std::path::Path;
+use std::io::{BufRead, Write};
 use std::str::FromStr;
 
-/// Write FST in text format
-pub fn write_text<W, F, P>(
+/// Write FST in text format to a writer
+pub fn write_text<W, F, Writer>(
     fst: &F,
-    path: P,
+    writer: &mut Writer,
     isyms: Option<&SymbolTable>,
     osyms: Option<&SymbolTable>,
 ) -> Result<()>
 where
     W: Semiring,
     F: Fst<W>,
-    P: AsRef<Path>,
+    Writer: Write,
 {
-    let mut file = File::create(path)?;
+    // write start state first if it exists
+    if let Some(start) = fst.start() {
+        writeln!(writer, "START\t{}", start)?;
+    }
+    
+    // write all states (to preserve state count)
+    for state in fst.states() {
+        writeln!(writer, "STATE\t{}", state)?;
+    }
     
     // write arcs
     for state in fst.states() {
         for arc in fst.arcs(state) {
             write!(
-                file,
+                writer,
                 "{}\t{}\t",
                 state,
                 arc.nextstate
@@ -37,32 +43,32 @@ where
             
             // write symbols or labels
             if let Some(syms) = isyms {
-                write!(file, "{}\t", syms.find(arc.ilabel).unwrap_or("?"))?;
+                write!(writer, "{}\t", syms.find(arc.ilabel).unwrap_or("?"))?;
             } else {
-                write!(file, "{}\t", arc.ilabel)?;
+                write!(writer, "{}\t", arc.ilabel)?;
             }
             
             if let Some(syms) = osyms {
-                write!(file, "{}\t", syms.find(arc.olabel).unwrap_or("?"))?;
+                write!(writer, "{}\t", syms.find(arc.olabel).unwrap_or("?"))?;
             } else {
-                write!(file, "{}\t", arc.olabel)?;
+                write!(writer, "{}\t", arc.olabel)?;
             }
             
-            writeln!(file, "{}", arc.weight)?;
+            writeln!(writer, "{}", arc.weight)?;
         }
         
         // write final states
         if let Some(weight) = fst.final_weight(state) {
-            writeln!(file, "{}\t{}", state, weight)?;
+            writeln!(writer, "FINAL\t{}\t{}", state, weight)?;
         }
     }
     
     Ok(())
 }
 
-/// Read FST from text format
-pub fn read_text<W, M, P>(
-    path: P,
+/// Read FST from text format from a reader
+pub fn read_text<W, M, Reader>(
+    reader: &mut Reader,
     isyms: Option<&SymbolTable>,
     osyms: Option<&SymbolTable>,
 ) -> Result<M>
@@ -70,13 +76,11 @@ where
     W: Semiring + FromStr,
     W::Err: std::error::Error + Send + Sync + 'static,
     M: MutableFst<W> + Default,
-    P: AsRef<Path>,
+    Reader: BufRead,
 {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
+    let buf_reader = reader;
     let mut fst = M::default();
     let mut state_map = HashMap::new();
-    let mut start_set = false;
     
     // helper to get or create state
     let get_state = |state_map: &mut HashMap<StateId, StateId>, 
@@ -85,20 +89,45 @@ where
         *state_map.entry(id).or_insert_with(|| fst.add_state())
     };
     
-    for line in reader.lines() {
+    for line in buf_reader.lines() {
         let line = line?;
-        let parts: Vec<&str> = line.trim().split_whitespace().collect();
+        let parts: Vec<&str> = line.split_whitespace().collect();
         
         match parts.len() {
             2 => {
-                // final state
-                let state = parts[0].parse::<StateId>()
-                    .map_err(|e| Error::Serialization(e.to_string()))?;
-                let weight = parts[1].parse::<W>()
-                    .map_err(|e| Error::Serialization(e.to_string()))?;
-                
-                let state = get_state(&mut state_map, &mut fst, state);
-                fst.set_final(state, weight);
+                if parts[0] == "START" {
+                    // start state
+                    let state = parts[1].parse::<StateId>()
+                        .map_err(|e| Error::Serialization(e.to_string()))?;
+                    let state = get_state(&mut state_map, &mut fst, state);
+                    fst.set_start(state);
+                } else if parts[0] == "STATE" {
+                    // state declaration (just ensure it exists)
+                    let state = parts[1].parse::<StateId>()
+                        .map_err(|e| Error::Serialization(e.to_string()))?;
+                    get_state(&mut state_map, &mut fst, state);
+                } else {
+                    // final state (old format for compatibility)
+                    let state = parts[0].parse::<StateId>()
+                        .map_err(|e| Error::Serialization(e.to_string()))?;
+                    let weight = parts[1].parse::<W>()
+                        .map_err(|e| Error::Serialization(e.to_string()))?;
+                    
+                    let state = get_state(&mut state_map, &mut fst, state);
+                    fst.set_final(state, weight);
+                }
+            }
+            3 => {
+                if parts[0] == "FINAL" {
+                    // final state (new format)
+                    let state = parts[1].parse::<StateId>()
+                        .map_err(|e| Error::Serialization(e.to_string()))?;
+                    let weight = parts[2].parse::<W>()
+                        .map_err(|e| Error::Serialization(e.to_string()))?;
+                    
+                    let state = get_state(&mut state_map, &mut fst, state);
+                    fst.set_final(state, weight);
+                }
             }
             5 => {
                 // arc
@@ -126,11 +155,6 @@ where
                 
                 let from = get_state(&mut state_map, &mut fst, from);
                 let to = get_state(&mut state_map, &mut fst, to);
-                
-                if !start_set {
-                    fst.set_start(from);
-                    start_set = true;
-                }
                 
                 fst.add_arc(from, Arc::new(ilabel, olabel, weight, to));
             }

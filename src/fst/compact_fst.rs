@@ -93,6 +93,12 @@ pub enum CompactElement<W: Semiring> {
     Weight(W),
 }
 
+impl<W: Semiring, C: Compactor<W>> Default for CompactFst<W, C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
     /// Create a new compact FST
     pub fn new() -> Self {
@@ -115,13 +121,13 @@ pub struct CompactArcIterator<'a, W: Semiring, C: Compactor<W>> {
     _phantom: PhantomData<W>,
 }
 
-impl<'a, W: Semiring, C: Compactor<W>> ArcIterator<W> for CompactArcIterator<'a, W, C> {
+impl<W: Semiring, C: Compactor<W>> ArcIterator<W> for CompactArcIterator<'_, W, C> {
     fn reset(&mut self) {
         self.pos = 0;
     }
 }
 
-impl<'a, W: Semiring, C: Compactor<W>> Iterator for CompactArcIterator<'a, W, C> {
+impl<W: Semiring, C: Compactor<W>> Iterator for CompactArcIterator<'_, W, C> {
     type Item = Arc<W>;
     
     fn next(&mut self) -> Option<Self::Item> {
@@ -162,7 +168,7 @@ impl<W: Semiring, C: Compactor<W>> Fst<W> for CompactFst<W, C> {
         self.properties
     }
     
-    fn arcs<'a>(&'a self, state: StateId) -> Self::ArcIter<'a> {
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         if let Some(s) = self.states.get(state as usize) {
             let start = s.arcs_start as usize;
             let end = start + s.num_arcs as usize;

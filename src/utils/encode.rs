@@ -14,6 +14,12 @@ pub enum EncodeType {
     EncodeWeightsOnly,
     /// Encode labels only
     EncodeLabelsOnly,
+    /// Alias for EncodeLabelsAndWeights
+    LabelsAndWeights,
+    /// Alias for EncodeWeightsOnly  
+    Weights,
+    /// Alias for EncodeLabelsOnly
+    Labels,
 }
 
 /// Arc encoder/decoder
@@ -38,23 +44,48 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
         }
     }
     
+    /// Get encoding type
+    pub fn encode_type(&self) -> EncodeType {
+        self.encode_type
+    }
+    
+    /// Get number of encoded elements
+    pub fn size(&self) -> usize {
+        self.label_map.len() + self.weight_map.len()
+    }
+    
     /// Encode an arc
     pub fn encode(&mut self, arc: &Arc<W>) -> Arc<W> {
         match self.encode_type {
-            EncodeType::EncodeLabelsAndWeights => {
+            EncodeType::EncodeLabelsAndWeights | EncodeType::LabelsAndWeights => {
                 let label = self.encode_labels(arc.ilabel, arc.olabel);
                 let weight_id = self.encode_weight(&arc.weight);
                 Arc::new(label, weight_id, W::one(), arc.nextstate)
             }
-            EncodeType::EncodeWeightsOnly => {
+            EncodeType::EncodeWeightsOnly | EncodeType::Weights => {
                 let weight_id = self.encode_weight(&arc.weight);
                 Arc::new(arc.ilabel, weight_id, W::one(), arc.nextstate)
             }
-            EncodeType::EncodeLabelsOnly => {
+            EncodeType::EncodeLabelsOnly | EncodeType::Labels => {
                 let label = self.encode_labels(arc.ilabel, arc.olabel);
                 Arc::new(label, 0, arc.weight.clone(), arc.nextstate)
             }
         }
+    }
+    
+    /// Decode an arc (placeholder - actual decoding would require reverse mappings)
+    pub fn decode(&self, _arc: &Arc<W>) -> Result<Arc<W>, &'static str> {
+        Err("Decoding not implemented - would require reverse mappings")
+    }
+    
+    /// Get input symbols (placeholder - returns empty symbol table)
+    pub fn input_symbols(&self) -> crate::utils::SymbolTable {
+        crate::utils::SymbolTable::new()
+    }
+    
+    /// Get output symbols (placeholder - returns empty symbol table)
+    pub fn output_symbols(&self) -> crate::utils::SymbolTable {
+        crate::utils::SymbolTable::new()
     }
     
     fn encode_labels(&mut self, ilabel: Label, olabel: Label) -> Label {

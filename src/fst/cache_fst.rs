@@ -91,7 +91,7 @@ impl<W: Semiring, F: Fst<W>> Fst<W> for CacheFst<W, F> {
         self.fst.properties()
     }
     
-    fn arcs<'a>(&'a self, state: StateId) -> Self::ArcIter<'a> {
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         // check cache
         let arcs = {
             let cache = self.arc_cache.read().unwrap();

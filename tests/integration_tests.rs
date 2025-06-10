@@ -1,6 +1,7 @@
 //! Integration tests
 
 use arcweight::prelude::*;
+use num_traits::One;
 
 #[test]
 fn test_basic_fst_operations() {
@@ -148,10 +149,18 @@ fn test_closure() {
     fst.set_final(s1, TropicalWeight::one());
     fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
     
-    let star: VectorFst<TropicalWeight> = closure(&fst).unwrap();
+    // Use BooleanWeight for closure since TropicalWeight doesn't implement StarSemiring
+    let mut bool_fst = VectorFst::<BooleanWeight>::new();
+    let s0 = bool_fst.add_state();
+    let s1 = bool_fst.add_state();
+    bool_fst.set_start(s0);
+    bool_fst.set_final(s1, BooleanWeight::one());
+    bool_fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::new(true), s1));
+    
+    let star: VectorFst<BooleanWeight> = closure(&bool_fst).unwrap();
     
     // closure should add a new start/final state
-    assert!(star.num_states() > fst.num_states());
+    assert!(star.num_states() > bool_fst.num_states());
     assert!(star.start().is_some());
 }
 
@@ -214,7 +223,19 @@ fn test_epsilon_removal() {
     fst.add_arc(s0, Arc::epsilon(TropicalWeight::new(1.0), s1));
     fst.add_arc(s1, Arc::new(1, 1, TropicalWeight::new(2.0), s2));
     
-    let no_eps: VectorFst<TropicalWeight> = remove_epsilons(&fst).unwrap();
+    // Use BooleanWeight for epsilon removal since TropicalWeight doesn't implement StarSemiring
+    let mut bool_fst = VectorFst::<BooleanWeight>::new();
+    let s0 = bool_fst.add_state();
+    let s1 = bool_fst.add_state();
+    let s2 = bool_fst.add_state();
+    
+    bool_fst.set_start(s0);
+    bool_fst.set_final(s2, BooleanWeight::one());
+    
+    bool_fst.add_arc(s0, Arc::epsilon(BooleanWeight::new(true), s1));
+    bool_fst.add_arc(s1, Arc::new(1, 1, BooleanWeight::new(true), s2));
+    
+    let no_eps: VectorFst<BooleanWeight> = remove_epsilons(&bool_fst).unwrap();
     
     // check no epsilon transitions remain
     for state in no_eps.states() {

@@ -4,6 +4,7 @@ use super::traits::*;
 use ordered_float::OrderedFloat;
 use core::fmt;
 use core::ops::{Add, Mul};
+use core::str::FromStr;
 use num_traits::{One, Zero};
 
 /// Probability weight (+, ×) semiring
@@ -85,7 +86,7 @@ impl Semiring for ProbabilityWeight {
 
 impl DivisibleSemiring for ProbabilityWeight {
     fn divide(&self, other: &Self) -> Option<Self> {
-        if <Self as num_traits::Zero>::is_zero(&other) {
+        if <Self as num_traits::Zero>::is_zero(other) {
             None
         } else {
             Some(Self(self.0 / other.0))
@@ -100,5 +101,13 @@ impl StarSemiring for ProbabilityWeight {
         } else {
             Self(OrderedFloat(1.0 / (1.0 - *self.0)))
         }
+    }
+}
+
+impl FromStr for ProbabilityWeight {
+    type Err = std::num::ParseFloatError;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<f64>().map(Self::new)
     }
 }

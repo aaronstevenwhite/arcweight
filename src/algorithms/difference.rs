@@ -14,7 +14,6 @@ impl<W: Semiring> ComposeFilter<W> for DifferenceFilter {
     type FilterState = ();
     
     fn start() -> Self::FilterState {
-        ()
     }
     
     fn filter_arc(

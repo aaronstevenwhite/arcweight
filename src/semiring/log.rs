@@ -115,7 +115,7 @@ impl Semiring for LogWeight {
     }
     
     fn approx_eq(&self, other: &Self, epsilon: f64) -> bool {
-        if <Self as num_traits::Zero>::is_zero(&self) && <Self as num_traits::Zero>::is_zero(&other) {
+        if <Self as num_traits::Zero>::is_zero(self) && <Self as num_traits::Zero>::is_zero(other) {
             true
         } else {
             (self.0 - other.0).abs() < epsilon
@@ -125,9 +125,9 @@ impl Semiring for LogWeight {
 
 impl DivisibleSemiring for LogWeight {
     fn divide(&self, other: &Self) -> Option<Self> {
-        if <Self as num_traits::Zero>::is_zero(&other) {
+        if <Self as num_traits::Zero>::is_zero(other) {
             None
-        } else if <Self as num_traits::Zero>::is_zero(&self) {
+        } else if <Self as num_traits::Zero>::is_zero(self) {
             Some(Self::zero())
         } else {
             Some(Self(self.0 - other.0))

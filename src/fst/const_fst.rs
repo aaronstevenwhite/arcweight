@@ -58,13 +58,13 @@ pub struct ConstArcIterator<'a, W: Semiring> {
     arcs: slice::Iter<'a, Arc<W>>,
 }
 
-impl<'a, W: Semiring> ArcIterator<W> for ConstArcIterator<'a, W> {
+impl<W: Semiring> ArcIterator<W> for ConstArcIterator<'_, W> {
     fn reset(&mut self) {
         unimplemented!("ConstArcIterator reset not implemented")
     }
 }
 
-impl<'a, W: Semiring> Iterator for ConstArcIterator<'a, W> {
+impl<W: Semiring> Iterator for ConstArcIterator<'_, W> {
     type Item = Arc<W>;
     
     fn next(&mut self) -> Option<Self::Item> {
@@ -100,7 +100,7 @@ impl<W: Semiring> Fst<W> for ConstFst<W> {
         self.properties
     }
     
-    fn arcs<'a>(&'a self, state: StateId) -> Self::ArcIter<'a> {
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         if let Some(s) = self.states.get(state as usize) {
             let start = s.arcs_start as usize;
             let end = start + s.num_arcs as usize;

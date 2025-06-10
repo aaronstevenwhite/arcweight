@@ -5,49 +5,45 @@ use crate::semiring::Semiring;
 use crate::arc::Arc;
 use crate::{Result, Error};
 use std::io::{Read, Write};
-use std::path::Path;
-use std::fs::File;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 const MAGIC: u32 = 0x46535442; // "FSTB"
 const VERSION: u32 = 1;
 
 /// Write FST in binary format
-pub fn write_binary<W, F, P>(fst: &F, path: P) -> Result<()>
+pub fn write_binary<W, F, Writer>(fst: &F, writer: &mut Writer) -> Result<()>
 where
     W: Semiring + serde::Serialize,
     F: Fst<W>,
-    P: AsRef<Path>,
+    Writer: Write,
 {
-    let mut file = File::create(path)?;
-    
     // write header
-    file.write_u32::<LittleEndian>(MAGIC)?;
-    file.write_u32::<LittleEndian>(VERSION)?;
+    writer.write_u32::<LittleEndian>(MAGIC)?;
+    writer.write_u32::<LittleEndian>(VERSION)?;
     
     // write basic info
-    file.write_u32::<LittleEndian>(fst.num_states() as u32)?;
-    file.write_u32::<LittleEndian>(fst.start().unwrap_or(u32::MAX))?;
+    writer.write_u32::<LittleEndian>(fst.num_states() as u32)?;
+    writer.write_u32::<LittleEndian>(fst.start().unwrap_or(u32::MAX))?;
     
     // write states
     for state in fst.states() {
         // final weight
         if let Some(weight) = fst.final_weight(state) {
-            file.write_u8(1)?;
-            write_weight(&mut file, weight)?;
+            writer.write_u8(1)?;
+            write_weight(writer, weight)?;
         } else {
-            file.write_u8(0)?;
+            writer.write_u8(0)?;
         }
         
         // arcs
         let num_arcs = fst.num_arcs(state);
-        file.write_u32::<LittleEndian>(num_arcs as u32)?;
+        writer.write_u32::<LittleEndian>(num_arcs as u32)?;
         
         for arc in fst.arcs(state) {
-            file.write_u32::<LittleEndian>(arc.ilabel)?;
-            file.write_u32::<LittleEndian>(arc.olabel)?;
-            write_weight(&mut file, &arc.weight)?;
-            file.write_u32::<LittleEndian>(arc.nextstate)?;
+            writer.write_u32::<LittleEndian>(arc.ilabel)?;
+            writer.write_u32::<LittleEndian>(arc.olabel)?;
+            write_weight(writer, &arc.weight)?;
+            writer.write_u32::<LittleEndian>(arc.nextstate)?;
         }
     }
     
@@ -55,28 +51,26 @@ where
 }
 
 /// Read FST from binary format
-pub fn read_binary<W, M, P>(path: P) -> Result<M>
+pub fn read_binary<W, M, Reader>(reader: &mut Reader) -> Result<M>
 where
     W: Semiring + serde::de::DeserializeOwned,
     M: MutableFst<W> + Default,
-    P: AsRef<Path>,
+    Reader: Read,
 {
-    let mut file = File::open(path)?;
-    
     // read header
-    let magic = file.read_u32::<LittleEndian>()?;
+    let magic = reader.read_u32::<LittleEndian>()?;
     if magic != MAGIC {
         return Err(Error::Serialization("Invalid magic number".into()));
     }
     
-    let version = file.read_u32::<LittleEndian>()?;
+    let version = reader.read_u32::<LittleEndian>()?;
     if version != VERSION {
         return Err(Error::Serialization("Unsupported version".into()));
     }
     
     // read basic info
-    let num_states = file.read_u32::<LittleEndian>()? as usize;
-    let start = file.read_u32::<LittleEndian>()?;
+    let num_states = reader.read_u32::<LittleEndian>()? as usize;
+    let start = reader.read_u32::<LittleEndian>()?;
     
     let mut fst = M::default();
     
@@ -93,18 +87,18 @@ where
     // read states
     for state in 0..num_states {
         // final weight
-        if file.read_u8()? == 1 {
-            let weight = read_weight(&mut file)?;
+        if reader.read_u8()? == 1 {
+            let weight = read_weight(reader)?;
             fst.set_final(state as StateId, weight);
         }
         
         // arcs
-        let num_arcs = file.read_u32::<LittleEndian>()? as usize;
+        let num_arcs = reader.read_u32::<LittleEndian>()? as usize;
         for _ in 0..num_arcs {
-            let ilabel = file.read_u32::<LittleEndian>()?;
-            let olabel = file.read_u32::<LittleEndian>()?;
-            let weight = read_weight(&mut file)?;
-            let nextstate = file.read_u32::<LittleEndian>()?;
+            let ilabel = reader.read_u32::<LittleEndian>()?;
+            let olabel = reader.read_u32::<LittleEndian>()?;
+            let weight = read_weight(reader)?;
+            let nextstate = reader.read_u32::<LittleEndian>()?;
             
             fst.add_arc(state as StateId, Arc::new(ilabel, olabel, weight, nextstate));
         }

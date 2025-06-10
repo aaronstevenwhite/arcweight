@@ -30,7 +30,6 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
     type FilterState = ();
     
     fn start() -> Self::FilterState {
-        ()
     }
     
     fn filter_arc(

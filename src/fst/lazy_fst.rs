@@ -137,7 +137,7 @@ where
         self.properties
     }
     
-    fn arcs<'a>(&'a self, state: StateId) -> Self::ArcIter<'a> {
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         let arcs = self.get_or_compute_state(state)
             .map(|s| s.arcs)
             .unwrap_or_default();

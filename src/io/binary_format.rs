@@ -1,5 +1,5 @@
 //! Binary format I/O for FSTs
-//! 
+//!
 //! This module provides binary serialization support when the `serde` feature is enabled.
 
 #[cfg(feature = "serde")]
@@ -114,7 +114,10 @@ mod inner {
         Ok(fst)
     }
 
-    fn write_weight<W: Semiring + serde::Serialize>(writer: &mut impl Write, weight: &W) -> Result<()> {
+    fn write_weight<W: Semiring + serde::Serialize>(
+        writer: &mut impl Write,
+        weight: &W,
+    ) -> Result<()> {
         // this would need specialization per weight type
         let bytes = bincode::serialize(weight).map_err(|e| Error::Serialization(e.to_string()))?;
         writer.write_u32::<LittleEndian>(bytes.len() as u32)?;

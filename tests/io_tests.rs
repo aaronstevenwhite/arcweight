@@ -157,8 +157,8 @@ mod text_format_tests {
 
 #[cfg(all(test, feature = "serde"))]
 mod binary_format_tests {
-    use arcweight::io::{read_binary, write_binary};
     use super::*;
+    use arcweight::io::{read_binary, write_binary};
 
     #[test]
     fn test_write_read_binary_roundtrip() {
@@ -445,7 +445,7 @@ proptest! {
 
         // Test both formats give same result
         let mut text_buffer = Vec::new();
-        
+
         #[cfg(feature = "serde")]
         {
             let mut binary_buffer = Vec::new();
@@ -466,7 +466,7 @@ proptest! {
                 }
             }
         }
-        
+
         #[cfg(not(feature = "serde"))]
         {
             // Just test text format when serde is not available

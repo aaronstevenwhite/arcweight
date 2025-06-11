@@ -235,15 +235,15 @@ mod shortest_path_tests {
         let fst = VectorFst::<TropicalWeight>::new();
 
         // Empty FST should return error or empty result
-        match shortest_path_single::<
+        if let Ok(shortest) = shortest_path_single::<
             TropicalWeight,
             VectorFst<TropicalWeight>,
             VectorFst<TropicalWeight>,
         >(&fst)
         {
-            Ok(shortest) => assert!(shortest.is_empty()),
-            Err(_) => {} // Empty FST may legitimately fail
+            assert!(shortest.is_empty());
         }
+        // Empty FST may legitimately fail, which is fine
     }
 }
 

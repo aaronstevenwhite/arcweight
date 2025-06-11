@@ -32,6 +32,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1.4"
 pretty_assertions = "1.4"
 approx = "0.5"
+rayon = "1.8"
 
 [features]
 default = ["std", "parallel", "serde"]
@@ -40,5 +41,26 @@ parallel = ["rayon"]
 serde = ["dep:serde", "bincode", "ordered-float/serde"]
 
 [[bench]]
-name = "benchmarks"
+name = "basic_operations"
 harness = false
+path = "benches/core/basic_operations.rs"
+
+[[bench]]
+name = "memory_operations"
+harness = false
+path = "benches/memory/memory_operations.rs"
+
+[[bench]]
+name = "serialization"
+harness = false
+path = "benches/io/serialization.rs"
+
+[[bench]]
+name = "optimization"
+harness = false
+path = "benches/optimization/optimization.rs"
+
+[[bench]]
+name = "parallel_ops"
+harness = false
+path = "benches/parallel/parallel_ops.rs"

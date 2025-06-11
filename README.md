@@ -68,14 +68,39 @@ let shortest = shortest_path(&fst)?;
 
 Check out the examples/ directory for more complex usage:
 
-- `edit_distance.rs` - Spell checking and fuzzy string matching using FSTs
+- `edit_distance.rs` - Compute edit distance with configurable weights
   ```bash
   cargo run --example edit_distance
   ```
 
-- `fst_composition.rs` - Text transformation using FST composition
+- `word_correction.rs` - Dictionary-based spell checking and word correction
   ```bash
-  cargo run --example fst_composition -- "hello" "h->H e->E l->L o->O"
+  cargo run --example word_correction
+  ```
+
+- `pronunciation_lexicon.rs` - Pronunciation dictionary with G2P rules
+  ```bash
+  cargo run --example pronunciation_lexicon
+  ```
+
+- `morphological_analyzer.rs` - Finite state morphology following Karttunen's framework
+  ```bash
+  cargo run --example morphological_analyzer
+  ```
+
+- `number_date_normalizer.rs` - Text normalization for numbers, dates, and measurements
+  ```bash
+  cargo run --example number_date_normalizer
+  ```
+
+- `transliteration.rs` - Cross-script transliteration (Cyrillic, Arabic, Greek to Latin)
+  ```bash
+  cargo run --example transliteration
+  ```
+
+- `phonological_rules.rs` - Phonological rule systems following Kaplan & Kay
+  ```bash
+  cargo run --example phonological_rules
   ```
 
 

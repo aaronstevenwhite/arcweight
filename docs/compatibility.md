@@ -5,169 +5,271 @@ This document outlines platform support, MSRV policy, and feature compatibility 
 ## Platform Support
 
 ### Operating Systems
-- Linux (x86_64, aarch64)
-- macOS (x86_64, aarch64)
-- Windows (x86_64)
+- **Linux** (x86_64, aarch64)
+- **macOS** (x86_64, aarch64) 
+- **Windows** (x86_64)
 
 ### Minimum Requirements
-- Rust 1.70.0 or later
-- 2GB RAM minimum
-- 100MB disk space
+- **Rust**: 1.75.0 or later (MSRV)
+- **Memory**: 2GB RAM minimum, 4GB recommended
+- **Storage**: 200MB for library and dependencies
 
 ## MSRV Policy
 
 ### Current MSRV
-- Rust 1.70.0
+- **Rust 1.75.0**
 
 ### MSRV Updates
-- Updated every 6 months
-- 3 months notice before updates
-- Support for current stable and previous version
-
-## Feature Compatibility
-
-### Core Features
-| Feature | Linux | macOS | Windows |
-|---------|-------|-------|---------|
-| FST Operations | ✅ | ✅ | ✅ |
-| Weight Semirings | ✅ | ✅ | ✅ |
-| IO Operations | ✅ | ✅ | ✅ |
-| Parallel Processing | ✅ | ✅ | ✅ |
-
-### Optional Features
-| Feature | Linux | macOS | Windows |
-|---------|-------|-------|---------|
-| GPU Acceleration | ✅ | ✅ | ❌ |
-| Memory Mapping | ✅ | ✅ | ✅ |
-| Custom Allocators | ✅ | ✅ | ✅ |
+The project follows a conservative MSRV policy:
+- MSRV updates occur only when necessary for new language features or dependency requirements
+- At least 3 months notice before MSRV bumps
+- MSRV changes are considered breaking changes and will increment the minor version
 
 ## Dependencies
 
-### Required Dependencies
+### Core Dependencies
+Based on `Cargo.toml`:
 ```toml
 [dependencies]
-serde = "1.0"
-thiserror = "1.0"
+thiserror = "1.0"          # Error handling
+anyhow = "1.0"             # Error context
+num-traits = "0.2"         # Numeric traits
+ordered-float = "4.2"      # Ordered floating point
+indexmap = "2.2"           # Ordered hash maps
+byteorder = "1.5"          # Byte order utilities
+bitflags = "2.4"           # Bit flag macros
+rand = "0.8"               # Random number generation
 ```
 
 ### Optional Dependencies
 ```toml
-[dependencies]
-rayon = { version = "1.7", optional = true }
-cuda = { version = "0.1", optional = true }
+rayon = { version = "1.8", optional = true }    # Parallel processing
+serde = { version = "1.0", optional = true }    # Serialization
+bincode = { version = "1.3", optional = true }  # Binary serialization
 ```
 
-## Build Configuration
+### Development Dependencies
+```toml
+[dev-dependencies]
+criterion = "0.5"          # Benchmarking
+proptest = "1.4"           # Property-based testing
+pretty_assertions = "1.4"  # Better test assertions
+approx = "0.5"             # Floating point comparisons
+rayon = "1.8"              # Parallel testing
+```
 
-### Feature Flags
+## Feature Flags
+
+### Available Features
 ```toml
 [features]
-default = ["std"]
-std = []
-parallel = ["rayon"]
-gpu = ["cuda"]
+default = ["std", "parallel", "serde"]
+std = []                   # Standard library support
+parallel = ["rayon"]       # Multi-threaded algorithms
+serde = ["dep:serde", "bincode", "ordered-float/serde"]  # Serialization
 ```
 
-### Build Options
-```toml
-[build-dependencies]
-cc = "1.0"
-```
+### Feature Compatibility
+| Feature | Linux | macOS | Windows | Description |
+|---------|-------|-------|---------|-------------|
+| `std` | ✅ | ✅ | ✅ | Standard library support (default) |
+| `parallel` | ✅ | ✅ | ✅ | Rayon-based parallel algorithms |
+| `serde` | ✅ | ✅ | ✅ | Serialization support |
 
-## API Compatibility
-
-### Stable APIs
-- Core FST operations
-- Weight semiring traits
-- IO operations
+### Core Functionality
+All core FST operations work across all supported platforms:
+- FST construction and manipulation
+- All semiring types
+- Algorithms (compose, determinize, minimize, etc.)
+- I/O operations (text and binary formats)
 - Property system
 
-### Unstable APIs
+## API Stability
+
+### Current Status (v0.1.x)
+- **Pre-1.0**: APIs may change between minor versions
+- **Breaking changes**: Will be documented in CHANGELOG.md
+- **Deprecation**: Deprecated APIs will be marked and documented
+
+### Stable Core APIs
+These APIs are unlikely to change significantly:
+- Core FST traits (`Fst`, `MutableFst`, `ExpandedFst`)
+- Semiring trait and implementations
+- Basic algorithms (compose, determinize, minimize)
+- Common weight types
+
+### Potentially Unstable APIs
+These may change before 1.0:
+- Internal implementation details
 - Experimental algorithms
-- Custom optimizations
-- Internal utilities
+- Performance optimization interfaces
+- Error types and messages
 
-## Version Compatibility
-
-### Major Versions
-- 0.1.x: Initial release
-- 0.2.x: Performance improvements
-- 0.3.x: API stabilization
-
-### Breaking Changes
-- Documented in CHANGELOG.md
-- Migration guides provided
-- Deprecation notices
-
-## Testing Compatibility
-
-### Test Environments
-- Linux (CI)
-- macOS (CI)
-- Windows (CI)
+## Testing
 
 ### Test Coverage
-- Unit tests
-- Integration tests
-- Property tests
-- Benchmarks
+- **Unit tests**: Core functionality and algorithms
+- **Integration tests**: End-to-end workflows
+- **Property tests**: Mathematical properties using proptest
+- **Benchmarks**: Performance regression testing
 
-## Performance Compatibility
+### Current Testing Status
+- **macOS**: Actively tested during development
+- **Linux**: Not yet tested (planned)
+- **Windows**: Not yet tested (planned)
+
+### Planned CI/CD Setup
+To set up cross-platform testing, create `.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, 1.75.0]  # MSRV testing
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+    - run: cargo test --all-features
+    - run: cargo test --no-default-features
+    - run: cargo bench --no-run  # Compile benchmarks
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - run: cargo clippy --all-features -- -D warnings
+
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - run: cargo fmt --all -- --check
+```
+
+## Performance
 
 ### Optimization Levels
-- Debug: No optimizations
-- Release: Standard optimizations
-- Release with LTO: Full optimizations
+- **Debug builds**: No optimizations, debug symbols
+- **Release builds**: Standard Rust optimizations
+- **Benchmark builds**: LTO and additional optimizations
 
-### Memory Models
-- Default allocator
-- Custom allocator
-- Pool allocator
+### Memory Safety
+- All code is memory-safe Rust
+- No unsafe code in public APIs
+- Comprehensive bounds checking
 
-## Security Compatibility
+## Version History
 
-### Security Features
-- Safe memory management
-- Input validation
-- Error handling
+### Current Version
+- **v0.1.0**: Initial release with core FST functionality
 
-### Security Requirements
-- Rust security updates
-- Dependency updates
-- Security audits
+### Planned Releases
+Future versions will focus on:
+- API stabilization
+- Performance improvements  
+- Additional algorithms
+- Enhanced documentation
 
-## Documentation Compatibility
+## Migration Guide
 
-### Documentation Formats
-- rustdoc
-- mdBook
-- GitHub Pages
+### Breaking Changes
+When breaking changes occur, migration guides will be provided in:
+- `CHANGELOG.md` 
+- Release notes
+- Documentation updates
 
-### Documentation Tools
-- cargo doc
-- mdbook
-- rustdoc-stripper
+### Deprecation Process
+1. Mark APIs as deprecated with `#[deprecated]`
+2. Provide migration path in documentation
+3. Keep deprecated APIs for at least one minor version
+4. Remove in next major version
 
-## Community Support
+## Platform-Specific Notes
 
-### Communication Channels
-- GitHub Issues
-- GitHub Discussions
-- Discord
+### macOS (Currently Tested)
+- **Tested on**: macOS during development (Intel and Apple Silicon)
+- **Toolchain**: Xcode command line tools
+- **Status**: Full feature support confirmed
 
-### Contribution Guidelines
-- Code of Conduct
-- Contributing Guide
-- Development Guide
+### Linux (Planned Testing)
+- **Target**: Ubuntu 20.04+ and common distributions
+- **Toolchain**: Standard GNU toolchain
+- **Status**: Expected to work but not yet verified
+
+### Windows (Planned Testing)
+- **Target**: Windows 10/11
+- **Toolchain**: MSVC toolchain via rust-msvc
+- **Status**: Expected to work but not yet verified
+
+### Other Platforms
+The library should theoretically work on:
+- FreeBSD, NetBSD, OpenBSD
+- Other Unix-like systems
+- Embedded targets with `std` feature disabled
+
+**Note**: Platform support claims are conservative until CI testing is established.
+
+## Security
+
+### Security Policy
+- Regular dependency updates
+- Security advisories through GitHub
+- Prompt response to security issues
+
+### Safe Defaults
+- Memory safety guaranteed by Rust
+- Input validation on public APIs
+- Proper error handling throughout
+
+## Support Channels
+
+### Getting Help
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: Questions and community support
+- **Documentation**: Comprehensive guides and API docs
+
+### Contributing
+See `CONTRIBUTING.md` for:
+- Development setup
+- Coding standards
+- Testing requirements
+- Pull request process
 
 ## Future Compatibility
 
-### Planned Support
-- Additional platforms
-- New architectures
-- Enhanced features
+### Planned Improvements
+- Additional semiring types
+- More FST algorithms
+- Performance optimizations
+- Better error messages
 
-### Deprecation Policy
-- 6 months notice
-- Migration guides
-- Alternative solutions 
+### Long-term Goals
+- Stable 1.0 API
+- Expanded platform support
+- Integration with other libraries
+- Advanced optimization features
+
+The ArcWeight project is committed to maintaining backward compatibility and providing clear migration paths for any necessary breaking changes.

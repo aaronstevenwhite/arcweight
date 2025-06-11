@@ -1,0 +1,184 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, examples ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, 1.75.0]  # MSRV testing
+        include:
+          # Test additional configurations on Ubuntu only
+          - os: ubuntu-latest
+            rust: beta
+          - os: ubuntu-latest
+            rust: nightly
+        exclude:
+          # Skip MSRV testing on Windows/macOS to reduce CI time
+          - os: windows-latest
+            rust: 1.75.0
+          - os: macos-latest
+            rust: 1.75.0
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+
+    - name: Configure Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ matrix.os }}-${{ matrix.rust }}
+
+    - name: Run tests (all features)
+      run: cargo test --all-features --verbose
+
+    - name: Run tests (no default features)
+      run: cargo test --no-default-features --verbose
+
+    - name: Run tests (std only)
+      run: cargo test --no-default-features --features std --verbose
+
+    - name: Run tests (parallel only)
+      run: cargo test --no-default-features --features std,parallel --verbose
+
+    - name: Run tests (serde only)
+      run: cargo test --no-default-features --features std,serde --verbose
+
+    - name: Compile benchmarks
+      run: cargo bench --no-run --verbose
+
+    - name: Run examples
+      run: |
+        cargo run --example edit_distance
+        cargo run --example morphological_analyzer
+        cargo run --example phonological_rules
+        cargo run --example pronunciation_lexicon
+        cargo run --example transliteration
+        cargo run --example number_date_normalizer
+        cargo run --example word_correction
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Configure Rust cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Run Clippy (all features)
+      run: cargo clippy --all-features --all-targets -- -D warnings
+
+    - name: Run Clippy (no default features)
+      run: cargo clippy --no-default-features -- -D warnings
+
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Configure Rust cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Build documentation
+      run: cargo doc --all-features --no-deps --document-private-items
+      env:
+        RUSTDOCFLAGS: -D warnings
+
+  msrv:
+    name: MSRV Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install MSRV toolchain
+      uses: dtolnay/rust-toolchain@1.75.0
+
+    - name: Configure Rust cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Check MSRV compatibility
+      run: cargo check --all-features
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install cargo-audit
+      run: cargo install cargo-audit
+
+    - name: Run security audit
+      run: cargo audit
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: llvm-tools-preview
+
+    - name: Configure Rust cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
+
+    - name: Generate coverage report
+      run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: lcov.info
+        fail_ci_if_error: false

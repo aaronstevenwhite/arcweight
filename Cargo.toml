@@ -22,6 +22,7 @@ include = [
     "README.md",
     "LICENSE",
     "CONTRIBUTING.md",
+    "CHANGELOG.md",
     "clippy.toml",
     "rustfmt.toml"
 ]

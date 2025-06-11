@@ -32,7 +32,7 @@ impl<W1: Semiring, W2: Semiring> Zero for ProductWeight<W1, W2> {
     fn zero() -> Self {
         Self::new(W1::zero(), W2::zero())
     }
-    
+
     fn is_zero(&self) -> bool {
         Semiring::is_zero(&self.w1) && Semiring::is_zero(&self.w2)
     }
@@ -46,42 +46,36 @@ impl<W1: Semiring, W2: Semiring> One for ProductWeight<W1, W2> {
 
 impl<W1: Semiring, W2: Semiring> Add for ProductWeight<W1, W2> {
     type Output = Self;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
-        Self::new(
-            self.w1 + rhs.w1,
-            self.w2 + rhs.w2,
-        )
+        Self::new(self.w1 + rhs.w1, self.w2 + rhs.w2)
     }
 }
 
 impl<W1: Semiring, W2: Semiring> Mul for ProductWeight<W1, W2> {
     type Output = Self;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
-        Self::new(
-            self.w1 * rhs.w1,
-            self.w2 * rhs.w2,
-        )
+        Self::new(self.w1 * rhs.w1, self.w2 * rhs.w2)
     }
 }
 
 impl<W1: Semiring, W2: Semiring> Semiring for ProductWeight<W1, W2> {
     type Value = (W1::Value, W2::Value);
-    
+
     fn new(value: Self::Value) -> Self {
         Self::new(W1::new(value.0), W2::new(value.1))
     }
-    
+
     fn value(&self) -> &Self::Value {
         // this requires unsafe or a different approach
         unimplemented!("ProductWeight::value requires redesign")
     }
-    
+
     fn properties() -> SemiringProperties {
         let p1 = W1::properties();
         let p2 = W2::properties();
-        
+
         SemiringProperties {
             left_semiring: p1.left_semiring && p2.left_semiring,
             right_semiring: p1.right_semiring && p2.right_semiring,
@@ -90,10 +84,9 @@ impl<W1: Semiring, W2: Semiring> Semiring for ProductWeight<W1, W2> {
             path: p1.path && p2.path,
         }
     }
-    
+
     fn approx_eq(&self, other: &Self, epsilon: f64) -> bool {
-        self.w1.approx_eq(&other.w1, epsilon) && 
-        self.w2.approx_eq(&other.w2, epsilon)
+        self.w1.approx_eq(&other.w1, epsilon) && self.w2.approx_eq(&other.w2, epsilon)
     }
 }
 

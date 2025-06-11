@@ -3,43 +3,33 @@
 pub use num_traits::{One, Zero};
 
 pub use crate::{
-    // core types
-    arc::{Arc, ArcIterator},
-    fst::{Fst, MutableFst, ExpandedFst, StateId, Label, NO_STATE_ID, NO_LABEL},
-    
-    // fst implementations
-    fst::{VectorFst, ConstFst, CompactFst},
-    
-    // semirings
-    semiring::{
-        Semiring, DivisibleSemiring, StarSemiring, NaturallyOrderedSemiring,
-        TropicalWeight, ProbabilityWeight, BooleanWeight, LogWeight,
-    },
-    
     // algorithms
     algorithms::{
-        compose, compose_default,
-        concat,
-        connect,
-        determinize,
-        minimize,
-        reverse,
-        shortest_path, shortest_path_single, ShortestPathConfig,
-        closure, closure_plus,
-        union,
-        project_input, project_output,
-        prune,
-        remove_epsilons,
-        topsort,
-        weight_convert,
+        closure, closure_plus, compose, compose_default, concat, connect, determinize, minimize,
+        project_input, project_output, prune, remove_epsilons, reverse, shortest_path,
+        shortest_path_single, topsort, union, weight_convert, ShortestPathConfig,
     },
-    
-    // utilities
-    utils::{SymbolTable},
-    
+
+    // core types
+    arc::{Arc, ArcIterator},
+    // fst implementations
+    fst::{CompactFst, ConstFst, VectorFst},
+
+    fst::{ExpandedFst, Fst, Label, MutableFst, StateId, NO_LABEL, NO_STATE_ID},
+
     // i/o
-    io::{read_text, write_text, read_binary, write_binary, read_openfst, write_openfst},
-    
+    io::{read_binary, read_openfst, read_text, write_binary, write_openfst, write_text},
+
+    // semirings
+    semiring::{
+        BooleanWeight, DivisibleSemiring, LogWeight, NaturallyOrderedSemiring, ProbabilityWeight,
+        Semiring, StarSemiring, TropicalWeight,
+    },
+
+    // utilities
+    utils::SymbolTable,
+
     // error handling
-    Error, Result,
+    Error,
+    Result,
 };

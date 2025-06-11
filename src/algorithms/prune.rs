@@ -34,27 +34,27 @@ where
 {
     // simple weight-based pruning
     let mut result = M::default();
-    
+
     // copy states
     for _ in 0..fst.num_states() {
         result.add_state();
     }
-    
+
     // set start
     if let Some(start) = fst.start() {
         result.set_start(start);
     }
-    
+
     // copy arcs and weights
     for state in fst.states() {
         if let Some(weight) = fst.final_weight(state) {
             result.set_final(state, weight.clone());
         }
-        
+
         for arc in fst.arcs(state) {
             result.add_arc(state, arc.clone());
         }
     }
-    
+
     Ok(result)
 }

@@ -1,10 +1,10 @@
 //! Difference algorithm
 
-use crate::fst::{Fst, MutableFst};
-use crate::semiring::Semiring;
 use crate::algorithms::ComposeFilter;
 use crate::arc::Arc;
-use crate::{Result, Error};
+use crate::fst::{Fst, MutableFst};
+use crate::semiring::Semiring;
+use crate::{Error, Result};
 use core::hash::Hash;
 
 /// Difference filter for composition
@@ -12,10 +12,9 @@ pub struct DifferenceFilter;
 
 impl<W: Semiring> ComposeFilter<W> for DifferenceFilter {
     type FilterState = ();
-    
-    fn start() -> Self::FilterState {
-    }
-    
+
+    fn start() -> Self::FilterState {}
+
     fn filter_arc(
         &self,
         arc1: &Arc<W>,
@@ -24,12 +23,10 @@ impl<W: Semiring> ComposeFilter<W> for DifferenceFilter {
     ) -> Option<(Arc<W>, Self::FilterState)> {
         // match when labels are different
         if arc1.olabel != arc2.ilabel && arc1.olabel != 0 && arc2.ilabel != 0 {
-            Some((Arc::new(
-                arc1.ilabel,
-                arc1.olabel,
-                arc1.weight.clone(),
-                0,
-            ), ()))
+            Some((
+                Arc::new(arc1.ilabel, arc1.olabel, arc1.weight.clone(), 0),
+                (),
+            ))
         } else {
             None
         }

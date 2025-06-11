@@ -28,7 +28,7 @@ impl Zero for BooleanWeight {
     fn zero() -> Self {
         Self::new(false)
     }
-    
+
     fn is_zero(&self) -> bool {
         !self.0
     }
@@ -42,7 +42,7 @@ impl One for BooleanWeight {
 
 impl Add for BooleanWeight {
     type Output = Self;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 || rhs.0)
     }
@@ -50,7 +50,7 @@ impl Add for BooleanWeight {
 
 impl Mul for BooleanWeight {
     type Output = Self;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
         Self(self.0 && rhs.0)
     }
@@ -58,15 +58,15 @@ impl Mul for BooleanWeight {
 
 impl Semiring for BooleanWeight {
     type Value = bool;
-    
+
     fn new(value: Self::Value) -> Self {
         Self::new(value)
     }
-    
+
     fn value(&self) -> &Self::Value {
         &self.0
     }
-    
+
     fn properties() -> SemiringProperties {
         SemiringProperties {
             left_semiring: true,
@@ -88,7 +88,7 @@ impl StarSemiring for BooleanWeight {
 
 impl FromStr for BooleanWeight {
     type Err = std::str::ParseBoolError;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse::<bool>().map(Self::new)
     }

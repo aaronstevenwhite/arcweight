@@ -1,11 +1,11 @@
 //! Probability semiring implementation
 
 use super::traits::*;
-use ordered_float::OrderedFloat;
 use core::fmt;
 use core::ops::{Add, Mul};
 use core::str::FromStr;
 use num_traits::{One, Zero};
+use ordered_float::OrderedFloat;
 
 /// Probability weight (+, ×) semiring
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -30,7 +30,7 @@ impl Zero for ProbabilityWeight {
     fn zero() -> Self {
         Self::new(0.0)
     }
-    
+
     fn is_zero(&self) -> bool {
         self.0 == 0.0
     }
@@ -44,7 +44,7 @@ impl One for ProbabilityWeight {
 
 impl Add for ProbabilityWeight {
     type Output = Self;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
@@ -52,7 +52,7 @@ impl Add for ProbabilityWeight {
 
 impl Mul for ProbabilityWeight {
     type Output = Self;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
         Self(self.0 * rhs.0)
     }
@@ -60,15 +60,15 @@ impl Mul for ProbabilityWeight {
 
 impl Semiring for ProbabilityWeight {
     type Value = f64;
-    
+
     fn new(value: Self::Value) -> Self {
         Self::new(value)
     }
-    
+
     fn value(&self) -> &Self::Value {
         &self.0
     }
-    
+
     fn properties() -> SemiringProperties {
         SemiringProperties {
             left_semiring: true,
@@ -78,7 +78,7 @@ impl Semiring for ProbabilityWeight {
             path: false,
         }
     }
-    
+
     fn approx_eq(&self, other: &Self, epsilon: f64) -> bool {
         (self.0 - other.0).abs() < epsilon
     }
@@ -106,7 +106,7 @@ impl StarSemiring for ProbabilityWeight {
 
 impl FromStr for ProbabilityWeight {
     type Err = std::num::ParseFloatError;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse::<f64>().map(Self::new)
     }

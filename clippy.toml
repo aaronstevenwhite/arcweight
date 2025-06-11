@@ -1,0 +1,38 @@
+# Clippy linting configuration for ArcWeight
+# See https://doc.rust-lang.org/clippy/configuration.html for all options
+
+# Performance and optimization
+too-many-arguments-threshold = 8
+type-complexity-threshold = 300
+single-char-binding-names-threshold = 4
+
+# Documentation requirements
+missing-docs-in-crate-items = true
+
+# Naming conventions
+enum-variant-name-threshold = 3
+max-struct-bools = 5
+max-fn-params-bools = 3
+
+# Code complexity
+cognitive-complexity-threshold = 30
+pass-by-value-size-limit = 256
+
+# String handling (important for FST library)
+max-suggested-slice-pattern-length = 3
+
+# Collections and iterators
+trivial-copy-size-limit = 16
+
+# Arithmetic operations (critical for semiring operations)
+arithmetic-side-effects-allowed = ["src/semiring/*.rs", "src/algorithms/*.rs"]
+arithmetic-side-effects-allowed-binary = []
+arithmetic-side-effects-allowed-unary = []
+
+# Allow certain patterns common in FST implementations
+allow-expect-in-tests = true
+allow-unwrap-in-tests = true
+
+# FST-specific allowances for performance-critical code
+avoid-breaking-exported-api = true
+msrv = "1.75"

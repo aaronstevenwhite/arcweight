@@ -1,8 +1,8 @@
 //! Minimization algorithm
 
+use crate::algorithms::{connect, determinize, reverse};
 use crate::fst::{Fst, MutableFst};
 use crate::semiring::DivisibleSemiring;
-use crate::algorithms::{connect, determinize, reverse};
 use crate::Result;
 use core::hash::Hash;
 
@@ -18,12 +18,12 @@ where
     // 2. determinize
     // 3. reverse
     // 4. determinize
-    
+
     let rev1: M = reverse(fst)?;
     let det1: M = determinize(&rev1)?;
     let rev2: M = reverse(&det1)?;
     let det2: M = determinize(&rev2)?;
-    
+
     // ensure connected
     connect(&det2)
 }

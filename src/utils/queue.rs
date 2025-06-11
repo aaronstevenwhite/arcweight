@@ -1,20 +1,20 @@
 //! Queue implementations for FST algorithms
 
 use crate::fst::StateId;
-use std::collections::{VecDeque, BinaryHeap};
 use core::cmp::Ordering;
+use std::collections::{BinaryHeap, VecDeque};
 
 /// Queue trait for state exploration
 pub trait Queue {
     /// Enqueue a state
     fn enqueue(&mut self, state: StateId);
-    
+
     /// Dequeue a state
     fn dequeue(&mut self) -> Option<StateId>;
-    
+
     /// Check if empty
     fn is_empty(&self) -> bool;
-    
+
     /// Clear the queue
     fn clear(&mut self);
 }
@@ -30,17 +30,17 @@ impl FifoQueue {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Get queue size
     pub fn size(&self) -> usize {
         self.queue.len()
     }
-    
+
     /// Get front element
     pub fn front(&self) -> Option<&StateId> {
         self.queue.front()
     }
-    
+
     /// Get back element
     pub fn back(&self) -> Option<&StateId> {
         self.queue.back()
@@ -51,15 +51,15 @@ impl Queue for FifoQueue {
     fn enqueue(&mut self, state: StateId) {
         self.queue.push_back(state);
     }
-    
+
     fn dequeue(&mut self) -> Option<StateId> {
         self.queue.pop_front()
     }
-    
+
     fn is_empty(&self) -> bool {
         self.queue.is_empty()
     }
-    
+
     fn clear(&mut self) {
         self.queue.clear();
     }
@@ -76,7 +76,7 @@ impl LifoQueue {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Get stack size
     pub fn size(&self) -> usize {
         self.stack.len()
@@ -87,15 +87,15 @@ impl Queue for LifoQueue {
     fn enqueue(&mut self, state: StateId) {
         self.stack.push(state);
     }
-    
+
     fn dequeue(&mut self) -> Option<StateId> {
         self.stack.pop()
     }
-    
+
     fn is_empty(&self) -> bool {
         self.stack.is_empty()
     }
-    
+
     fn clear(&mut self) {
         self.stack.clear();
     }
@@ -138,12 +138,12 @@ impl<P: Ord> StateQueue<P> {
             heap: BinaryHeap::new(),
         }
     }
-    
+
     /// Enqueue with priority
     pub fn enqueue_with_priority(&mut self, state: StateId, priority: P) {
         self.heap.push(StateWithPriority { state, priority });
     }
-    
+
     /// Get size of queue
     pub fn size(&self) -> usize {
         self.heap.len()
@@ -154,15 +154,15 @@ impl<P: Ord> Queue for StateQueue<P> {
     fn enqueue(&mut self, _state: StateId) {
         panic!("Use enqueue_with_priority for StateQueue");
     }
-    
+
     fn dequeue(&mut self) -> Option<StateId> {
         self.heap.pop().map(|s| s.state)
     }
-    
+
     fn is_empty(&self) -> bool {
         self.heap.is_empty()
     }
-    
+
     fn clear(&mut self) {
         self.heap.clear();
     }
@@ -180,10 +180,13 @@ impl TopOrderQueue {
     pub fn from_order(order: Vec<StateId>) -> Self {
         Self { order, pos: 0 }
     }
-    
+
     /// Create a new empty topological order queue
     pub fn new<W: crate::semiring::Semiring, F: crate::fst::Fst<W>>(_fst: &F) -> Self {
-        Self { order: Vec::new(), pos: 0 }
+        Self {
+            order: Vec::new(),
+            pos: 0,
+        }
     }
 }
 
@@ -191,7 +194,7 @@ impl Queue for TopOrderQueue {
     fn enqueue(&mut self, _state: StateId) {
         panic!("TopOrderQueue is read-only");
     }
-    
+
     fn dequeue(&mut self) -> Option<StateId> {
         if self.pos < self.order.len() {
             let state = self.order[self.pos];
@@ -201,11 +204,11 @@ impl Queue for TopOrderQueue {
             None
         }
     }
-    
+
     fn is_empty(&self) -> bool {
         self.pos >= self.order.len()
     }
-    
+
     fn clear(&mut self) {
         self.pos = self.order.len();
     }

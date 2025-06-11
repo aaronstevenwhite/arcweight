@@ -2,10 +2,10 @@
 
 use super::traits::*;
 use crate::arc::{Arc, ArcIterator};
-use crate::semiring::Semiring;
 use crate::properties::FstProperties;
-use core::marker::PhantomData;
+use crate::semiring::Semiring;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 
 /// Compact FST with compressed arc representation
 #[derive(Debug, Clone)]
@@ -29,16 +29,16 @@ struct CompactState {
 pub trait Compactor<W: Semiring>: Debug + Send + Sync + 'static {
     /// Compacted element type
     type Element: Clone + Debug + Send + Sync;
-    
+
     /// Compact an arc
     fn compact(arc: &Arc<W>) -> Self::Element;
-    
+
     /// Expand a compacted arc
     fn expand(element: &Self::Element) -> Arc<W>;
-    
+
     /// Compact a weight
     fn compact_weight(weight: &W) -> Self::Element;
-    
+
     /// Expand a compacted weight
     fn expand_weight(element: &Self::Element) -> W;
 }
@@ -51,7 +51,7 @@ pub struct DefaultCompactor<W: Semiring> {
 
 impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
     type Element = CompactElement<W>;
-    
+
     fn compact(arc: &Arc<W>) -> Self::Element {
         CompactElement::Arc {
             ilabel: arc.ilabel,
@@ -60,20 +60,23 @@ impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
             nextstate: arc.nextstate,
         }
     }
-    
+
     fn expand(element: &Self::Element) -> Arc<W> {
         match element {
-            CompactElement::Arc { ilabel, olabel, weight, nextstate } => {
-                Arc::new(*ilabel, *olabel, weight.clone(), *nextstate)
-            }
+            CompactElement::Arc {
+                ilabel,
+                olabel,
+                weight,
+                nextstate,
+            } => Arc::new(*ilabel, *olabel, weight.clone(), *nextstate),
             _ => panic!("Expected arc element"),
         }
     }
-    
+
     fn compact_weight(weight: &W) -> Self::Element {
         CompactElement::Weight(weight.clone())
     }
-    
+
     fn expand_weight(element: &Self::Element) -> W {
         match element {
             CompactElement::Weight(w) => w.clone(),
@@ -129,7 +132,7 @@ impl<W: Semiring, C: Compactor<W>> ArcIterator<W> for CompactArcIterator<'_, W, 
 
 impl<W: Semiring, C: Compactor<W>> Iterator for CompactArcIterator<'_, W, C> {
     type Item = Arc<W>;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.end {
             let arc = C::expand(&self.data[self.pos]);
@@ -142,32 +145,36 @@ impl<W: Semiring, C: Compactor<W>> Iterator for CompactArcIterator<'_, W, C> {
 }
 
 impl<W: Semiring, C: Compactor<W>> Fst<W> for CompactFst<W, C> {
-    type ArcIter<'a> = CompactArcIterator<'a, W, C> where W: 'a, C: 'a;
-    
+    type ArcIter<'a>
+        = CompactArcIterator<'a, W, C>
+    where
+        W: 'a,
+        C: 'a;
+
     fn start(&self) -> Option<StateId> {
         self.start
     }
-    
+
     fn final_weight(&self, _state: StateId) -> Option<&W> {
         // this would need redesign to avoid returning references
         unimplemented!("CompactFst final_weight needs redesign")
     }
-    
+
     fn num_arcs(&self, state: StateId) -> usize {
         self.states
             .get(state as usize)
             .map(|s| s.num_arcs as usize)
             .unwrap_or(0)
     }
-    
+
     fn num_states(&self) -> usize {
         self.states.len()
     }
-    
+
     fn properties(&self) -> FstProperties {
         self.properties
     }
-    
+
     fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         if let Some(s) = self.states.get(state as usize) {
             let start = s.arcs_start as usize;

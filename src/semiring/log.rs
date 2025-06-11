@@ -1,10 +1,10 @@
 //! Log semiring implementation
 
 use super::traits::*;
-use ordered_float::OrderedFloat;
 use core::fmt;
 use core::ops::{Add, Mul};
 use num_traits::{One, Zero};
+use ordered_float::OrderedFloat;
 
 /// Log weight (-log(p), +) semiring
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
@@ -14,12 +14,12 @@ pub struct LogWeight(OrderedFloat<f64>);
 impl LogWeight {
     /// Positive infinity (zero element)
     pub const INFINITY: Self = Self(OrderedFloat(f64::INFINITY));
-    
+
     /// Create a new log weight
     pub fn new(value: f64) -> Self {
         Self(OrderedFloat(value))
     }
-    
+
     /// Convert from probability
     pub fn from_probability(p: f64) -> Self {
         if p == 0.0 {
@@ -28,7 +28,7 @@ impl LogWeight {
             Self::new(-p.ln())
         }
     }
-    
+
     /// Convert to probability
     pub fn to_probability(&self) -> f64 {
         if self.0.is_infinite() {
@@ -53,7 +53,7 @@ impl Zero for LogWeight {
     fn zero() -> Self {
         Self::INFINITY
     }
-    
+
     fn is_zero(&self) -> bool {
         self.0.is_infinite()
     }
@@ -67,7 +67,7 @@ impl One for LogWeight {
 
 impl Add for LogWeight {
     type Output = Self;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
         if <Self as num_traits::Zero>::is_zero(&self) {
             rhs
@@ -83,7 +83,7 @@ impl Add for LogWeight {
 
 impl Mul for LogWeight {
     type Output = Self;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
         if <Self as num_traits::Zero>::is_zero(&self) || <Self as num_traits::Zero>::is_zero(&rhs) {
             Self::zero()
@@ -95,15 +95,15 @@ impl Mul for LogWeight {
 
 impl Semiring for LogWeight {
     type Value = f64;
-    
+
     fn new(value: Self::Value) -> Self {
         Self::new(value)
     }
-    
+
     fn value(&self) -> &Self::Value {
         &self.0
     }
-    
+
     fn properties() -> SemiringProperties {
         SemiringProperties {
             left_semiring: true,
@@ -113,7 +113,7 @@ impl Semiring for LogWeight {
             path: false,
         }
     }
-    
+
     fn approx_eq(&self, other: &Self, epsilon: f64) -> bool {
         if <Self as num_traits::Zero>::is_zero(self) && <Self as num_traits::Zero>::is_zero(other) {
             true

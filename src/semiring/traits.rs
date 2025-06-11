@@ -5,11 +5,11 @@ use core::ops::{Add, Mul};
 use num_traits::{One, Zero};
 
 /// Core semiring trait defining algebraic operations for weights
-pub trait Semiring: 
-    Clone 
-    + Debug 
-    + Display 
-    + PartialEq 
+pub trait Semiring:
+    Clone
+    + Debug
+    + Display
+    + PartialEq
     + PartialOrd
     + Add<Output = Self>
     + Mul<Output = Self>
@@ -21,48 +21,48 @@ pub trait Semiring:
 {
     /// Type of the underlying value
     type Value: Clone + Debug + PartialEq + PartialOrd;
-    
+
     /// Create a new weight from a value
     fn new(value: Self::Value) -> Self;
-    
+
     /// Get the underlying value
     fn value(&self) -> &Self::Value;
-    
+
     /// Semiring addition (⊕)
     fn plus(&self, other: &Self) -> Self {
         self.clone() + other.clone()
     }
-    
+
     /// Semiring multiplication (⊗)
     fn times(&self, other: &Self) -> Self {
         self.clone() * other.clone()
     }
-    
+
     /// In-place semiring addition
     fn plus_assign(&mut self, other: &Self) {
         *self = self.plus(other);
     }
-    
+
     /// In-place semiring multiplication  
     fn times_assign(&mut self, other: &Self) {
         *self = self.times(other);
     }
-    
+
     /// Check if weight is zero (additive identity)
     fn is_zero(&self) -> bool {
         self == &Self::zero()
     }
-    
+
     /// Check if weight is one (multiplicative identity)
     fn is_one(&self) -> bool {
         self == &Self::one()
     }
-    
+
     /// Semiring properties
     fn properties() -> SemiringProperties {
         SemiringProperties::default()
     }
-    
+
     /// Approximate equality for floating-point weights
     fn approx_eq(&self, other: &Self, _epsilon: f64) -> bool {
         self == other

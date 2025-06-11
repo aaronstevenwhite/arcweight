@@ -75,7 +75,6 @@ impl NumberNormalizer {
             ("seventeen".to_string(), "17".to_string()),
             ("eighteen".to_string(), "18".to_string()),
             ("nineteen".to_string(), "19".to_string()),
-            
             // Tens
             ("twenty".to_string(), "20".to_string()),
             ("thirty".to_string(), "30".to_string()),
@@ -85,7 +84,6 @@ impl NumberNormalizer {
             ("seventy".to_string(), "70".to_string()),
             ("eighty".to_string(), "80".to_string()),
             ("ninety".to_string(), "90".to_string()),
-            
             // Compound numbers
             ("twenty-one".to_string(), "21".to_string()),
             ("twenty-two".to_string(), "22".to_string()),
@@ -93,23 +91,20 @@ impl NumberNormalizer {
             ("thirty-five".to_string(), "35".to_string()),
             ("forty-seven".to_string(), "47".to_string()),
             ("fifty-nine".to_string(), "59".to_string()),
-            
             // Hundreds
             ("hundred".to_string(), "100".to_string()),
             ("one hundred".to_string(), "100".to_string()),
             ("two hundred".to_string(), "200".to_string()),
             ("three hundred".to_string(), "300".to_string()),
-            
             // Thousands
             ("thousand".to_string(), "1000".to_string()),
             ("one thousand".to_string(), "1000".to_string()),
             ("two thousand".to_string(), "2000".to_string()),
-            
             // Millions
             ("million".to_string(), "1000000".to_string()),
             ("one million".to_string(), "1000000".to_string()),
         ];
-        
+
         let ordinal_to_number = vec![
             ("first".to_string(), "1st".to_string()),
             ("second".to_string(), "2nd".to_string()),
@@ -130,7 +125,7 @@ impl NumberNormalizer {
             ("twenty-first".to_string(), "21st".to_string()),
             ("thirtieth".to_string(), "30th".to_string()),
         ];
-        
+
         let date_patterns = vec![
             // Month abbreviations
             ("Jan".to_string(), "01".to_string()),
@@ -145,7 +140,6 @@ impl NumberNormalizer {
             ("Oct".to_string(), "10".to_string()),
             ("Nov".to_string(), "11".to_string()),
             ("Dec".to_string(), "12".to_string()),
-            
             // Full month names
             ("January".to_string(), "01".to_string()),
             ("February".to_string(), "02".to_string()),
@@ -158,7 +152,6 @@ impl NumberNormalizer {
             ("October".to_string(), "10".to_string()),
             ("November".to_string(), "11".to_string()),
             ("December".to_string(), "12".to_string()),
-            
             // Common date formats
             ("Jan 15, 2024".to_string(), "2024-01-15".to_string()),
             ("February 3, 2023".to_string(), "2023-02-03".to_string()),
@@ -169,7 +162,7 @@ impl NumberNormalizer {
             ("15-Jan-2024".to_string(), "2024-01-15".to_string()),
             ("2024/01/15".to_string(), "2024-01-15".to_string()),
         ];
-        
+
         let time_patterns = vec![
             // 12-hour format
             ("12:00 AM".to_string(), "00:00".to_string()),
@@ -180,20 +173,18 @@ impl NumberNormalizer {
             ("3:45 PM".to_string(), "15:45".to_string()),
             ("6:15 PM".to_string(), "18:15".to_string()),
             ("11:59 PM".to_string(), "23:59".to_string()),
-            
             // Common time expressions
             ("noon".to_string(), "12:00".to_string()),
             ("midnight".to_string(), "00:00".to_string()),
             ("quarter past three".to_string(), "15:15".to_string()),
             ("half past four".to_string(), "16:30".to_string()),
             ("quarter to five".to_string(), "16:45".to_string()),
-            
             // Informal time
             ("3 o'clock".to_string(), "15:00".to_string()),
             ("8 AM".to_string(), "08:00".to_string()),
             ("5 PM".to_string(), "17:00".to_string()),
         ];
-        
+
         let currency_patterns = vec![
             // Dollar amounts
             ("$10".to_string(), "USD 10.00".to_string()),
@@ -203,7 +194,6 @@ impl NumberNormalizer {
             ("ten dollars".to_string(), "USD 10.00".to_string()),
             ("fifty cents".to_string(), "USD 0.50".to_string()),
             ("a dollar".to_string(), "USD 1.00".to_string()),
-            
             // Other currencies
             ("€100".to_string(), "EUR 100.00".to_string()),
             ("£50".to_string(), "GBP 50.00".to_string()),
@@ -211,7 +201,7 @@ impl NumberNormalizer {
             ("100 euros".to_string(), "EUR 100.00".to_string()),
             ("fifty pounds".to_string(), "GBP 50.00".to_string()),
         ];
-        
+
         let measurement_patterns = vec![
             // Length
             ("5 feet".to_string(), "5 ft".to_string()),
@@ -220,25 +210,22 @@ impl NumberNormalizer {
             ("100 meters".to_string(), "100 m".to_string()),
             ("5 kilometers".to_string(), "5 km".to_string()),
             ("6 foot 2".to_string(), "6'2\"".to_string()),
-            
             // Weight
             ("10 pounds".to_string(), "10 lbs".to_string()),
             ("2 kilograms".to_string(), "2 kg".to_string()),
             ("5 ounces".to_string(), "5 oz".to_string()),
             ("1 ton".to_string(), "1 ton".to_string()),
-            
             // Volume
             ("1 gallon".to_string(), "1 gal".to_string()),
             ("2 liters".to_string(), "2 L".to_string()),
             ("8 cups".to_string(), "8 cups".to_string()),
             ("3 tablespoons".to_string(), "3 tbsp".to_string()),
-            
             // Temperature
             ("32 degrees Fahrenheit".to_string(), "32°F".to_string()),
             ("100 degrees Celsius".to_string(), "100°C".to_string()),
             ("room temperature".to_string(), "20°C".to_string()),
         ];
-        
+
         NumberNormalizer {
             word_to_digit,
             ordinal_to_number,
@@ -248,11 +235,11 @@ impl NumberNormalizer {
             measurement_patterns,
         }
     }
-    
+
     /// Normalize a text containing various entities
     fn normalize_text(&self, text: &str) -> Vec<NormalizedEntity> {
         let mut results = Vec::new();
-        
+
         // Check for number words
         for (word, digit) in &self.word_to_digit {
             if text.contains(word) {
@@ -264,7 +251,7 @@ impl NumberNormalizer {
                 });
             }
         }
-        
+
         // Check for ordinal numbers
         for (ordinal, number) in &self.ordinal_to_number {
             if text.contains(ordinal) {
@@ -276,7 +263,7 @@ impl NumberNormalizer {
                 });
             }
         }
-        
+
         // Check for date patterns
         for (date_text, normalized_date) in &self.date_patterns {
             if text.contains(date_text) {
@@ -288,7 +275,7 @@ impl NumberNormalizer {
                 });
             }
         }
-        
+
         // Check for time patterns
         for (time_text, normalized_time) in &self.time_patterns {
             if text.contains(time_text) {
@@ -300,7 +287,7 @@ impl NumberNormalizer {
                 });
             }
         }
-        
+
         // Check for currency patterns
         for (currency_text, normalized_currency) in &self.currency_patterns {
             if text.contains(currency_text) {
@@ -312,7 +299,7 @@ impl NumberNormalizer {
                 });
             }
         }
-        
+
         // Check for measurement patterns
         for (measurement_text, normalized_measurement) in &self.measurement_patterns {
             if text.contains(measurement_text) {
@@ -324,44 +311,44 @@ impl NumberNormalizer {
                 });
             }
         }
-        
+
         results
     }
-    
+
     /// Apply normalizations to a text string
     fn apply_normalizations(&self, text: &str) -> String {
         let mut result = text.to_string();
-        
+
         // Apply number normalizations
         for (word, digit) in &self.word_to_digit {
             result = result.replace(word, digit);
         }
-        
+
         // Apply ordinal normalizations
         for (ordinal, number) in &self.ordinal_to_number {
             result = result.replace(ordinal, number);
         }
-        
+
         // Apply date normalizations
         for (date_text, normalized_date) in &self.date_patterns {
             result = result.replace(date_text, normalized_date);
         }
-        
+
         // Apply time normalizations
         for (time_text, normalized_time) in &self.time_patterns {
             result = result.replace(time_text, normalized_time);
         }
-        
+
         // Apply currency normalizations
         for (currency_text, normalized_currency) in &self.currency_patterns {
             result = result.replace(currency_text, normalized_currency);
         }
-        
+
         // Apply measurement normalizations
         for (measurement_text, normalized_measurement) in &self.measurement_patterns {
             result = result.replace(measurement_text, normalized_measurement);
         }
-        
+
         result
     }
 }
@@ -372,7 +359,7 @@ fn build_number_normalization_fst() -> VectorFst<TropicalWeight> {
     let start = fst.add_state();
     fst.set_start(start);
     fst.set_final(start, TropicalWeight::one());
-    
+
     // Add some simple number transformations
     let number_rules = vec![
         ("one", "1"),
@@ -381,43 +368,52 @@ fn build_number_normalization_fst() -> VectorFst<TropicalWeight> {
         ("four", "4"),
         ("five", "5"),
     ];
-    
+
     for (word, digit) in number_rules {
         let mut current = start;
-        
+
         // Accept the word
         for ch in word.chars() {
             let next = fst.add_state();
-            fst.add_arc(current, Arc::new(
-                ch as u32,
-                0, // epsilon output during word
-                TropicalWeight::one(),
-                next
-            ));
+            fst.add_arc(
+                current,
+                Arc::new(
+                    ch as u32,
+                    0, // epsilon output during word
+                    TropicalWeight::one(),
+                    next,
+                ),
+            );
             current = next;
         }
-        
+
         // Output the digit
         for ch in digit.chars() {
             let next = fst.add_state();
-            fst.add_arc(current, Arc::new(
-                0, // epsilon input
-                ch as u32,
-                TropicalWeight::one(),
-                next
-            ));
+            fst.add_arc(
+                current,
+                Arc::new(
+                    0, // epsilon input
+                    ch as u32,
+                    TropicalWeight::one(),
+                    next,
+                ),
+            );
             current = next;
         }
-        
+
         // Connect back to start for more normalizations
-        fst.add_arc(current, Arc::new(
-            0, // epsilon
-            0, // epsilon
-            TropicalWeight::one(),
-            start
-        ));
+        fst.add_arc(
+            current,
+            Arc::new(
+                0, // epsilon
+                0, // epsilon
+                TropicalWeight::one(),
+                start,
+            ),
+        );
     }
-    
+
     fst
 }
 
@@ -431,7 +427,7 @@ fn normalize_phone_numbers(text: &str) -> Vec<NormalizedEntity> {
         ("+1 555 123 4567", "+1-555-123-4567"),
         ("1-800-FLOWERS", "+1-800-356-9377"),
     ];
-    
+
     let mut results = Vec::new();
     for (pattern, normalized) in phone_patterns {
         if text.contains(pattern) {
@@ -450,40 +446,42 @@ fn normalize_phone_numbers(text: &str) -> Vec<NormalizedEntity> {
 fn process_with_fst_pipeline(text: &str, _normalizer_fst: &VectorFst<TropicalWeight>) -> String {
     // This is a simplified demonstration of how an FST could be used
     // In practice, you'd compose the input text FST with the normalizer FST
-    
+
     // For demonstration, we'll show the concept
-    let simple_replacements = vec![
-        ("one", "1"),
-        ("two", "2"),
-        ("three", "3"),
-    ];
-    
+    let simple_replacements = vec![("one", "1"), ("two", "2"), ("three", "3")];
+
     let mut result = text.to_string();
     for (from, to) in simple_replacements {
         result = result.replace(from, to);
     }
-    
+
     result
 }
 
 fn main() -> Result<()> {
     println!("Number/Date Normalizer FST Example");
     println!("=================================\n");
-    
+
     // Create normalizer
     let normalizer = NumberNormalizer::new();
-    
+
     // Build demonstration FST
     let _number_fst = build_number_normalization_fst();
-    
+
     println!("Normalization patterns loaded:");
     println!("  {} number word mappings", normalizer.word_to_digit.len());
-    println!("  {} ordinal number mappings", normalizer.ordinal_to_number.len());
+    println!(
+        "  {} ordinal number mappings",
+        normalizer.ordinal_to_number.len()
+    );
     println!("  {} date format patterns", normalizer.date_patterns.len());
     println!("  {} time format patterns", normalizer.time_patterns.len());
     println!("  {} currency patterns", normalizer.currency_patterns.len());
-    println!("  {} measurement patterns", normalizer.measurement_patterns.len());
-    
+    println!(
+        "  {} measurement patterns",
+        normalizer.measurement_patterns.len()
+    );
+
     // Test number normalization
     println!("\n1. Number Normalization:");
     println!("------------------------");
@@ -495,12 +493,12 @@ fn main() -> Result<()> {
         "Population is one million",
         "Temperature is zero degrees",
     ];
-    
+
     for test in number_tests {
         let normalized = normalizer.apply_normalizations(test);
         println!("  '{}' → '{}'", test, normalized);
     }
-    
+
     // Test ordinal normalization
     println!("\n2. Ordinal Number Normalization:");
     println!("--------------------------------");
@@ -511,12 +509,12 @@ fn main() -> Result<()> {
         "The twentieth century",
         "Twenty-first birthday",
     ];
-    
+
     for test in ordinal_tests {
         let normalized = normalizer.apply_normalizations(test);
         println!("  '{}' → '{}'", test, normalized);
     }
-    
+
     // Test date normalization
     println!("\n3. Date Normalization:");
     println!("---------------------");
@@ -528,12 +526,12 @@ fn main() -> Result<()> {
         "Started on 01/01/2024",
         "Due 3/15/24",
     ];
-    
+
     for test in date_tests {
         let normalized = normalizer.apply_normalizations(test);
         println!("  '{}' → '{}'", test, normalized);
     }
-    
+
     // Test time normalization
     println!("\n4. Time Normalization:");
     println!("---------------------");
@@ -545,12 +543,12 @@ fn main() -> Result<()> {
         "Call at 3 o'clock",
         "Due at quarter past three",
     ];
-    
+
     for test in time_tests {
         let normalized = normalizer.apply_normalizations(test);
         println!("  '{}' → '{}'", test, normalized);
     }
-    
+
     // Test currency normalization
     println!("\n5. Currency Normalization:");
     println!("-------------------------");
@@ -562,12 +560,12 @@ fn main() -> Result<()> {
         "Salary $1.5 million",
         "Change fifty cents",
     ];
-    
+
     for test in currency_tests {
         let normalized = normalizer.apply_normalizations(test);
         println!("  '{}' → '{}'", test, normalized);
     }
-    
+
     // Test measurement normalization
     println!("\n6. Measurement Normalization:");
     println!("-----------------------------");
@@ -579,12 +577,12 @@ fn main() -> Result<()> {
         "Temperature 32 degrees Fahrenheit",
         "Length 100 meters",
     ];
-    
+
     for test in measurement_tests {
         let normalized = normalizer.apply_normalizations(test);
         println!("  '{}' → '{}'", test, normalized);
     }
-    
+
     // Test phone number normalization
     println!("\n7. Phone Number Normalization:");
     println!("------------------------------");
@@ -595,17 +593,21 @@ fn main() -> Result<()> {
         "Mobile 5551234567",
         "Office +1 555 123 4567",
     ];
-    
+
     for test in phone_tests {
         let phone_results = normalize_phone_numbers(test);
         if !phone_results.is_empty() {
             let result = &phone_results[0];
-            println!("  '{}' → '{}'", test, test.replace(&result.original, &result.normalized));
+            println!(
+                "  '{}' → '{}'",
+                test,
+                test.replace(&result.original, &result.normalized)
+            );
         } else {
             println!("  '{}' → {} (no normalization)", test, test);
         }
     }
-    
+
     // Comprehensive text normalization
     println!("\n8. Comprehensive Text Normalization:");
     println!("------------------------------------");
@@ -616,37 +618,37 @@ fn main() -> Result<()> {
         "Flight duration: two hours and fifteen minutes on February 3, 2023.",
         "Distance: five miles, weight: one hundred pounds, cost: $25.50.",
     ];
-    
+
     for text in complex_texts {
         let normalized = normalizer.apply_normalizations(text);
         println!("\nOriginal:");
         println!("  {}", text);
         println!("Normalized:");
         println!("  {}", normalized);
-        
+
         // Show detected entities
         let entities = normalizer.normalize_text(text);
         if !entities.is_empty() {
             println!("Detected entities:");
             for entity in entities {
-                println!("  {:?}: '{}' → '{}'", 
-                         entity.entity_type, 
-                         entity.original, 
-                         entity.normalized);
+                println!(
+                    "  {:?}: '{}' → '{}'",
+                    entity.entity_type, entity.original, entity.normalized
+                );
             }
         }
     }
-    
+
     // FST pipeline demonstration
     println!("\n9. FST Pipeline Processing:");
     println!("--------------------------");
     println!("Demonstrating how FSTs can be used for normalization:");
-    
+
     let fst_test = "I need one apple, two oranges, and three bananas.";
     let fst_result = process_with_fst_pipeline(fst_test, &_number_fst);
     println!("  Input:  {}", fst_test);
     println!("  Output: {}", fst_result);
-    
+
     // Applications and benefits
     println!("\n10. Applications and Benefits:");
     println!("-----------------------------");
@@ -659,7 +661,7 @@ fn main() -> Result<()> {
     println!("  • Financial systems: standardizing currency amounts");
     println!("  • Medical records: normalizing measurements and dosages");
     println!("  • Legal documents: standardizing dates and references");
-    
+
     println!("\nFST advantages for normalization:");
     println!("  • Bidirectional: normalization ↔ denormalization");
     println!("  • Compositional: combine multiple normalization rules");
@@ -667,7 +669,7 @@ fn main() -> Result<()> {
     println!("  • Deterministic: consistent results");
     println!("  • Maintainable: rules are explicit and modifiable");
     println!("  • Language-agnostic: same framework for different locales");
-    
+
     // Localization examples
     println!("\n11. Localization Considerations:");
     println!("--------------------------------");
@@ -681,6 +683,6 @@ fn main() -> Result<()> {
     println!("  • Separate FSTs for each locale");
     println!("  • Parameterized FST construction");
     println!("  • Runtime rule switching");
-    
+
     Ok(())
 }

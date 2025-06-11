@@ -2,4 +2,4 @@
 
 mod traits;
 
-pub use traits::{FstProperties, PropertyFlags, compute_properties};
+pub use traits::{compute_properties, FstProperties, PropertyFlags};

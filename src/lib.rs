@@ -25,7 +25,7 @@
 //! let s0 = fst.add_state();
 //! let s1 = fst.add_state();
 //! let s2 = fst.add_state();
-//! 
+//!
 //! fst.set_start(s0);
 //! fst.set_final(s2, TropicalWeight::one());
 //!
@@ -34,7 +34,8 @@
 //! fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.3), s2));
 //!
 //! // find shortest path
-//! let shortest = shortest_path(&fst, 1)?;
+//! let config = ShortestPathConfig { nshortest: 1, ..Default::default() };
+//! let shortest: VectorFst<TropicalWeight> = shortest_path(&fst, config).unwrap();
 //! ```
 
 #![warn(missing_docs)]
@@ -44,8 +45,8 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-pub mod arc;
 pub mod algorithms;
+pub mod arc;
 pub mod fst;
 pub mod io;
 pub mod properties;
@@ -56,8 +57,8 @@ pub mod prelude;
 
 // re-export key items at crate root
 pub use arc::{Arc, ArcIterator};
-pub use fst::{Fst, MutableFst, ExpandedFst, VectorFst};
-pub use semiring::{Semiring, TropicalWeight, ProbabilityWeight, BooleanWeight};
+pub use fst::{ExpandedFst, Fst, MutableFst, VectorFst};
+pub use semiring::{BooleanWeight, ProbabilityWeight, Semiring, TropicalWeight};
 
 /// Library-wide error type
 #[derive(Debug, thiserror::Error)]
@@ -65,15 +66,15 @@ pub enum Error {
     /// Invalid FST operation
     #[error("Invalid FST operation: {0}")]
     InvalidOperation(String),
-    
+
     /// I/O error
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     /// Serialization error
     #[error("Serialization error: {0}")]
     Serialization(String),
-    
+
     /// Algorithm-specific error
     #[error("Algorithm error: {0}")]
     Algorithm(String),

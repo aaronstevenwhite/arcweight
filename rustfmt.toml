@@ -1,0 +1,21 @@
+# Rust formatting configuration for ArcWeight
+# See https://rust-lang.github.io/rustfmt/ for all options
+
+# Basic formatting (stable features only)
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+use_small_heuristics = "Default"
+
+# Import formatting
+reorder_imports = true
+
+# Function and type formatting
+fn_params_layout = "Tall"
+
+# Miscellaneous
+edition = "2021"
+merge_derives = true
+use_field_init_shorthand = true
+use_try_shorthand = true

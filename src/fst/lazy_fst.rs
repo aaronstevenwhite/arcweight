@@ -2,8 +2,8 @@
 
 use super::traits::*;
 use crate::arc::{Arc, ArcIterator};
-use crate::semiring::Semiring;
 use crate::properties::FstProperties;
+use crate::semiring::Semiring;
 use crate::Result;
 use core::cell::RefCell;
 use std::sync::Mutex;
@@ -51,28 +51,28 @@ where
             properties: FstProperties::default(),
         }
     }
-    
+
     fn get_or_compute_state(&self, state: StateId) -> Option<LazyState<W>> {
         let cache = self.cache.lock().unwrap();
         let cache_ref = cache.borrow_mut();
-        
+
         if state as usize >= cache_ref.states.len() {
             return None;
         }
-        
+
         if let Some(ref s) = cache_ref.states[state as usize] {
             return Some(s.clone());
         }
-        
+
         drop(cache_ref);
         drop(cache);
-        
+
         let computed = (self.compute_fn)(state)?;
-        
+
         let cache = self.cache.lock().unwrap();
         let mut cache_ref = cache.borrow_mut();
         cache_ref.states[state as usize] = Some(computed.clone());
-        
+
         Some(computed)
     }
 }
@@ -85,7 +85,7 @@ pub struct LazyArcIterator<W: Semiring> {
 
 impl<W: Semiring> Iterator for LazyArcIterator<W> {
     type Item = Arc<W>;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.arcs.len() {
             let arc = self.arcs[self.pos].clone();
@@ -103,45 +103,48 @@ impl<W: Semiring> ArcIterator<W> for LazyArcIterator<W> {
     }
 }
 
-
 impl<W: Semiring, F> Fst<W> for LazyFstImpl<W, F>
 where
     F: Fn(StateId) -> Option<LazyState<W>> + Send + Sync,
 {
-    type ArcIter<'a> = LazyArcIterator<W> where Self: 'a;
-    
+    type ArcIter<'a>
+        = LazyArcIterator<W>
+    where
+        Self: 'a;
+
     fn start(&self) -> Option<StateId> {
         let cache = self.cache.lock().unwrap();
         let x = cache.borrow().start;
         x
     }
-    
+
     fn final_weight(&self, _state: StateId) -> Option<&W> {
         // this needs redesign to avoid lifetime issues
         unimplemented!("LazyFst final_weight needs redesign")
     }
-    
+
     fn num_arcs(&self, state: StateId) -> usize {
         self.get_or_compute_state(state)
             .map(|s| s.arcs.len())
             .unwrap_or(0)
     }
-    
+
     fn num_states(&self) -> usize {
         let cache = self.cache.lock().unwrap();
         let x = cache.borrow().states.len();
         x
     }
-    
+
     fn properties(&self) -> FstProperties {
         self.properties
     }
-    
+
     fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
-        let arcs = self.get_or_compute_state(state)
+        let arcs = self
+            .get_or_compute_state(state)
             .map(|s| s.arcs)
             .unwrap_or_default();
-        
+
         LazyArcIterator { arcs, pos: 0 }
     }
 }

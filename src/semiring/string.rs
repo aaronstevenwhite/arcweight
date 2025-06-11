@@ -13,27 +13,27 @@ pub struct StringWeight(Vec<u8>);
 impl StringWeight {
     /// Empty string (one element)
     pub const EMPTY: Self = Self(Vec::new());
-    
+
     /// Create from bytes
     pub fn from_bytes(bytes: Vec<u8>) -> Self {
         Self(bytes)
     }
-    
+
     /// Create from string slice
     pub fn from_string(s: &str) -> Self {
         Self(s.as_bytes().to_vec())
     }
-    
+
     /// Convert to string
     pub fn to_string(&self) -> Result<String, core::str::Utf8Error> {
         core::str::from_utf8(&self.0).map(|s| s.to_string())
     }
-    
+
     /// Get bytes
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
-    
+
     /// Longest common prefix
     fn lcp(&self, other: &Self) -> Self {
         let len = self.0.len().min(other.0.len());
@@ -59,7 +59,7 @@ impl Zero for StringWeight {
         // special marker for zero (infinity)
         Self(vec![0xFF])
     }
-    
+
     fn is_zero(&self) -> bool {
         self.0 == vec![0xFF]
     }
@@ -73,7 +73,7 @@ impl One for StringWeight {
 
 impl Add for StringWeight {
     type Output = Self;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
         if <Self as num_traits::Zero>::is_zero(&self) {
             rhs
@@ -87,7 +87,7 @@ impl Add for StringWeight {
 
 impl Mul for StringWeight {
     type Output = Self;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
         if <Self as num_traits::Zero>::is_zero(&self) || <Self as num_traits::Zero>::is_zero(&rhs) {
             Self::zero()
@@ -101,15 +101,15 @@ impl Mul for StringWeight {
 
 impl Semiring for StringWeight {
     type Value = Vec<u8>;
-    
+
     fn new(value: Self::Value) -> Self {
         Self(value)
     }
-    
+
     fn value(&self) -> &Self::Value {
         &self.0
     }
-    
+
     fn properties() -> SemiringProperties {
         SemiringProperties {
             left_semiring: true,

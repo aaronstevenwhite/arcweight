@@ -2,10 +2,10 @@
 
 use super::traits::*;
 use crate::arc::{Arc, ArcIterator};
-use crate::semiring::Semiring;
 use crate::properties::FstProperties;
-use std::sync::{Arc as SyncArc, RwLock};
+use crate::semiring::Semiring;
 use std::collections::HashMap;
+use std::sync::{Arc as SyncArc, RwLock};
 
 /// Cache wrapper for expensive FST operations
 #[derive(Debug)]
@@ -26,7 +26,7 @@ impl<W: Semiring, F: Fst<W>> CacheFst<W, F> {
             _phantom: core::marker::PhantomData,
         }
     }
-    
+
     /// Clear the cache
     pub fn clear_cache(&self) {
         self.arc_cache.write().unwrap().clear();
@@ -42,7 +42,7 @@ pub struct CacheArcIterator<W: Semiring> {
 
 impl<W: Semiring> Iterator for CacheArcIterator<W> {
     type Item = Arc<W>;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.arcs.len() {
             let arc = self.arcs[self.pos].clone();
@@ -61,17 +61,20 @@ impl<W: Semiring> ArcIterator<W> for CacheArcIterator<W> {
 }
 
 impl<W: Semiring, F: Fst<W>> Fst<W> for CacheFst<W, F> {
-    type ArcIter<'a> = CacheArcIterator<W> where Self: 'a;
-    
+    type ArcIter<'a>
+        = CacheArcIterator<W>
+    where
+        Self: 'a;
+
     fn start(&self) -> Option<StateId> {
         self.fst.start()
     }
-    
+
     fn final_weight(&self, state: StateId) -> Option<&W> {
         // cache lookup and storage would need redesign
         self.fst.final_weight(state)
     }
-    
+
     fn num_arcs(&self, state: StateId) -> usize {
         // check cache first
         if let Ok(cache) = self.arc_cache.read() {
@@ -79,25 +82,25 @@ impl<W: Semiring, F: Fst<W>> Fst<W> for CacheFst<W, F> {
                 return arcs.len();
             }
         }
-        
+
         self.fst.num_arcs(state)
     }
-    
+
     fn num_states(&self) -> usize {
         self.fst.num_states()
     }
-    
+
     fn properties(&self) -> FstProperties {
         self.fst.properties()
     }
-    
+
     fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         // check cache
         let arcs = {
             let cache = self.arc_cache.read().unwrap();
             cache.get(&state).cloned()
         };
-        
+
         let arcs = match arcs {
             Some(arcs) => arcs,
             None => {
@@ -108,7 +111,7 @@ impl<W: Semiring, F: Fst<W>> Fst<W> for CacheFst<W, F> {
                 computed
             }
         };
-        
+
         CacheArcIterator { arcs, pos: 0 }
     }
 }

@@ -5,12 +5,31 @@ edition = "2021"
 rust-version = "1.75"
 authors = ["Aaron Steven White <aaron.white@rochester.edu>"]
 license = "Apache-2.0"
-description = "A high-performance, modular library for weighted finite state transducers"
+description = "A high-performance, modular library for weighted finite state transducers with comprehensive examples and benchmarks"
 readme = "README.md"
 homepage = "https://github.com/aaronstevenwhite/arcweight"
 repository = "https://github.com/aaronstevenwhite/arcweight"
+documentation = "https://docs.rs/arcweight"
 keywords = ["fst", "transducer", "automata", "nlp", "speech"]
 categories = ["algorithms", "data-structures", "science", "text-processing"]
+include = [
+    "src/**/*",
+    "examples/**/*",
+    "benches/**/*",
+    "tests/**/*",
+    "docs/**/*",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "clippy.toml",
+    "rustfmt.toml"
+]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # core dependencies
@@ -159,3 +178,45 @@ path = "benches/parallel/state_processing.rs"
 name = "weight_processing"
 harness = false
 path = "benches/parallel/weight_processing.rs"
+
+# Main benchmark harness
+[[bench]]
+name = "benchmarks"
+harness = false
+path = "benches/benchmarks.rs"
+
+# Example programs
+[[example]]
+name = "edit_distance"
+path = "examples/edit_distance.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "word_correction"
+path = "examples/word_correction.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "pronunciation_lexicon"
+path = "examples/pronunciation_lexicon.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "morphological_analyzer"
+path = "examples/morphological_analyzer.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "number_date_normalizer"
+path = "examples/number_date_normalizer.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "transliteration"
+path = "examples/transliteration.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "phonological_rules"
+path = "examples/phonological_rules.rs"
+doc-scrape-examples = true

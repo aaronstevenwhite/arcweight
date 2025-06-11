@@ -1,11 +1,11 @@
 //! Shortest path algorithms
 
-use crate::fst::{Fst, MutableFst, StateId, NO_STATE_ID};
-use crate::semiring::{Semiring, NaturallyOrderedSemiring};
 use crate::arc::Arc;
-use crate::{Result, Error};
-use std::collections::BinaryHeap;
+use crate::fst::{Fst, MutableFst, StateId, NO_STATE_ID};
+use crate::semiring::{NaturallyOrderedSemiring, Semiring};
+use crate::{Error, Result};
 use core::cmp::Ordering;
+use std::collections::BinaryHeap;
 
 /// Configuration for shortest path algorithms
 #[derive(Debug, Clone)]
@@ -59,10 +59,7 @@ impl<W: NaturallyOrderedSemiring> Ord for PathState<W> {
 }
 
 /// Find shortest path(s) in an FST
-pub fn shortest_path<W, F, M>(
-    fst: &F,
-    config: ShortestPathConfig,
-) -> Result<M>
+pub fn shortest_path<W, F, M>(fst: &F, config: ShortestPathConfig) -> Result<M>
 where
     W: NaturallyOrderedSemiring,
     F: Fst<W>,
@@ -71,59 +68,60 @@ where
     if config.nshortest == 0 {
         return Ok(M::default());
     }
-    
-    let start = fst.start().ok_or_else(|| {
-        Error::Algorithm("FST has no start state".into())
-    })?;
-    
+
+    let start = fst
+        .start()
+        .ok_or_else(|| Error::Algorithm("FST has no start state".into()))?;
+
     // dijkstra's algorithm with k-shortest paths
     let mut result = M::default();
     let mut distance = vec![W::zero(); fst.num_states()];
     let mut parent = vec![None; fst.num_states()];
     let mut heap = BinaryHeap::new();
-    
+
     // add start state to result
     let start_new = result.add_state();
     result.set_start(start_new);
-    
+
     // initialize
     distance[start as usize] = W::one();
     heap.push(PathState {
         state: start,
         weight: W::one(),
     });
-    
+
     // state mapping from input to output FST
     let mut state_map = vec![NO_STATE_ID; fst.num_states()];
     state_map[start as usize] = start_new;
-    
+
     // Track all final states found
     let mut final_states = Vec::new();
-    
+
     // main loop (do NOT break early)
     while let Some(PathState { state, weight }) = heap.pop() {
         // skip if we've found a better path
         if weight > distance[state as usize] {
             continue;
         }
-        
+
         // check if final
         if let Some(final_weight) = fst.final_weight(state) {
             let out_state = state_map[state as usize];
             result.set_final(out_state, final_weight.clone());
             final_states.push(state);
         }
-        
+
         // explore transitions
         for arc in fst.arcs(state) {
             let next_weight = weight.times(&arc.weight);
             let next_state = arc.nextstate;
-            
-            if <W as num_traits::Zero>::is_zero(&distance[next_state as usize]) || 
-               next_weight < distance[next_state as usize] {
+
+            if <W as num_traits::Zero>::is_zero(&distance[next_state as usize])
+                || next_weight < distance[next_state as usize]
+            {
                 distance[next_state as usize] = next_weight.clone();
                 parent[next_state as usize] = Some((state, arc.clone()));
-                
+
                 heap.push(PathState {
                     state: next_state,
                     weight: next_weight,
@@ -131,7 +129,7 @@ where
             }
         }
     }
-    
+
     // reconstruct paths for all final states found
     for &final_state in &final_states {
         // Reconstruct path from start to this final state
@@ -151,12 +149,10 @@ where
                 state_map[state as usize] = result.add_state();
             }
             let out_state = state_map[state as usize];
-            result.add_arc(prev_out_state, Arc::new(
-                arc.ilabel,
-                arc.olabel,
-                arc.weight.clone(),
-                out_state
-            ));
+            result.add_arc(
+                prev_out_state,
+                Arc::new(arc.ilabel, arc.olabel, arc.weight.clone(), out_state),
+            );
             prev_out_state = out_state;
         }
         // Set final state in output FST
@@ -165,7 +161,7 @@ where
             result.set_final(out_state, final_weight.clone());
         }
     }
-    
+
     Ok(result)
 }
 

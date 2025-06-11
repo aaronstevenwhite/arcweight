@@ -1,8 +1,8 @@
 //! Intersection algorithm
 
+use crate::algorithms::compose_default;
 use crate::fst::{Fst, MutableFst};
 use crate::semiring::Semiring;
-use crate::algorithms::compose_default;
 use crate::Result;
 
 /// Intersect two acceptors

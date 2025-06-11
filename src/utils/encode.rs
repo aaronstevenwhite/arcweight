@@ -43,17 +43,17 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
             next_weight: 0,
         }
     }
-    
+
     /// Get encoding type
     pub fn encode_type(&self) -> EncodeType {
         self.encode_type
     }
-    
+
     /// Get number of encoded elements
     pub fn size(&self) -> usize {
         self.label_map.len() + self.weight_map.len()
     }
-    
+
     /// Encode an arc
     pub fn encode(&mut self, arc: &Arc<W>) -> Arc<W> {
         match self.encode_type {
@@ -72,22 +72,22 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
             }
         }
     }
-    
+
     /// Decode an arc (placeholder - actual decoding would require reverse mappings)
     pub fn decode(&self, _arc: &Arc<W>) -> Result<Arc<W>, &'static str> {
         Err("Decoding not implemented - would require reverse mappings")
     }
-    
+
     /// Get input symbols (placeholder - returns empty symbol table)
     pub fn input_symbols(&self) -> crate::utils::SymbolTable {
         crate::utils::SymbolTable::new()
     }
-    
+
     /// Get output symbols (placeholder - returns empty symbol table)
     pub fn output_symbols(&self) -> crate::utils::SymbolTable {
         crate::utils::SymbolTable::new()
     }
-    
+
     fn encode_labels(&mut self, ilabel: Label, olabel: Label) -> Label {
         let key = (ilabel, olabel);
         if let Some(&label) = self.label_map.get(&key) {
@@ -99,7 +99,7 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
             label
         }
     }
-    
+
     fn encode_weight(&mut self, weight: &W) -> u32 {
         if let Some(&id) = self.weight_map.get(weight) {
             id

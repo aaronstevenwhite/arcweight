@@ -126,22 +126,22 @@ impl FstProperties {
     pub const UNWEIGHTED: PropertyFlags = PropertyFlags::UNWEIGHTED;
     /// FST is string-like (linear path)
     pub const STRING: PropertyFlags = PropertyFlags::STRING;
-    
+
     /// Check if a property is known
     pub fn is_known(&self, flag: PropertyFlags) -> bool {
         self.known.contains(flag)
     }
-    
+
     /// Check if a property is set
     pub fn has_property(&self, flag: PropertyFlags) -> bool {
         self.is_known(flag) && self.properties.contains(flag)
     }
-    
+
     /// Check if a property is set (alias for has_property for compatibility)
     pub fn contains(&self, flag: PropertyFlags) -> bool {
         self.has_property(flag)
     }
-    
+
     /// Set a property
     pub fn set_property(&mut self, flag: PropertyFlags, value: bool) {
         self.known |= flag;
@@ -151,7 +151,7 @@ impl FstProperties {
             self.properties &= !flag;
         }
     }
-    
+
     /// Invalidate all properties
     pub fn invalidate_all(&mut self) {
         self.known = PropertyFlags::empty();
@@ -162,7 +162,7 @@ impl FstProperties {
 /// Compute FST properties
 pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     let mut props = FstProperties::default();
-    
+
     // check for start state
     if fst.start().is_none() {
         // Empty FST has specific default properties
@@ -182,28 +182,28 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
         props.set_property(PropertyFlags::OUTPUT_EPSILONS, false);
         return props;
     }
-    
+
     // check basic properties
     let mut has_epsilons = false;
     let mut has_input_epsilons = false;
     let mut has_output_epsilons = false;
     let mut is_acceptor = true;
     let mut is_unweighted = true;
-    
+
     // For cycle detection, track states we've visited
     let mut visited = HashSet::new();
     let mut rec_stack = HashSet::new();
-    
+
     // DFS to check for cycles
     fn has_cycle<W: Semiring, F: Fst<W>>(
-        fst: &F, 
-        state: StateId, 
+        fst: &F,
+        state: StateId,
         visited: &mut HashSet<StateId>,
-        rec_stack: &mut HashSet<StateId>
+        rec_stack: &mut HashSet<StateId>,
     ) -> bool {
         visited.insert(state);
         rec_stack.insert(state);
-        
+
         for arc in fst.arcs(state) {
             if !visited.contains(&arc.nextstate) {
                 if has_cycle(fst, arc.nextstate, visited, rec_stack) {
@@ -213,11 +213,11 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
                 return true;
             }
         }
-        
+
         rec_stack.remove(&state);
         false
     }
-    
+
     // Start DFS from start state if it exists
     let is_acyclic = if let Some(start_state) = fst.start() {
         !has_cycle(fst, start_state, &mut visited, &mut rec_stack)
@@ -225,7 +225,7 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
         // No start state means no reachable states, so it's acyclic
         true
     };
-    
+
     // Check if all states are accessible from start state
     let accessible_states = visited.clone();
     let is_accessible = if fst.start().is_some() {
@@ -234,11 +234,11 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
         // No start state means no states are accessible
         fst.num_states() == 0
     };
-    
+
     // For coaccessible, we need to check if all states can reach a final state
     // This is a simplified check - assume it's true for now
     let is_coaccessible = true;
-    
+
     // Check if FST is string-like (linear path with no branching and no cycles)
     let mut is_string = true;
     for state in fst.states() {
@@ -252,7 +252,7 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     if !is_acyclic {
         is_string = false;
     }
-    
+
     // Check other properties by examining arcs
     for state in fst.states() {
         for arc in fst.arcs(state) {
@@ -273,7 +273,7 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
             }
         }
     }
-    
+
     // Set all computed properties
     props.set_property(PropertyFlags::NO_EPSILONS, !has_epsilons);
     props.set_property(PropertyFlags::EPSILONS, has_epsilons);
@@ -291,6 +291,6 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     props.set_property(PropertyFlags::INITIAL_ACYCLIC, is_acyclic);
     props.set_property(PropertyFlags::TOP_SORTED, is_acyclic);
     props.set_property(PropertyFlags::STRING, is_string);
-    
+
     props
 }

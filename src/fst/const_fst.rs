@@ -2,8 +2,8 @@
 
 use super::traits::*;
 use crate::arc::{Arc, ArcIterator};
-use crate::semiring::Semiring;
 use crate::properties::FstProperties;
+use crate::semiring::Semiring;
 use crate::Result;
 use core::slice;
 
@@ -28,21 +28,21 @@ impl<W: Semiring> ConstFst<W> {
     pub fn from_fst<F: Fst<W>>(fst: &F) -> Result<Self> {
         let mut states = Vec::with_capacity(fst.num_states());
         let mut arcs = Vec::new();
-        
+
         for state in fst.states() {
             let arcs_start = arcs.len() as u32;
             let state_arcs: Vec<_> = fst.arcs(state).collect();
             let num_arcs = state_arcs.len() as u32;
-            
+
             arcs.extend(state_arcs);
-            
+
             states.push(ConstState {
                 final_weight: fst.final_weight(state).cloned(),
                 arcs_start,
                 num_arcs,
             });
         }
-        
+
         Ok(Self {
             states: states.into_boxed_slice(),
             arcs: arcs.into_boxed_slice(),
@@ -66,40 +66,43 @@ impl<W: Semiring> ArcIterator<W> for ConstArcIterator<'_, W> {
 
 impl<W: Semiring> Iterator for ConstArcIterator<'_, W> {
     type Item = Arc<W>;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         self.arcs.next().cloned()
     }
 }
 
 impl<W: Semiring> Fst<W> for ConstFst<W> {
-    type ArcIter<'a> = ConstArcIterator<'a, W> where W: 'a;
-    
+    type ArcIter<'a>
+        = ConstArcIterator<'a, W>
+    where
+        W: 'a;
+
     fn start(&self) -> Option<StateId> {
         self.start
     }
-    
+
     fn final_weight(&self, state: StateId) -> Option<&W> {
         self.states
             .get(state as usize)
             .and_then(|s| s.final_weight.as_ref())
     }
-    
+
     fn num_arcs(&self, state: StateId) -> usize {
         self.states
             .get(state as usize)
             .map(|s| s.num_arcs as usize)
             .unwrap_or(0)
     }
-    
+
     fn num_states(&self) -> usize {
         self.states.len()
     }
-    
+
     fn properties(&self) -> FstProperties {
         self.properties
     }
-    
+
     fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
         if let Some(s) = self.states.get(state as usize) {
             let start = s.arcs_start as usize;
@@ -108,9 +111,7 @@ impl<W: Semiring> Fst<W> for ConstFst<W> {
                 arcs: self.arcs[start..end].iter(),
             }
         } else {
-            ConstArcIterator {
-                arcs: [].iter(),
-            }
+            ConstArcIterator { arcs: [].iter() }
         }
     }
 }

@@ -1,11 +1,11 @@
 //! Tropical semiring implementation
 
 use super::traits::*;
-use ordered_float::OrderedFloat;
 use core::fmt;
 use core::ops::{Add, Mul};
 use core::str::FromStr;
 use num_traits::{One, Zero};
+use ordered_float::OrderedFloat;
 
 /// Tropical weight (min, +) semiring
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
@@ -15,7 +15,7 @@ pub struct TropicalWeight(OrderedFloat<f32>);
 impl TropicalWeight {
     /// Positive infinity (zero element)
     pub const INFINITY: Self = Self(OrderedFloat(f32::INFINITY));
-    
+
     /// Create a new tropical weight
     pub fn new(value: f32) -> Self {
         Self(OrderedFloat(value))
@@ -36,7 +36,7 @@ impl Zero for TropicalWeight {
     fn zero() -> Self {
         Self::INFINITY
     }
-    
+
     fn is_zero(&self) -> bool {
         self.0.is_infinite()
     }
@@ -50,7 +50,7 @@ impl One for TropicalWeight {
 
 impl Add for TropicalWeight {
     type Output = Self;
-    
+
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0.min(rhs.0))
     }
@@ -58,7 +58,7 @@ impl Add for TropicalWeight {
 
 impl Mul for TropicalWeight {
     type Output = Self;
-    
+
     fn mul(self, rhs: Self) -> Self::Output {
         if <Self as num_traits::Zero>::is_zero(&self) || <Self as num_traits::Zero>::is_zero(&rhs) {
             Self::zero()
@@ -70,15 +70,15 @@ impl Mul for TropicalWeight {
 
 impl Semiring for TropicalWeight {
     type Value = f32;
-    
+
     fn new(value: Self::Value) -> Self {
         Self::new(value)
     }
-    
+
     fn value(&self) -> &Self::Value {
         &self.0
     }
-    
+
     fn properties() -> SemiringProperties {
         SemiringProperties {
             left_semiring: true,
@@ -88,7 +88,7 @@ impl Semiring for TropicalWeight {
             path: true,
         }
     }
-    
+
     fn approx_eq(&self, other: &Self, epsilon: f64) -> bool {
         if <Self as num_traits::Zero>::is_zero(self) && <Self as num_traits::Zero>::is_zero(other) {
             true
@@ -114,7 +114,7 @@ impl DivisibleSemiring for TropicalWeight {
 
 impl FromStr for TropicalWeight {
     type Err = std::num::ParseFloatError;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "∞" || s == "inf" || s == "infinity" {
             Ok(Self::INFINITY)

@@ -1,9 +1,9 @@
 //! Replace algorithm
 
+use crate::fst::Label;
 use crate::fst::MutableFst;
 use crate::semiring::Semiring;
 use crate::Result;
-use crate::fst::Label;
 
 /// Replace FST implementation
 #[derive(Debug)]
@@ -31,11 +31,11 @@ where
 {
     // simplified implementation
     let mut result = M::default();
-    
+
     // would implement full recursive replacement
     let s0 = result.add_state();
     result.set_start(s0);
     result.set_final(s0, W::one());
-    
+
     Ok(result)
 }

@@ -7,7 +7,7 @@
 
 A high-performance, modular Rust library for weighted finite state transducers (WFSTs).
 
-ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. It offers functionality comparable to OpenFST with a modern, type-safe Rust API.
+ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. It offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API.
 
 ## Features
 
@@ -95,7 +95,3 @@ Licensed under [Apache 2.0](LICENSE).
 ## Contributing
 
 Contributions are welcome! Please read our Contributing Guide for details.
-
-## Acknowledgments
-
-This library is inspired by the excellent OpenFST library by Cyril Allauzen, Michael Riley, Johan Schalkwyk, Wojciech Skut, and Mehryar Mohri.

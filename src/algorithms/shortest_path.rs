@@ -97,7 +97,10 @@ where
     let mut state_map = vec![NO_STATE_ID; fst.num_states()];
     state_map[start as usize] = start_new;
     
-    // main loop
+    // Track all final states found
+    let mut final_states = Vec::new();
+    
+    // main loop (do NOT break early)
     while let Some(PathState { state, weight }) = heap.pop() {
         // skip if we've found a better path
         if weight > distance[state as usize] {
@@ -108,11 +111,7 @@ where
         if let Some(final_weight) = fst.final_weight(state) {
             let out_state = state_map[state as usize];
             result.set_final(out_state, final_weight.clone());
-            
-            if config.nshortest == 1 {
-                // reconstruct path and return
-                break;
-            }
+            final_states.push(state);
         }
         
         // explore transitions
@@ -133,26 +132,37 @@ where
         }
     }
     
-    // reconstruct paths
-    for (state, parent_info) in parent.iter().enumerate() {
-        if let Some((parent_state, arc)) = parent_info {
-            // ensure states exist in output
-            if state_map[state] == NO_STATE_ID {
-                state_map[state] = result.add_state();
+    // reconstruct paths for all final states found
+    for &final_state in &final_states {
+        // Reconstruct path from start to this final state
+        let mut path = Vec::new();
+        let mut current = final_state;
+        while let Some((parent_state, arc)) = &parent[current as usize] {
+            path.push((parent_state, current, arc.clone()));
+            current = *parent_state;
+        }
+        // Path is from final_state to start, so reverse it
+        path.reverse();
+        // Add states and arcs to result FST
+        let mut prev_out_state = start_new;
+        for &(_parent_state, state, ref arc) in &path {
+            // Ensure state exists in output
+            if state_map[state as usize] == NO_STATE_ID {
+                state_map[state as usize] = result.add_state();
             }
-            if state_map[*parent_state as usize] == NO_STATE_ID {
-                state_map[*parent_state as usize] = result.add_state();
-            }
-            
-            // add arc
-            let from = state_map[*parent_state as usize];
-            let to = state_map[state];
-            result.add_arc(from, Arc::new(
+            let out_state = state_map[state as usize];
+            result.add_arc(prev_out_state, Arc::new(
                 arc.ilabel,
                 arc.olabel,
                 arc.weight.clone(),
-                to
+                out_state
             ));
+            prev_out_state = out_state;
+        }
+        // Set final state in output FST
+        if let Some(final_weight) = fst.final_weight(final_state) {
+            let out_state = state_map[final_state as usize];
+            result.set_final(out_state, final_weight.clone());
         }
     }
     

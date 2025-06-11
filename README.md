@@ -62,16 +62,25 @@ let shortest = shortest_path(&fst)?;
 
 - [User Guide](docs/guide.md) - Comprehensive guide to using ArcWeight
 - [API Reference](https://docs.rs/arcweight) - Detailed API documentation
-- [Examples](examples/) - Complete, runnable examples
+- [Examples](docs/examples/) - Complete, runnable examples with detailed documentation
 
 ## Examples
 
 Check out the examples/ directory for more complex usage:
 
-- `basic_usage.rs` - Getting started with FSTs
-- `composition.rs` - Composing transducers
-- `shortest_path.rs` - Finding optimal paths
-- `speech_recognition.rs` - Real-world speech processing example
+- `edit_distance.rs` - Spell checking and fuzzy string matching using FSTs
+  ```bash
+  cargo run --example edit_distance
+  ```
+
+- `fst_composition.rs` - Text transformation using FST composition
+  ```bash
+  cargo run --example fst_composition -- "hello" "h->H e->E l->L o->O"
+  ```
+
+
+
+Each example includes detailed documentation in the [Examples Guide](docs/examples/).
 
 ## Performance
 
@@ -94,4 +103,4 @@ Licensed under [Apache 2.0](LICENSE).
 
 ## Contributing
 
-Contributions are welcome! Please read our Contributing Guide for details.
+Contributions are welcome! Please read our [Contributing Guide](docs/contributing.md) for details.

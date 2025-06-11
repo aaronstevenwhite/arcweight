@@ -83,7 +83,23 @@ let mut fst = Fst::new();
 
 ## Examples
 
-See the `examples/` directory for complete, runnable examples demonstrating various features and use cases.
+The `examples/` directory contains complete, runnable examples demonstrating various features and use cases:
+
+### Edit Distance
+The [Edit Distance example](examples/edit_distance.md) shows how to use FSTs for spell checking and fuzzy string matching. It demonstrates:
+- Building an FST that accepts strings within a specified edit distance
+- Creating a dictionary FST from a list of words
+- Composing FSTs to find matching words
+- Finding the best corrections using shortest paths
+
+### FST Composition
+The [FST Composition example](examples/fst_composition.md) demonstrates how to compose FSTs for text transformation. It shows:
+- Building FSTs from input strings and transformation rules
+- Composing FSTs to apply transformations
+- Finding the shortest path in the composed FST
+- Extracting and displaying the results
+
+For more examples, see the [Examples Directory](examples/).
 
 ## API Reference
 

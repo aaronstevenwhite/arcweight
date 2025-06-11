@@ -18,7 +18,7 @@ pub use crate::{
     fst::{ExpandedFst, Fst, Label, MutableFst, StateId, NO_LABEL, NO_STATE_ID},
 
     // i/o
-    io::{read_binary, read_openfst, read_text, write_binary, write_openfst, write_text},
+    io::{read_openfst, read_text, write_openfst, write_text},
 
     // semirings
     semiring::{
@@ -33,3 +33,6 @@ pub use crate::{
     Error,
     Result,
 };
+
+#[cfg(feature = "serde")]
+pub use crate::io::{read_binary, write_binary};

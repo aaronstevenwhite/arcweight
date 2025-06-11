@@ -51,14 +51,11 @@ jobs:
     - name: Run tests (no default features)
       run: cargo test --no-default-features --verbose
 
-    - name: Run tests (std only)
-      run: cargo test --no-default-features --features std --verbose
-
     - name: Run tests (parallel only)
-      run: cargo test --no-default-features --features std,parallel --verbose
+      run: cargo test --no-default-features --features parallel --verbose
 
     - name: Run tests (serde only)
-      run: cargo test --no-default-features --features std,serde --verbose
+      run: cargo test --no-default-features --features serde --verbose
 
     - name: Compile benchmarks
       run: cargo bench --no-run --verbose

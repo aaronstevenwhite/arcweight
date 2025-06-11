@@ -17,13 +17,31 @@ This document outlines platform support, MSRV policy, and feature compatibility 
 ## MSRV Policy
 
 ### Current MSRV
-- **Rust 1.75.0**
+- **Rust 1.75.0** (verified using `cargo msrv find`)
+- Configured in:
+  - `Cargo.toml`: `rust-version = "1.75.0"`
+  - `clippy.toml`: `msrv = "1.75.0"`
+  - CI workflows: Tested explicitly with 1.75.0
+
+### MSRV Verification
+The MSRV is regularly verified using:
+```bash
+# Install cargo-msrv
+cargo install cargo-msrv
+
+# Find the actual minimum version
+cargo msrv find
+
+# Verify specific version compatibility
+cargo msrv verify 1.75.0
+```
 
 ### MSRV Updates
 The project follows a conservative MSRV policy:
 - MSRV updates occur only when necessary for new language features or dependency requirements
 - At least 3 months notice before MSRV bumps
 - MSRV changes are considered breaking changes and will increment the minor version
+- All MSRV changes must be verified with `cargo msrv` before release
 
 ## Dependencies
 
@@ -63,8 +81,7 @@ rayon = "1.8"              # Parallel testing
 ### Available Features
 ```toml
 [features]
-default = ["std", "parallel", "serde"]
-std = []                   # Standard library support
+default = ["parallel", "serde"]
 parallel = ["rayon"]       # Multi-threaded algorithms
 serde = ["dep:serde", "bincode", "ordered-float/serde"]  # Serialization
 ```
@@ -72,9 +89,9 @@ serde = ["dep:serde", "bincode", "ordered-float/serde"]  # Serialization
 ### Feature Compatibility
 | Feature | Linux | macOS | Windows | Description |
 |---------|-------|-------|---------|-------------|
-| `std` | ✅ | ✅ | ✅ | Standard library support (default) |
 | `parallel` | ✅ | ✅ | ✅ | Rayon-based parallel algorithms |
-| `serde` | ✅ | ✅ | ✅ | Serialization support |
+| `serde` | ✅ | ✅ | ✅ | Serialization support (binary format) |
+| no features | ✅ | ✅ | ✅ | Core functionality without parallelism or serialization |
 
 ### Core Functionality
 All core FST operations work across all supported platforms:
@@ -114,12 +131,13 @@ These may change before 1.0:
 - **Benchmarks**: Performance regression testing
 
 ### Current Testing Status
-- **macOS**: Actively tested during development
-- **Linux**: Not yet tested (planned)
-- **Windows**: Not yet tested (planned)
+All platforms are tested in CI:
+- **Linux**: ✅ Tested on Ubuntu (stable, beta, nightly, MSRV)
+- **macOS**: ✅ Tested on macOS latest (stable)
+- **Windows**: ✅ Tested on Windows latest (stable)
 
-### Planned CI/CD Setup
-To set up cross-platform testing, create `.github/workflows/ci.yml`:
+### CI/CD Configuration
+Cross-platform testing is configured in `.github/workflows/ci.yml`:
 
 ```yaml
 name: CI
@@ -209,20 +227,22 @@ When breaking changes occur, migration guides will be provided in:
 
 ## Platform-Specific Notes
 
-### macOS (Currently Tested)
-- **Tested on**: macOS during development (Intel and Apple Silicon)
-- **Toolchain**: Xcode command line tools
-- **Status**: Full feature support confirmed
-
-### Linux (Planned Testing)
-- **Target**: Ubuntu 20.04+ and common distributions
+### Linux
+- **Tested on**: Ubuntu latest in CI
+- **Rust versions**: Stable, beta, nightly, and MSRV (1.75.0)
 - **Toolchain**: Standard GNU toolchain
-- **Status**: Expected to work but not yet verified
+- **Status**: ✅ Fully supported and tested
 
-### Windows (Planned Testing)
-- **Target**: Windows 10/11
-- **Toolchain**: MSVC toolchain via rust-msvc
-- **Status**: Expected to work but not yet verified
+### macOS
+- **Tested on**: macOS latest in CI
+- **Architectures**: Intel and Apple Silicon (via universal builds)
+- **Toolchain**: Xcode command line tools
+- **Status**: ✅ Fully supported and tested
+
+### Windows
+- **Tested on**: Windows latest in CI
+- **Toolchain**: MSVC toolchain
+- **Status**: ✅ Fully supported and tested
 
 ### Other Platforms
 The library should theoretically work on:

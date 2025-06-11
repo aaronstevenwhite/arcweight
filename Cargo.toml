@@ -54,8 +54,7 @@ approx = "0.5"
 rayon = "1.8"
 
 [features]
-default = ["std", "parallel", "serde"]
-std = []
+default = ["parallel", "serde"]
 parallel = ["rayon"]
 serde = ["dep:serde", "bincode", "ordered-float/serde"]
 

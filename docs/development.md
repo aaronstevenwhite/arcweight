@@ -5,7 +5,7 @@ This guide provides detailed information for developers working on ArcWeight.
 ## Development Environment
 
 ### Required Tools
-- Rust (latest stable)
+- Rust 1.75.0 or later (MSRV - Minimum Supported Rust Version)
 - Cargo
 - Git
 - A code editor (VS Code, IntelliJ, etc.)
@@ -57,6 +57,38 @@ cargo build --release
 ```bash
 cargo build --features "feature1 feature2"
 ```
+
+## Minimum Supported Rust Version (MSRV)
+
+ArcWeight has a Minimum Supported Rust Version (MSRV) of **1.75.0**. This version is:
+- Specified in `Cargo.toml` as `rust-version = "1.75.0"`
+- Configured in `clippy.toml` as `msrv = "1.75.0"`
+- Tested in CI with the specific version
+
+### Verifying MSRV
+
+The MSRV was determined using `cargo msrv`:
+
+```bash
+# Install cargo-msrv
+cargo install cargo-msrv
+
+# Find the minimum supported Rust version
+cargo msrv find
+
+# Verify a specific version works
+cargo msrv verify 1.75.0
+```
+
+### Updating MSRV
+
+When updating the MSRV:
+1. Run `cargo msrv find` to determine the new minimum version
+2. Update `rust-version` in `Cargo.toml`
+3. Update `msrv` in `clippy.toml`
+4. Update the CI workflow (`.github/workflows/ci.yml`)
+5. Update documentation references
+6. Add a note in the changelog
 
 ## Testing
 

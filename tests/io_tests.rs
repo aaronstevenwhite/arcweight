@@ -5,6 +5,9 @@ use num_traits::identities::One;
 use proptest::prelude::*;
 use std::io::{BufReader, Cursor};
 
+#[cfg(feature = "serde")]
+use arcweight::io::{read_binary, write_binary};
+
 #[cfg(test)]
 mod text_format_tests {
     use super::*;
@@ -152,8 +155,9 @@ mod text_format_tests {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "serde"))]
 mod binary_format_tests {
+    use arcweight::io::{read_binary, write_binary};
     use super::*;
 
     #[test]
@@ -415,13 +419,16 @@ proptest! {
             }
         }
 
-        let mut buffer = Vec::new();
-        if write_binary(&fst, &mut buffer).is_ok() {
-            let mut cursor = Cursor::new(buffer);
-            if let Ok(read_fst) = read_binary::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut cursor) {
-                prop_assert_eq!(read_fst.num_states(), fst.num_states());
-                prop_assert_eq!(read_fst.start(), fst.start());
-                prop_assert_eq!(read_fst.num_arcs_total(), fst.num_arcs_total());
+        #[cfg(feature = "serde")]
+        {
+            let mut buffer = Vec::new();
+            if write_binary(&fst, &mut buffer).is_ok() {
+                let mut cursor = Cursor::new(buffer);
+                if let Ok(read_fst) = read_binary::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut cursor) {
+                    prop_assert_eq!(read_fst.num_states(), fst.num_states());
+                    prop_assert_eq!(read_fst.start(), fst.start());
+                    prop_assert_eq!(read_fst.num_arcs_total(), fst.num_arcs_total());
+                }
             }
         }
     }
@@ -438,21 +445,36 @@ proptest! {
 
         // Test both formats give same result
         let mut text_buffer = Vec::new();
-        let mut binary_buffer = Vec::new();
+        
+        #[cfg(feature = "serde")]
+        {
+            let mut binary_buffer = Vec::new();
 
-        if write_text(&fst, &mut text_buffer, None, None).is_ok() &&
-           write_binary(&fst, &mut binary_buffer).is_ok() {
+            if write_text(&fst, &mut text_buffer, None, None).is_ok() &&
+               write_binary(&fst, &mut binary_buffer).is_ok() {
 
-            let mut text_cursor = Cursor::new(text_buffer);
-            let mut binary_cursor = Cursor::new(binary_buffer);
+                let mut text_cursor = Cursor::new(text_buffer);
+                let mut binary_cursor = Cursor::new(binary_buffer);
 
-            if let (Ok(text_fst), Ok(binary_fst)) = (
-                read_text::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut text_cursor, None, None),
-                read_binary::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut binary_cursor)
-            ) {
-                prop_assert_eq!(text_fst.num_states(), binary_fst.num_states());
-                prop_assert_eq!(text_fst.start(), binary_fst.start());
-                prop_assert_eq!(text_fst.num_arcs_total(), binary_fst.num_arcs_total());
+                if let (Ok(text_fst), Ok(binary_fst)) = (
+                    read_text::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut text_cursor, None, None),
+                    read_binary::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut binary_cursor)
+                ) {
+                    prop_assert_eq!(text_fst.num_states(), binary_fst.num_states());
+                    prop_assert_eq!(text_fst.start(), binary_fst.start());
+                    prop_assert_eq!(text_fst.num_arcs_total(), binary_fst.num_arcs_total());
+                }
+            }
+        }
+        
+        #[cfg(not(feature = "serde"))]
+        {
+            // Just test text format when serde is not available
+            if write_text(&fst, &mut text_buffer, None, None).is_ok() {
+                let mut text_cursor = Cursor::new(text_buffer);
+                if let Ok(_text_fst) = read_text::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut text_cursor, None, None) {
+                    // Test passes if text format works
+                }
             }
         }
     }

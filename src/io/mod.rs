@@ -4,6 +4,7 @@ mod binary_format;
 mod openfst_compat;
 mod text_format;
 
+#[cfg(feature = "serde")]
 pub use binary_format::{read_binary, write_binary};
 pub use openfst_compat::{read_openfst, write_openfst};
 pub use text_format::{read_text, write_text};

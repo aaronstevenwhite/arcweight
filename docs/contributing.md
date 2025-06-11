@@ -27,6 +27,7 @@ This guide covers in-depth development practices, architecture details, and adva
    cargo install cargo-watch    # Watch for changes
    cargo install cargo-expand   # Expand macros
    cargo install cargo-udeps    # Find unused dependencies
+   cargo install cargo-msrv     # Verify MSRV compatibility
    ```
 
 4. **Verify setup**:

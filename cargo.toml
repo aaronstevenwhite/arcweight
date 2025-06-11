@@ -3,12 +3,12 @@ name = "arcweight"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT OR Apache-2.0"
+authors = ["Aaron Steven White <aaron.white@rochester.edu>"]
+license = "Apache-2.0"
 description = "A high-performance, modular library for weighted finite state transducers"
 readme = "README.md"
-homepage = "https://github.com/yourusername/arcweight"
-repository = "https://github.com/yourusername/arcweight"
+homepage = "https://github.com/aaronstevenwhite/arcweight"
+repository = "https://github.com/aaronstevenwhite/arcweight"
 keywords = ["fst", "transducer", "automata", "nlp", "speech"]
 categories = ["algorithms", "data-structures", "science", "text-processing"]
 
@@ -46,9 +46,59 @@ harness = false
 path = "benches/core/basic_operations.rs"
 
 [[bench]]
+name = "composition"
+harness = false
+path = "benches/core/composition.rs"
+
+[[bench]]
+name = "creation"
+harness = false
+path = "benches/core/creation.rs"
+
+[[bench]]
+name = "determinization"
+harness = false
+path = "benches/core/determinization.rs"
+
+[[bench]]
+name = "epsilon_removal"
+harness = false
+path = "benches/core/epsilon_removal.rs"
+
+[[bench]]
+name = "minimization"
+harness = false
+path = "benches/core/minimization.rs"
+
+[[bench]]
+name = "shortest_path"
+harness = false
+path = "benches/core/shortest_path.rs"
+
+[[bench]]
+name = "arc_storage"
+harness = false
+path = "benches/memory/arc_storage.rs"
+
+[[bench]]
 name = "memory_operations"
 harness = false
 path = "benches/memory/memory_operations.rs"
+
+[[bench]]
+name = "memory_usage"
+harness = false
+path = "benches/memory/memory_usage.rs"
+
+[[bench]]
+name = "state_management"
+harness = false
+path = "benches/memory/state_management.rs"
+
+[[bench]]
+name = "deserialization"
+harness = false
+path = "benches/io/deserialization.rs"
 
 [[bench]]
 name = "serialization"
@@ -61,6 +111,51 @@ harness = false
 path = "benches/optimization/optimization.rs"
 
 [[bench]]
+name = "weight_pushing"
+harness = false
+path = "benches/optimization/weight_pushing.rs"
+
+[[bench]]
+name = "optimization_epsilon_removal"
+harness = false
+path = "benches/optimization/epsilon_removal.rs"
+
+[[bench]]
+name = "optimization_minimization"
+harness = false
+path = "benches/optimization/minimization.rs"
+
+[[bench]]
+name = "arc_processing"
+harness = false
+path = "benches/parallel/arc_processing.rs"
+
+[[bench]]
 name = "parallel_ops"
 harness = false
 path = "benches/parallel/parallel_ops.rs"
+
+[[bench]]
+name = "parallel_operations"
+harness = false
+path = "benches/parallel/parallel_operations.rs"
+
+[[bench]]
+name = "parallel_processing"
+harness = false
+path = "benches/parallel/parallel_processing.rs"
+
+[[bench]]
+name = "parallel_state_processing"
+harness = false
+path = "benches/parallel/parallel_state_processing.rs"
+
+[[bench]]
+name = "state_processing"
+harness = false
+path = "benches/parallel/state_processing.rs"
+
+[[bench]]
+name = "weight_processing"
+harness = false
+path = "benches/parallel/weight_processing.rs"

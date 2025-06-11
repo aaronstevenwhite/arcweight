@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/arcweight.svg)](https://crates.io/crates/arcweight)
 [![Documentation](https://docs.rs/arcweight/badge.svg)](https://docs.rs/arcweight)
-[![License](https://img.shields.io/crates/l/arcweight.svg)](https://github.com/yourusername/arcweight#license)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Build Status](https://github.com/yourusername/arcweight/workflows/CI/badge.svg)](https://github.com/yourusername/arcweight/actions)
 
 A high-performance, modular Rust library for weighted finite state transducers (WFSTs).
@@ -11,13 +11,21 @@ ArcWeight provides a comprehensive toolkit for constructing, combining, optimizi
 
 ## Features
 
-- 🚀 **High Performance**: Optimized implementations with optional parallelization
+- 🚀 **High Performance**: Optimized implementations with parallel algorithms support
 - 🔧 **Modular Design**: Trait-based architecture for maximum extensibility
-- 📊 **Comprehensive Semirings**: Tropical, probability, boolean, log, and more
+- 📊 **Rich Semiring Support**: 
+  - Tropical, Probability, Boolean, Log semirings
+  - String, MinMax, and Product semirings
+  - Custom semiring implementations
 - 🗄️ **Multiple FST Types**: Vector, constant, compact, lazy, and cached implementations
-- 🔄 **Full Algorithm Suite**: All standard FST operations including composition, determinization, minimization
+- 🔄 **Comprehensive Algorithm Suite**:
+  - Core operations: composition, determinization, minimization
+  - Advanced operations: push, prune, project, replace
+  - Path operations: shortest path, random path generation
+  - Graph operations: connect, synchronize, topsort
 - 📁 **OpenFST Compatible**: Read and write OpenFST format files
 - 🦀 **Pure Rust**: No C++ dependencies, fully memory safe
+- 🧪 **Extensive Benchmarks**: Performance testing for core operations, memory usage, and parallel algorithms
 
 ## Quick Start
 
@@ -26,7 +34,11 @@ Add ArcWeight to your `Cargo.toml`:
 ```toml
 [dependencies]
 arcweight = "0.1"
+```
 
+Basic example:
+
+```rust
 use arcweight::prelude::*;
 
 // Create a simple acceptor
@@ -46,35 +58,44 @@ fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.3), s2));
 let shortest = shortest_path(&fst)?;
 ```
 
-# Documentation
+## Documentation
 
-For detailed documentation, see docs.rs/arcweight.
-Examples
+- [User Guide](docs/guide.md) - Comprehensive guide to using ArcWeight
+- [API Reference](https://docs.rs/arcweight) - Detailed API documentation
+- [Examples](examples/) - Complete, runnable examples
+
+## Examples
+
 Check out the examples/ directory for more complex usage:
 
-basic_usage.rs - Getting started with FSTs
-composition.rs - Composing transducers
-shortest_path.rs - Finding optimal paths
-speech_recognition.rs - Real-world speech processing example
+- `basic_usage.rs` - Getting started with FSTs
+- `composition.rs` - Composing transducers
+- `shortest_path.rs` - Finding optimal paths
+- `speech_recognition.rs` - Real-world speech processing example
 
-Performance
+## Performance
+
 ArcWeight is designed for high performance:
 
-Zero-copy arc iteration
-Cache-friendly data structures
-Optional parallel algorithms via Rayon
-Minimal allocations in hot paths
+- Zero-copy arc iteration
+- Cache-friendly data structures
+- Parallel algorithms via Rayon
+- Minimal allocations in hot paths
+- Comprehensive benchmarking suite
 
 Run benchmarks with:
-bashcargo bench
-License
-Licensed under either of
+```bash
+cargo bench
+```
 
-Apache License, Version 2.0 (LICENSE-APACHE)
-MIT license (LICENSE-MIT)
+## License
 
-at your option.
-Contributing
+Licensed under the Apache License, Version 2.0 (LICENSE-APACHE).
+
+## Contributing
+
 Contributions are welcome! Please read our Contributing Guide for details.
-Acknowledgments
+
+## Acknowledgments
+
 This library is inspired by the excellent OpenFST library by Cyril Allauzen, Michael Riley, Johan Schalkwyk, Wojciech Skut, and Mehryar Mohri.

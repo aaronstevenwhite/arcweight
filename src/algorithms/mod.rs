@@ -6,37 +6,37 @@
 //!
 //! ## Core Operations
 //!
-//! - [`compose`] - Composition of two FSTs
+//! - [`compose()`] - Composition of two FSTs
 //! - [`concat()`] - Concatenation of FSTs
-//! - [`union`] - Union of multiple FSTs
-//! - [`closure`], [`closure_plus`] - Kleene star and plus operations
+//! - [`union()`] - Union of multiple FSTs
+//! - [`closure()`], [`closure_plus()`] - Kleene star and plus operations
 //!
 //! ## Optimization Algorithms
 //!
-//! - [`minimize`] - State minimization using Brzozowski's algorithm
-//! - [`determinize`] - Convert non-deterministic FST to deterministic
-//! - [`remove_epsilons`] - Remove epsilon transitions
-//! - [`connect`] - Remove non-accessible/coaccessible states
+//! - [`minimize()`] - State minimization using Brzozowski's algorithm
+//! - [`determinize()`] - Convert non-deterministic FST to deterministic
+//! - [`remove_epsilons()`] - Remove epsilon transitions
+//! - [`connect()`] - Remove non-accessible/coaccessible states
 //!
 //! ## Path Algorithms
 //!
-//! - [`shortest_path`] - Find shortest paths through FST
-//! - [`randgen`] - Generate random paths from FST
+//! - [`shortest_path()`] - Find shortest paths through FST
+//! - [`randgen()`] - Generate random paths from FST
 //!
 //! ## Transformation Algorithms
 //!
-//! - [`reverse`] - Reverse the FST direction
-//! - [`project_input`], [`project_output`] - Project to input/output labels
-//! - [`synchronize`] - Synchronize transducer labels
-//! - [`push_weights`], [`push_labels`] - Push weights toward initial/final states
+//! - [`reverse()`] - Reverse the FST direction
+//! - [`project_input()`], [`project_output()`] - Project to input/output labels
+//! - [`synchronize()`] - Synchronize transducer labels
+//! - [`push_weights()`], [`push_labels()`] - Push weights toward initial/final states
 //!
 //! ## Utility Algorithms
 //!
-//! - [`prune`] - Prune arcs/states based on weight thresholds
-//! - [`replace`] - Replace symbols with sub-FSTs
-//! - [`topsort`] - Topological sort of states
-//! - [`weight_convert`] - Convert between semiring types
-//! - [`difference`], [`intersect`] - Set operations (some not fully implemented)
+//! - [`prune()`] - Prune arcs/states based on weight thresholds
+//! - [`replace()`] - Replace symbols with sub-FSTs
+//! - [`topsort()`] - Topological sort of states
+//! - [`weight_convert()`] - Convert between semiring types
+//! - [`difference()`], [`intersect()`] - Set operations (some not fully implemented)
 //!
 //! ## Usage Examples
 //!

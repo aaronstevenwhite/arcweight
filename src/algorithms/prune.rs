@@ -26,9 +26,9 @@ impl Default for PruneConfig {
 }
 
 /// Prune an FST by weight threshold
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

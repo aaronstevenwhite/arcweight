@@ -25,9 +25,9 @@ impl StringWeight {
     }
 
     /// Convert to string
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - The internal byte sequence is not valid UTF-8
     pub fn to_string(&self) -> Result<String, core::str::Utf8Error> {

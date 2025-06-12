@@ -59,35 +59,35 @@ impl<W: NaturallyOrderedSemiring> Ord for PathState<W> {
 }
 
 /// Find shortest path(s) in an FST
-/// 
+///
 /// Uses Dijkstra's algorithm to find the shortest path(s) from the start state
 /// to any final state in the FST.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use arcweight::prelude::*;
-/// 
+///
 /// // Create a simple linear FST: 0 --1/0.5--> 1 --2/0.3--> 2(final)
 /// let mut fst = VectorFst::<TropicalWeight>::new();
 /// let s0 = fst.add_state();
 /// let s1 = fst.add_state();
 /// let s2 = fst.add_state();
-/// 
+///
 /// fst.set_start(s0);
 /// fst.set_final(s2, TropicalWeight::one());
 /// fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
 /// fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.3), s2));
-/// 
+///
 /// // Find shortest path
 /// let shortest: VectorFst<TropicalWeight> = shortest_path(&fst, ShortestPathConfig::default()).unwrap();
-/// 
+///
 /// // The result should contain the single shortest path with total weight 0.8
 /// assert_eq!(shortest.num_states(), 3);
 /// ```
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - The FST has no start state
@@ -201,9 +201,9 @@ where
 }
 
 /// Convenience function for single shortest path
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - The FST has no start state

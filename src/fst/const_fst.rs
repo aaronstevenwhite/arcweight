@@ -25,9 +25,9 @@ struct ConstState<W: Semiring> {
 
 impl<W: Semiring> ConstFst<W> {
     /// Create from a vector FST
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - Memory allocation fails during FST construction
     /// - The input FST contains invalid state or arc data

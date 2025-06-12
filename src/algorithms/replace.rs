@@ -24,9 +24,9 @@ impl<W: Semiring> ReplaceFst<W> {
 }
 
 /// Replace non-terminals with FSTs
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

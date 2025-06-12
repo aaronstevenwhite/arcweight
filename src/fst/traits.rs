@@ -108,9 +108,9 @@ pub trait ExpandedFst<W: Semiring>: Fst<W> {
 /// Trait for FSTs computed on-demand
 pub trait LazyFst<W: Semiring>: Fst<W> {
     /// Expand a state (compute its arcs)
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - State computation fails due to invalid state data
     /// - Memory allocation fails during arc expansion

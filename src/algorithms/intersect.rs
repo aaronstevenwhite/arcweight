@@ -6,9 +6,9 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Intersect two acceptors
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - Either input FST is invalid or has no start state
 /// - Memory allocation fails during computation

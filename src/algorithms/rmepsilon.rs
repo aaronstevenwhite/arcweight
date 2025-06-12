@@ -7,9 +7,9 @@ use crate::Result;
 use std::collections::{HashMap, VecDeque};
 
 /// Remove epsilon transitions
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

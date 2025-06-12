@@ -28,9 +28,9 @@ impl<W: Semiring, F: Fst<W>> CacheFst<W, F> {
     }
 
     /// Clear the cache
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if the internal cache lock is poisoned, which can occur
     /// if another thread panicked while holding the lock.
     pub fn clear_cache(&self) {

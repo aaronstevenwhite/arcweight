@@ -62,7 +62,7 @@ impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
     }
 
     /// # Panics
-    /// 
+    ///
     /// Panics if the element is not an arc type, which indicates
     /// incorrect usage of the compactor.
     fn expand(element: &Self::Element) -> Arc<W> {
@@ -82,7 +82,7 @@ impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
     }
 
     /// # Panics
-    /// 
+    ///
     /// Panics if the element is not a weight type, which indicates
     /// incorrect usage of the compactor.
     fn expand_weight(element: &Self::Element) -> W {

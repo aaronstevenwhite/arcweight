@@ -8,30 +8,30 @@ use num_traits::{One, Zero};
 use ordered_float::OrderedFloat;
 
 /// Tropical weight (min, +) semiring
-/// 
+///
 /// The tropical semiring uses minimum for addition and regular addition for multiplication.
 /// The zero element is positive infinity and the one element is 0.0.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use arcweight::prelude::*;
-/// 
+///
 /// let w1 = TropicalWeight::new(0.5);
 /// let w2 = TropicalWeight::new(0.3);
-/// 
+///
 /// // Addition is minimum
 /// let sum = w1 + w2;
 /// assert_eq!(sum, TropicalWeight::new(0.3));
-/// 
+///
 /// // Multiplication is addition
 /// let product = w1 * w2;
 /// assert_eq!(product, TropicalWeight::new(0.8));
-/// 
+///
 /// // Zero is infinity
 /// assert!(<TropicalWeight as num_traits::Zero>::is_zero(&TropicalWeight::zero()));
 /// assert_eq!(TropicalWeight::zero(), TropicalWeight::INFINITY);
-/// 
+///
 /// // One is 0.0
 /// assert_eq!(TropicalWeight::one(), TropicalWeight::new(0.0));
 /// ```
@@ -44,15 +44,15 @@ impl TropicalWeight {
     pub const INFINITY: Self = Self(OrderedFloat(f32::INFINITY));
 
     /// Create a new tropical weight
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use arcweight::prelude::*;
-    /// 
+    ///
     /// let weight = TropicalWeight::new(0.5);
     /// assert_eq!(weight.value(), &0.5);
-    /// 
+    ///
     /// let zero_weight = TropicalWeight::new(f32::INFINITY);
     /// assert!(<TropicalWeight as num_traits::Zero>::is_zero(&zero_weight));
     /// ```

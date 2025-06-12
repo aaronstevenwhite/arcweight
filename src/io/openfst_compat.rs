@@ -19,9 +19,9 @@ enum FstType {
 }
 
 /// Write FST in OpenFST format
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The writer encounters an I/O error during writing
 /// - The FST contains weights that cannot be represented in OpenFST tropical format
@@ -67,9 +67,9 @@ where
 }
 
 /// Read FST from OpenFST format
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The reader encounters an I/O error during reading
 /// - The OpenFST data is malformed or corrupted (invalid magic number)

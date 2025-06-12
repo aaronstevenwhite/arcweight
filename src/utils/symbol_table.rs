@@ -4,32 +4,32 @@ use crate::fst::Label;
 use std::collections::HashMap;
 
 /// Symbol table for FST labels
-/// 
+///
 /// Maps between human-readable symbols (strings) and numeric labels used internally
 /// by FSTs. Essential for text I/O and human-readable FST representations.
-/// 
-/// The symbol table automatically includes epsilon ("<eps>") as label 0.
-/// 
+///
+/// The symbol table automatically includes epsilon (`<eps>`) as label 0.
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use arcweight::prelude::*;
-/// 
+///
 /// let mut syms = SymbolTable::new();
-/// 
+///
 /// // Add symbols and get their numeric IDs
 /// let hello_id = syms.add_symbol("hello");
 /// let world_id = syms.add_symbol("world");
 /// let eos_id = syms.add_symbol("</s>");
-/// 
+///
 /// // Lookup by ID
 /// assert_eq!(syms.find(hello_id), Some("hello"));
 /// assert_eq!(syms.find(0), Some("<eps>")); // epsilon is always 0
-/// 
+///
 /// // Lookup by symbol
 /// assert_eq!(syms.find_id("world"), Some(world_id));
 /// assert_eq!(syms.find_id("missing"), None);
-/// 
+///
 /// // Use in FST construction
 /// let mut fst = VectorFst::<TropicalWeight>::new();
 /// let s0 = fst.add_state();
@@ -37,7 +37,7 @@ use std::collections::HashMap;
 /// fst.set_start(s0);
 /// fst.set_final(s1, TropicalWeight::one());
 /// fst.add_arc(s0, Arc::new(hello_id, world_id, TropicalWeight::one(), s1));
-/// 
+///
 /// assert_eq!(fst.num_arcs(s0), 1);
 /// ```
 #[derive(Debug, Clone, Default)]
@@ -48,14 +48,14 @@ pub struct SymbolTable {
 
 impl SymbolTable {
     /// Create a new empty symbol table
-    /// 
-    /// The table starts with epsilon ("<eps>") as symbol 0.
-    /// 
+    ///
+    /// The table starts with epsilon (`<eps>`) as symbol 0.
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use arcweight::prelude::*;
-    /// 
+    ///
     /// let syms = SymbolTable::new();
     /// assert_eq!(syms.len(), 1); // contains epsilon
     /// assert_eq!(syms.find(0), Some("<eps>"));
@@ -68,20 +68,20 @@ impl SymbolTable {
     }
 
     /// Add a symbol
-    /// 
+    ///
     /// Returns the numeric ID for the symbol. If the symbol already exists,
     /// returns its existing ID.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use arcweight::prelude::*;
-    /// 
+    ///
     /// let mut syms = SymbolTable::new();
-    /// 
+    ///
     /// let first_id = syms.add_symbol("hello");
     /// let second_id = syms.add_symbol("hello"); // same symbol
-    /// 
+    ///
     /// assert_eq!(first_id, second_id); // returns same ID
     /// assert_eq!(syms.len(), 2); // epsilon + hello
     /// ```

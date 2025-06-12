@@ -7,40 +7,40 @@ use crate::Result;
 use core::hash::Hash;
 
 /// Minimize a deterministic FST
-/// 
+///
 /// Uses Brzozowski's algorithm: reverse → determinize → reverse → determinize → connect.
 /// The input FST should be deterministic for best results.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use arcweight::prelude::*;
-/// 
+///
 /// // Create an FST with redundant states
 /// let mut fst = VectorFst::<TropicalWeight>::new();
 /// let s0 = fst.add_state();
 /// let s1 = fst.add_state();
 /// let s2 = fst.add_state();
 /// let s3 = fst.add_state();
-/// 
+///
 /// fst.set_start(s0);
 /// fst.set_final(s2, TropicalWeight::one());
 /// fst.set_final(s3, TropicalWeight::one());
-/// 
+///
 /// // Two paths to equivalent final states
 /// fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
 /// fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
 /// fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s3));
-/// 
+///
 /// // Minimize
 /// let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
-/// 
+///
 /// // Should produce a valid minimized FST
 /// assert!(minimized.num_states() > 0);
 /// ```
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

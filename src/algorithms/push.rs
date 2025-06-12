@@ -6,9 +6,9 @@ use crate::semiring::{DivisibleSemiring, Semiring};
 use crate::Result;
 
 /// Push weights toward initial state
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation
@@ -62,9 +62,9 @@ where
 }
 
 /// Push labels toward initial state
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

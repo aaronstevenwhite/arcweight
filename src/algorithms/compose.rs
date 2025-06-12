@@ -54,16 +54,16 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 }
 
 /// Compose two FSTs
-/// 
+///
 /// Computes the composition of two FSTs using the specified composition filter.
 /// The result FST accepts input sequences that are accepted by the first FST
 /// and whose output is accepted by the second FST.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use arcweight::prelude::*;
-/// 
+///
 /// // Create first FST: maps 1 -> 2
 /// let mut fst1 = VectorFst::<TropicalWeight>::new();
 /// let s0 = fst1.add_state();
@@ -71,7 +71,7 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 /// fst1.set_start(s0);
 /// fst1.set_final(s1, TropicalWeight::one());
 /// fst1.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
-/// 
+///
 /// // Create second FST: maps 2 -> 3
 /// let mut fst2 = VectorFst::<TropicalWeight>::new();
 /// let s0 = fst2.add_state();
@@ -79,15 +79,15 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 /// fst2.set_start(s0);
 /// fst2.set_final(s1, TropicalWeight::one());
 /// fst2.add_arc(s0, Arc::new(2, 3, TropicalWeight::new(0.3), s1));
-/// 
+///
 /// // Compose: result maps 1 -> 3 with weight 0.8
 /// let composed: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2).unwrap();
-/// 
+///
 /// assert!(composed.num_states() > 0);
 /// ```
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - Either input FST is invalid or has no start state
 /// - Memory allocation fails during computation
@@ -151,9 +151,9 @@ where
 }
 
 /// Compose with default filter
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - Either input FST is invalid or has no start state
 /// - Memory allocation fails during computation

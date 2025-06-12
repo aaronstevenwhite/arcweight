@@ -6,9 +6,9 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Project input labels
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation
@@ -23,9 +23,9 @@ where
 }
 
 /// Project output labels
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

@@ -10,9 +10,9 @@ use std::io::{BufRead, Write};
 use std::str::FromStr;
 
 /// Write FST in text format to a writer
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The writer encounters an I/O error during writing
 /// - Symbol table lookups fail for provided labels
@@ -69,9 +69,9 @@ where
 }
 
 /// Read FST from text format from a reader
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The reader encounters an I/O error during reading
 /// - The text format is malformed or contains invalid syntax

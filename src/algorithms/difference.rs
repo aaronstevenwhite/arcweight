@@ -34,9 +34,9 @@ impl<W: Semiring> ComposeFilter<W> for DifferenceFilter {
 }
 
 /// Difference of two FSTs (fst1 - fst2)
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - Either input FST is invalid or corrupted
 /// - Memory allocation fails during computation

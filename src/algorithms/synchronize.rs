@@ -7,9 +7,9 @@ use crate::{Error, Result};
 use std::collections::{HashMap, VecDeque};
 
 /// Synchronize a transducer
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - The FST has no start state

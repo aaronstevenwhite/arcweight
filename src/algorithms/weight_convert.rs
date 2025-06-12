@@ -6,9 +6,9 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Convert between weight types
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

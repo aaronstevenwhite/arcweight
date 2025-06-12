@@ -6,9 +6,9 @@ use crate::semiring::StarSemiring;
 use crate::Result;
 
 /// Kleene closure (star)
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation
@@ -23,9 +23,9 @@ where
 }
 
 /// Kleene plus
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

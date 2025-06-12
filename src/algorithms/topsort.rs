@@ -7,9 +7,9 @@ use crate::{Error, Result};
 use std::collections::HashSet;
 
 /// Topologically sort an acyclic FST
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - Memory allocation fails during computation

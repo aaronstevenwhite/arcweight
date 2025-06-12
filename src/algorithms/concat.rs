@@ -6,9 +6,9 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Concatenate two FSTs
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - Either input FST is invalid or corrupted
 /// - Memory allocation fails during computation

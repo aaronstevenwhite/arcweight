@@ -15,9 +15,9 @@ mod inner {
     const VERSION: u32 = 1;
 
     /// Write FST in binary format
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - The writer encounters an I/O error during writing
     /// - Weight serialization fails due to invalid weight data
@@ -62,9 +62,9 @@ mod inner {
     }
 
     /// Read FST from binary format
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - The reader encounters an I/O error during reading
     /// - The binary data is malformed or corrupted (invalid magic number or version)

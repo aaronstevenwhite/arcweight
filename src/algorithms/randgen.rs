@@ -31,9 +31,9 @@ impl Default for RandGenConfig {
 }
 
 /// Generate random paths from FST
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The input FST is invalid or corrupted
 /// - The FST has no start state

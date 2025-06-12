@@ -74,9 +74,9 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
     }
 
     /// Decode an arc (placeholder - actual decoding would require reverse mappings)
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - The decoding operation is not yet implemented
     /// - The encoded arc contains invalid or unmapped labels/weights

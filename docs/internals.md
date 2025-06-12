@@ -94,7 +94,7 @@ pub struct FstProperties {
 
 ## Semiring System
 
-### Semiring Trait
+### Semiring Trait Hierarchy
 ```rust
 pub trait Semiring: Clone + Debug + Send + Sync {
     fn zero() -> Self;
@@ -102,12 +102,40 @@ pub trait Semiring: Clone + Debug + Send + Sync {
     fn plus(&self, other: &Self) -> Self;
     fn times(&self, other: &Self) -> Self;
 }
+
+pub trait DivisibleSemiring: Semiring {
+    fn divide(&self, other: &Self) -> Option<Self>;
+}
+
+pub trait NaturallyOrderedSemiring: Semiring + Ord {}
+
+pub trait StarSemiring: Semiring {
+    fn star(&self) -> Self;
+}
 ```
 
+### Semiring Constraints on Operations
+
+**Determinization** requires `DivisibleSemiring + Ord`:
+- Enables weight normalization through division
+- Requires ordering for subset construction
+
+**Weight Pushing** requires `DivisibleSemiring`:
+- Needs division for potential computation
+- Zero-sum-free property enforced at type level
+
+**Shortest Path** requires `NaturallyOrderedSemiring`:
+- Natural ordering enables path comparison
+- Supports negative cycle detection
+
+**Epsilon Removal** benefits from `StarSemiring`:
+- Star operation provides convergence guarantees
+- K-closed property for termination
+
 ### Common Semirings
-- Tropical semiring
-- Log semiring
-- Probability semiring
+- **Tropical semiring**: `DivisibleSemiring + NaturallyOrderedSemiring` (supports most operations)
+- **Log semiring**: `DivisibleSemiring + NaturallyOrderedSemiring` (numerical stability)
+- **Probability semiring**: `Semiring` only (limited operation support)
 
 ## IO System
 

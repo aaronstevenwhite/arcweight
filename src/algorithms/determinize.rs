@@ -1,4 +1,28 @@
 //! Determinization algorithm
+//!
+//! Converts a nondeterministic weighted FST to a deterministic one using subset construction.
+//!
+//! # Semiring Requirements
+//!
+//! This operation requires the semiring to be **weakly left divisible**, implemented as
+//! the `DivisibleSemiring` trait. This enables weight normalization during subset construction:
+//! - Each subset's minimum weight is divided out to prevent exponential weight growth
+//! - Division operations must be well-defined and consistent
+//!
+//! Additionally, the weights must be `Ord` to enable finding minimum weights for normalization.
+//!
+//! # Supported Semirings
+//!
+//! - ✅ `TropicalWeight` - Implements `DivisibleSemiring + Ord`
+//! - ✅ `LogWeight` - Implements `DivisibleSemiring + Ord`  
+//! - ❌ `ProbabilityWeight` - Not weakly left divisible
+//! - ❌ `BooleanWeight` - No natural division operation
+//!
+//! # Notes
+//!
+//! Even with a compatible semiring, not all weighted FSTs can be determinized due to
+//! structural requirements like the "twins property". The algorithm will return an error
+//! if determinization is not possible for the given FST.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, Label, MutableFst, StateId};

@@ -1,4 +1,27 @@
 //! Shortest path algorithms
+//!
+//! Finds shortest paths in weighted FSTs using generalized distance algorithms.
+//!
+//! # Semiring Requirements
+//!
+//! Shortest path computation requires a **naturally ordered semiring**:
+//! - `NaturallyOrderedSemiring` trait provides total ordering for path comparison
+//! - Enables priority queue-based algorithms (Dijkstra-style)
+//! - Required for meaningful "shortest" path definition
+//!
+//! # Supported Semirings
+//!
+//! - ✅ `TropicalWeight` - Natural ordering by cost (min-cost paths)
+//! - ✅ `LogWeight` - Natural ordering by log probability
+//! - ❌ `ProbabilityWeight` - No natural ordering defined
+//! - ❌ `BooleanWeight` - No meaningful path comparison
+//!
+//! # Cycle Handling
+//!
+//! For cyclic FSTs:
+//! - Negative cycle detection prevents infinite loops
+//! - Weight monotonicity ensures termination
+//! - Path uniqueness filtering available via configuration
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId, NO_STATE_ID};

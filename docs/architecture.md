@@ -38,9 +38,10 @@ ArcWeight is a high-performance Rust library for weighted finite state transduce
 
 **Core Traits** (`traits.rs`):
 - `Semiring`: Basic semiring operations (plus, times, zero, one)
-- `DivisibleSemiring`: Semirings supporting division
-- `StarSemiring`: Semirings with Kleene star operation
-- `NaturallyOrderedSemiring`: Semirings with natural ordering
+- `DivisibleSemiring`: Semirings supporting division (required for determinization, weight pushing)
+- `StarSemiring`: Semirings with Kleene star operation (required for epsilon removal)
+- `NaturallyOrderedSemiring`: Semirings with natural ordering (required for shortest path, pruning)
+- `InvertibleSemiring`: Semirings with multiplicative inverse
 
 **Weight Types**:
 - `TropicalWeight`: Min-plus semiring (shortest path, Viterbi)

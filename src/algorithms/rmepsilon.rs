@@ -1,4 +1,27 @@
 //! Epsilon removal algorithm
+//!
+//! Removes epsilon (empty) transitions from weighted FSTs while preserving semantics.
+//!
+//! # Semiring Requirements
+//!
+//! Epsilon removal benefits from the **star operation** for guaranteed termination:
+//! - `StarSemiring` trait provides Kleene star: w* = 1 ⊕ w ⊕ w² ⊕ ...
+//! - K-closed property ensures convergence for epsilon cycles
+//! - Without star operation, may not terminate on epsilon cycles with non-convergent weights
+//!
+//! # Supported Semirings
+//!
+//! - ✅ `TropicalWeight` - Star operation well-defined (idempotent)
+//! - ✅ `BooleanWeight` - Star operation trivial (always converges)
+//! - ⚠️  `ProbabilityWeight` - May not converge for epsilon cycles
+//! - ⚠️  `LogWeight` - Convergence depends on cycle weights
+//!
+//! # Termination Guarantees
+//!
+//! Algorithm terminates when:
+//! - FST is acyclic (no epsilon cycles)
+//! - Semiring is k-closed (star operation converges)
+//! - Epsilon cycle weights converge to a fixed point
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId};

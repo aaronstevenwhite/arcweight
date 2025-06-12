@@ -1,4 +1,27 @@
 //! Weight and label pushing algorithms
+//!
+//! Pushes weights toward the initial state or final states to enable optimization.
+//!
+//! # Semiring Requirements
+//!
+//! Weight pushing requires the semiring to be **weakly left divisible** and **zero-sum-free**:
+//! - `DivisibleSemiring` trait enables division for potential computation
+//! - Zero-sum-free property prevents division by zero during normalization
+//! - Required for both initial-state and final-state weight pushing
+//!
+//! # Supported Semirings
+//!
+//! - ✅ `TropicalWeight` - Implements `DivisibleSemiring`, zero-sum-free
+//! - ✅ `LogWeight` - Implements `DivisibleSemiring`, zero-sum-free
+//! - ❌ `ProbabilityWeight` - Not weakly left divisible
+//! - ❌ String semirings - Generally not zero-sum-free
+//!
+//! # Convergence Requirements
+//!
+//! For cyclic FSTs, weight pushing requires:
+//! - Convergent weight sequences for global pushing
+//! - Acyclic structure for guaranteed termination
+//! - K-closed semiring property for epsilon cycles
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};

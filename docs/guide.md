@@ -153,6 +153,45 @@ fn find_best_path(fst: &VectorFst<TropicalWeight>) -> Result<()> {
 
 ## Semirings and Weights
 
+### Understanding Semiring Constraints
+
+Different FST operations have varying requirements based on semiring properties:
+
+#### Operations Available for All Semirings
+- **Composition** - Always possible (though result may not be trim)
+- **Union** - Combining alternative paths
+- **Concatenation** - Sequential FST combination
+- **Projection** - Extract input/output as FSA
+- **Reversal** - Reverse transition directions
+- **Epsilon Insertion** - Add epsilon transitions
+
+#### Operations Requiring Special Semiring Properties
+
+**Determinization**:
+- Requires `DivisibleSemiring` (weakly left divisible)
+- FST must have the twins property
+- Not available for all weighted FSTs (even in tropical semiring)
+
+**Minimization**:
+- Only defined for deterministic weighted FSTs
+- Requires determinization as prerequisite
+
+**Weight Pushing**:
+- Requires `DivisibleSemiring` (zero-sum-free and weakly left divisible)
+- For global pushing, FST should be acyclic or have convergence properties
+
+**Shortest Path/Best Path**:
+- Requires `NaturallyOrderedSemiring` (natural order like tropical/log)
+- For cyclic FSTs, requires negative cycle detection
+
+**Epsilon Removal**:
+- May not terminate for FSTs with epsilon cycles whose weights don't converge
+- Requires k-closed property for guaranteed termination
+
+**Pruning**:
+- Only meaningful for `NaturallyOrderedSemiring`
+- Requires comparison operations on weights
+
 ### Tropical Semiring (Most Common)
 ```rust
 use arcweight::prelude::*;

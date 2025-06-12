@@ -1,4 +1,26 @@
 //! Pruning algorithm
+//!
+//! Removes paths from weighted FSTs that exceed a weight threshold.
+//!
+//! # Semiring Requirements
+//!
+//! Pruning requires a **naturally ordered semiring** for meaningful weight comparison:
+//! - `NaturallyOrderedSemiring` trait enables weight threshold comparison
+//! - Total ordering defines which paths are "worse" than the threshold
+//! - Without natural ordering, pruning concept is not well-defined
+//!
+//! # Supported Semirings
+//!
+//! - ✅ `TropicalWeight` - Natural ordering by cost (prune high-cost paths)
+//! - ✅ `LogWeight` - Natural ordering by log probability
+//! - ❌ `ProbabilityWeight` - No natural ordering defined
+//! - ❌ `BooleanWeight` - No meaningful weight comparison
+//!
+//! # Pruning Strategies
+//!
+//! - **Forward pruning**: Remove paths based on forward weights
+//! - **Backward pruning**: Remove paths based on backward weights  
+//! - **Global pruning**: Remove paths based on total path weight
 
 use crate::fst::{Fst, MutableFst};
 use crate::semiring::NaturallyOrderedSemiring;

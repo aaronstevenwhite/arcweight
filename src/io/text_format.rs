@@ -10,6 +10,13 @@ use std::io::{BufRead, Write};
 use std::str::FromStr;
 
 /// Write FST in text format to a writer
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The writer encounters an I/O error during writing
+/// - Symbol table lookups fail for provided labels
+/// - Weight formatting fails for display
 pub fn write_text<W, F, Writer>(
     fst: &F,
     writer: &mut Writer,
@@ -62,6 +69,15 @@ where
 }
 
 /// Read FST from text format from a reader
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The reader encounters an I/O error during reading
+/// - The text format is malformed or contains invalid syntax
+/// - Weight or label parsing fails due to invalid format
+/// - Symbol table lookups fail for provided symbols
+/// - Memory allocation fails during FST construction
 pub fn read_text<W, M, Reader>(
     reader: &mut Reader,
     isyms: Option<&SymbolTable>,

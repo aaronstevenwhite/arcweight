@@ -6,6 +6,13 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Intersect two acceptors
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - Either input FST is invalid or has no start state
+/// - Memory allocation fails during computation
+/// - The intersection operation encounters incompatible FST structures
 pub fn intersect<W, F1, F2, M>(fst1: &F1, fst2: &F2) -> Result<M>
 where
     W: Semiring,

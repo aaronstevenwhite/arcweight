@@ -31,6 +31,14 @@ impl Default for RandGenConfig {
 }
 
 /// Generate random paths from FST
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - The FST has no start state
+/// - Memory allocation fails during path generation
+/// - Random path generation exceeds configured limits
 pub fn randgen<W, F, M>(fst: &F, config: RandGenConfig) -> Result<M>
 where
     W: Semiring,

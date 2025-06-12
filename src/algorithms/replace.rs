@@ -24,6 +24,14 @@ impl<W: Semiring> ReplaceFst<W> {
 }
 
 /// Replace non-terminals with FSTs
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - Non-terminal replacement creates invalid FST structures
+/// - Recursive replacement depth exceeds limits
 pub fn replace<W, M>(_replace_fst: &ReplaceFst<W>) -> Result<M>
 where
     W: Semiring,

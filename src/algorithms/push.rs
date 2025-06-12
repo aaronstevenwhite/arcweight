@@ -6,6 +6,14 @@ use crate::semiring::{DivisibleSemiring, Semiring};
 use crate::Result;
 
 /// Push weights toward initial state
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The FST is not compatible with weight pushing operations
+/// - Potential computation fails for non-divisible weights
 pub fn push_weights<W, F, M>(fst: &F) -> Result<M>
 where
     W: DivisibleSemiring,
@@ -54,6 +62,13 @@ where
 }
 
 /// Push labels toward initial state
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The FST structure prevents label pushing operations
 pub fn push_labels<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,

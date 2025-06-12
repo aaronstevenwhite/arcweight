@@ -6,6 +6,13 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Project input labels
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The projection operation encounters invalid state or arc data
 pub fn project_input<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,
@@ -16,6 +23,13 @@ where
 }
 
 /// Project output labels
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The projection operation encounters invalid state or arc data
 pub fn project_output<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,

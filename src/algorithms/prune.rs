@@ -26,6 +26,13 @@ impl Default for PruneConfig {
 }
 
 /// Prune an FST by weight threshold
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The weight threshold configuration is invalid
 pub fn prune<W, F, M>(fst: &F, _config: PruneConfig) -> Result<M>
 where
     W: NaturallyOrderedSemiring,

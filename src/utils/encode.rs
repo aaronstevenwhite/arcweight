@@ -74,6 +74,13 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
     }
 
     /// Decode an arc (placeholder - actual decoding would require reverse mappings)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if:
+    /// - The decoding operation is not yet implemented
+    /// - The encoded arc contains invalid or unmapped labels/weights
+    /// - The reverse mapping tables are not available
     pub fn decode(&self, _arc: &Arc<W>) -> Result<Arc<W>, &'static str> {
         Err("Decoding not implemented - would require reverse mappings")
     }

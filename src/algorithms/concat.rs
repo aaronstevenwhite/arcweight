@@ -6,6 +6,13 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Concatenate two FSTs
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - Either input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The concatenation operation encounters invalid state mappings
 pub fn concat<W, F1, F2, M>(fst1: &F1, fst2: &F2) -> Result<M>
 where
     W: Semiring,

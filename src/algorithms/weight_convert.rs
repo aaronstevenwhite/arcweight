@@ -6,6 +6,14 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Convert between weight types
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - Weight conversion fails for incompatible semiring types
+/// - The converter function produces invalid weight values
 pub fn weight_convert<W1, W2, F, M, C>(fst: &F, converter: C) -> Result<M>
 where
     W1: Semiring,

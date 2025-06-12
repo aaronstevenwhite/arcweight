@@ -25,6 +25,12 @@ struct ConstState<W: Semiring> {
 
 impl<W: Semiring> ConstFst<W> {
     /// Create from a vector FST
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if:
+    /// - Memory allocation fails during FST construction
+    /// - The input FST contains invalid state or arc data
     pub fn from_fst<F: Fst<W>>(fst: &F) -> Result<Self> {
         let mut states = Vec::with_capacity(fst.num_states());
         let mut arcs = Vec::new();

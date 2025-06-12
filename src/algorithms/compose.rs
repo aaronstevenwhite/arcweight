@@ -54,6 +54,13 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 }
 
 /// Compose two FSTs
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - Either input FST is invalid or has no start state
+/// - Memory allocation fails during computation
+/// - The composition operation encounters incompatible state structures
 pub fn compose<W, F1, F2, M, CF>(fst1: &F1, fst2: &F2, filter: CF) -> Result<M>
 where
     W: Semiring,
@@ -113,6 +120,13 @@ where
 }
 
 /// Compose with default filter
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - Either input FST is invalid or has no start state
+/// - Memory allocation fails during computation
+/// - The composition operation encounters incompatible state structures
 pub fn compose_default<W, F1, F2, M>(fst1: &F1, fst2: &F2) -> Result<M>
 where
     W: Semiring,

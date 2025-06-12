@@ -19,6 +19,13 @@ enum FstType {
 }
 
 /// Write FST in OpenFST format
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The writer encounters an I/O error during writing
+/// - The FST contains weights that cannot be represented in OpenFST tropical format
+/// - Seeking operations fail on the writer
 pub fn write_openfst<F, Writer>(fst: &F, writer: &mut Writer) -> Result<()>
 where
     F: Fst<TropicalWeight>,
@@ -60,6 +67,14 @@ where
 }
 
 /// Read FST from OpenFST format
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The reader encounters an I/O error during reading
+/// - The OpenFST data is malformed or corrupted (invalid magic number)
+/// - The file format version is unsupported
+/// - Memory allocation fails during FST construction
 pub fn read_openfst<M, Reader>(reader: &mut Reader) -> Result<M>
 where
     M: MutableFst<TropicalWeight> + Default,

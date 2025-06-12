@@ -160,6 +160,14 @@ impl FstProperties {
 }
 
 /// Compute FST properties
+/// 
+/// # Errors
+/// 
+/// This function does not return errors in the current implementation, but future
+/// versions may return errors if:
+/// - The input FST structure is corrupted or invalid
+/// - Memory allocation fails during property computation
+/// - Complex property analysis encounters unsupported FST patterns
 pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     let mut props = FstProperties::default();
 

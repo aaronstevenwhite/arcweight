@@ -59,6 +59,15 @@ impl<W: NaturallyOrderedSemiring> Ord for PathState<W> {
 }
 
 /// Find shortest path(s) in an FST
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - The FST has no start state
+/// - Memory allocation fails during computation
+/// - Path finding fails due to infinite weights or disconnected states
+/// - The algorithm encounters unsupported FST properties
 pub fn shortest_path<W, F, M>(fst: &F, config: ShortestPathConfig) -> Result<M>
 where
     W: NaturallyOrderedSemiring,
@@ -166,6 +175,14 @@ where
 }
 
 /// Convenience function for single shortest path
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - The FST has no start state
+/// - Memory allocation fails during computation
+/// - Path finding fails due to infinite weights or disconnected states
 pub fn shortest_path_single<W, F, M>(fst: &F) -> Result<M>
 where
     W: NaturallyOrderedSemiring,

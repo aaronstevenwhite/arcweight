@@ -7,6 +7,14 @@ use crate::{Error, Result};
 use std::collections::HashSet;
 
 /// Topologically sort an acyclic FST
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The FST contains cycles (violates acyclic requirement)
+/// - Topological ordering computation fails
 pub fn topsort<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,

@@ -56,6 +56,14 @@ impl<W: Semiring> WeightedSubset<W> {
 }
 
 /// Determinize an FST
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or has no start state
+/// - Memory allocation fails during computation
+/// - The semiring does not support required division operations
+/// - Subset construction encounters invalid state combinations
 pub fn determinize<W, F, M>(fst: &F) -> Result<M>
 where
     W: DivisibleSemiring + Hash + Eq + Ord,

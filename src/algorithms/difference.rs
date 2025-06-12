@@ -34,6 +34,14 @@ impl<W: Semiring> ComposeFilter<W> for DifferenceFilter {
 }
 
 /// Difference of two FSTs (fst1 - fst2)
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - Either input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The difference algorithm encounters incompatible FST structures
+/// - The operation is not yet fully implemented
 pub fn difference<W, F1, F2, M>(_fst1: &F1, _fst2: &F2) -> Result<M>
 where
     W: Semiring + Hash,

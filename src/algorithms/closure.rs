@@ -6,6 +6,13 @@ use crate::semiring::StarSemiring;
 use crate::Result;
 
 /// Kleene closure (star)
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The semiring does not support star operations
 pub fn closure<W, F, M>(fst: &F) -> Result<M>
 where
     W: StarSemiring,
@@ -16,6 +23,13 @@ where
 }
 
 /// Kleene plus
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The semiring does not support star operations
 pub fn closure_plus<W, F, M>(fst: &F) -> Result<M>
 where
     W: StarSemiring,

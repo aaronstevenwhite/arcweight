@@ -7,6 +7,14 @@ use crate::Result;
 use std::collections::{HashMap, VecDeque};
 
 /// Remove epsilon transitions
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - Epsilon closure computation fails due to cycles or invalid weights
+/// - The semiring does not support required star operations
 pub fn remove_epsilons<W, F, M>(fst: &F) -> Result<M>
 where
     W: StarSemiring,

@@ -7,6 +7,14 @@ use crate::Result;
 use core::hash::Hash;
 
 /// Minimize a deterministic FST
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The semiring does not support required operations
+/// - Any intermediate algorithm step (reverse, determinize, connect) fails
 pub fn minimize<W, F, M>(fst: &F) -> Result<M>
 where
     W: DivisibleSemiring + Hash + Eq + Ord,

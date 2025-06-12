@@ -15,6 +15,13 @@ mod inner {
     const VERSION: u32 = 1;
 
     /// Write FST in binary format
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if:
+    /// - The writer encounters an I/O error during writing
+    /// - Weight serialization fails due to invalid weight data
+    /// - Memory allocation fails during the write operation
     pub fn write_binary<W, F, Writer>(fst: &F, writer: &mut Writer) -> Result<()>
     where
         W: Semiring + serde::Serialize,
@@ -55,6 +62,14 @@ mod inner {
     }
 
     /// Read FST from binary format
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if:
+    /// - The reader encounters an I/O error during reading
+    /// - The binary data is malformed or corrupted (invalid magic number or version)
+    /// - Weight deserialization fails due to corrupted weight data
+    /// - Memory allocation fails during FST construction
     pub fn read_binary<W, M, Reader>(reader: &mut Reader) -> Result<M>
     where
         W: Semiring + serde::de::DeserializeOwned,

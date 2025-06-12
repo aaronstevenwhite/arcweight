@@ -6,6 +6,14 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Union of two FSTs
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - Either input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The FSTs have incompatible weight types or structures
+/// - State mapping operations fail during union construction
 pub fn union<W, F1, F2, M>(fst1: &F1, fst2: &F2) -> Result<M>
 where
     W: Semiring,

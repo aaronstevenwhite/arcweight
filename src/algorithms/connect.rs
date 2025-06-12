@@ -7,6 +7,13 @@ use crate::{Error, Result};
 use std::collections::HashSet;
 
 /// Remove non-accessible and non-coaccessible states
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or has no start state
+/// - Memory allocation fails during computation
+/// - State mapping operations encounter invalid references
 pub fn connect<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,

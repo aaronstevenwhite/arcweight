@@ -6,6 +6,13 @@ use crate::semiring::Semiring;
 use crate::Result;
 
 /// Reverse an FST
+/// 
+/// # Errors
+/// 
+/// Returns an error if:
+/// - The input FST is invalid or corrupted
+/// - Memory allocation fails during computation
+/// - The FST structure cannot be properly reversed
 pub fn reverse<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,

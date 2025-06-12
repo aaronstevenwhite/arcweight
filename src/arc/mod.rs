@@ -5,6 +5,30 @@ use crate::semiring::Semiring;
 use core::fmt;
 
 /// Arc in a weighted FST
+/// 
+/// Represents a weighted transition between states in an FST.
+/// Each arc has input and output labels, a weight, and a target state.
+/// 
+/// # Examples
+/// 
+/// Creating different types of arcs:
+/// 
+/// ```
+/// use arcweight::prelude::*;
+/// 
+/// // Regular arc with different input/output labels
+/// let arc1 = Arc::new(1, 2, TropicalWeight::new(0.5), 3);
+/// 
+/// // Acceptor arc (same input/output)
+/// let arc2 = Arc::new(1, 1, TropicalWeight::one(), 2);
+/// 
+/// // Epsilon arc (input=0, output=0)
+/// let epsilon = Arc::epsilon(TropicalWeight::new(0.1), 1);
+/// 
+/// assert_eq!(arc1.ilabel, 1);
+/// assert_eq!(arc1.olabel, 2);
+/// assert!(epsilon.is_epsilon());
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Arc<W: Semiring> {
@@ -20,6 +44,19 @@ pub struct Arc<W: Semiring> {
 
 impl<W: Semiring> Arc<W> {
     /// Create a new arc
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use arcweight::prelude::*;
+    /// 
+    /// let arc = Arc::new(1, 2, TropicalWeight::new(0.5), 3);
+    /// 
+    /// assert_eq!(arc.ilabel, 1);
+    /// assert_eq!(arc.olabel, 2);
+    /// assert_eq!(arc.weight, TropicalWeight::new(0.5));
+    /// assert_eq!(arc.nextstate, 3);
+    /// ```
     pub fn new(ilabel: Label, olabel: Label, weight: W, nextstate: StateId) -> Self {
         Self {
             ilabel,
@@ -30,6 +67,23 @@ impl<W: Semiring> Arc<W> {
     }
 
     /// Create an epsilon arc
+    /// 
+    /// Epsilon arcs have input and output labels of 0, representing
+    /// transitions that don't consume or produce symbols.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use arcweight::prelude::*;
+    /// 
+    /// let epsilon = Arc::epsilon(TropicalWeight::one(), 2);
+    /// 
+    /// assert_eq!(epsilon.ilabel, 0);
+    /// assert_eq!(epsilon.olabel, 0);
+    /// assert!(epsilon.is_epsilon());
+    /// assert!(epsilon.is_epsilon_input());
+    /// assert!(epsilon.is_epsilon_output());
+    /// ```
     pub fn epsilon(weight: W, nextstate: StateId) -> Self {
         Self::new(0, 0, weight, nextstate)
     }

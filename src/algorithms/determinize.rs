@@ -57,6 +57,35 @@ impl<W: Semiring> WeightedSubset<W> {
 
 /// Determinize an FST
 /// 
+/// Converts a non-deterministic FST into an equivalent deterministic FST
+/// using the subset construction algorithm with weight normalization.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use arcweight::prelude::*;
+/// 
+/// // Create a non-deterministic FST with two paths for label 1
+/// let mut fst = VectorFst::<TropicalWeight>::new();
+/// let s0 = fst.add_state();
+/// let s1 = fst.add_state();
+/// let s2 = fst.add_state();
+/// 
+/// fst.set_start(s0);
+/// fst.set_final(s1, TropicalWeight::new(0.5));
+/// fst.set_final(s2, TropicalWeight::new(0.3));
+/// 
+/// // Two arcs with same label from start state
+/// fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.2), s1));
+/// fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.4), s2));
+/// 
+/// // Determinize
+/// let det_fst: VectorFst<TropicalWeight> = determinize(&fst).unwrap();
+/// 
+/// // Result should be deterministic
+/// assert!(det_fst.num_states() > 0);
+/// ```
+/// 
 /// # Errors
 /// 
 /// Returns an error if:

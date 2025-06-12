@@ -1,4 +1,64 @@
 //! FST algorithms module
+//! 
+//! This module provides a comprehensive collection of algorithms for manipulating
+//! and analyzing weighted finite state transducers (FSTs). The algorithms are
+//! organized into several categories:
+//! 
+//! ## Core Operations
+//! 
+//! - [`compose`] - Composition of two FSTs
+//! - [`concat`] - Concatenation of FSTs
+//! - [`union`] - Union of multiple FSTs
+//! - [`closure`], [`closure_plus`] - Kleene star and plus operations
+//! 
+//! ## Optimization Algorithms
+//! 
+//! - [`minimize`] - State minimization using Brzozowski's algorithm
+//! - [`determinize`] - Convert non-deterministic FST to deterministic
+//! - [`remove_epsilons`] - Remove epsilon transitions
+//! - [`connect`] - Remove non-accessible/coaccessible states
+//! 
+//! ## Path Algorithms
+//! 
+//! - [`shortest_path`] - Find shortest paths through FST
+//! - [`randgen`] - Generate random paths from FST
+//! 
+//! ## Transformation Algorithms
+//! 
+//! - [`reverse`] - Reverse the FST direction
+//! - [`project_input`], [`project_output`] - Project to input/output labels
+//! - [`synchronize`] - Synchronize transducer labels
+//! - [`push_weights`], [`push_labels`] - Push weights toward initial/final states
+//! 
+//! ## Utility Algorithms
+//! 
+//! - [`prune`] - Prune arcs/states based on weight thresholds
+//! - [`replace`] - Replace symbols with sub-FSTs
+//! - [`topsort`] - Topological sort of states
+//! - [`weight_convert`] - Convert between semiring types
+//! - [`difference`], [`intersect`] - Set operations (some not fully implemented)
+//! 
+//! ## Usage Examples
+//! 
+//! Most algorithms follow the pattern of taking input FST(s) and configuration,
+//! returning a new FST with the operation applied:
+//! 
+//! ```
+//! use arcweight::prelude::*;
+//! 
+//! // Create a simple FST
+//! let mut fst = VectorFst::<TropicalWeight>::new();
+//! let s0 = fst.add_state();
+//! let s1 = fst.add_state();
+//! fst.set_start(s0);
+//! fst.set_final(s1, TropicalWeight::one());
+//! 
+//! // Apply algorithms
+//! let minimized: VectorFst<TropicalWeight> = minimize(&fst)?;
+//! let shortest: VectorFst<TropicalWeight> = shortest_path(&fst, ShortestPathConfig::default())?;
+//! let reversed: VectorFst<TropicalWeight> = reverse(&fst)?;
+//! # Ok::<(), arcweight::Error>(())
+//! ```
 
 mod closure;
 mod compose;

@@ -14,34 +14,36 @@
 
 use arcweight::prelude::*;
 
-/// Builds an FST that accepts all strings within a given edit distance of the target string.
-/// Uses a standard edit distance lattice construction.
+/// Builds an FST that computes edit distance between strings using dynamic programming.
+/// This creates a simple, correct implementation that handles any characters.
 ///
 /// # Arguments
+/// * `source` - The source string
 /// * `target` - The target string
-/// * `k` - Maximum allowed edit distance
 /// * `insertion_cost` - Cost of inserting a character
 /// * `deletion_cost` - Cost of deleting a character  
 /// * `substitution_cost` - Cost of substituting a character
 ///
 /// # Returns
-/// An FST that accepts strings within distance k of the target
+/// An FST that computes the edit distance
 fn build_edit_distance_fst(
+    source: &str,
     target: &str,
-    k: usize,
     insertion_cost: f32,
     deletion_cost: f32,
     substitution_cost: f32,
 ) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
+    let source_chars: Vec<char> = source.chars().collect();
     let target_chars: Vec<char> = target.chars().collect();
+    let m = source_chars.len();
     let n = target_chars.len();
 
     // Create states for the edit distance lattice
-    // State (i,d) represents matching i characters with d edits
-    let mut states = vec![vec![]; n + 1];
-    for state_row in states.iter_mut().take(n + 1) {
-        for _d in 0..=k {
+    // State (i,j) represents having processed i chars from source and j chars from target
+    let mut states = vec![vec![]; m + 1];
+    for state_row in states.iter_mut().take(m + 1) {
+        for _j in 0..=n {
             state_row.push(fst.add_state());
         }
     }
@@ -49,95 +51,61 @@ fn build_edit_distance_fst(
     // Start state
     fst.set_start(states[0][0]);
 
-    // Final states - reached end of target with <= k edits
-    for d in 0..=k {
-        fst.set_final(states[n][d], TropicalWeight::one());
-    }
+    // Final state - end of both strings
+    fst.set_final(states[m][n], TropicalWeight::one());
 
     // Add transitions
-    for i in 0..=n {
-        for d in 0..=k {
-            let current = states[i][d];
+    #[allow(clippy::needless_range_loop)] // Using i,j to index into DP table
+    for i in 0..=m {
+        for j in 0..=n {
+            let current = states[i][j];
 
-            if i < n && d <= k {
-                // Match - advance both strings with no cost
+            // Match or substitution - advance both strings
+            if i < m && j < n {
+                let cost = if source_chars[i] == target_chars[j] {
+                    0.0 // match
+                } else {
+                    substitution_cost // substitution
+                };
                 fst.add_arc(
                     current,
                     Arc::new(
-                        target_chars[i] as u32,
-                        target_chars[i] as u32,
-                        TropicalWeight::one(),
-                        states[i + 1][d],
+                        source_chars[i] as u32,
+                        target_chars[j] as u32,
+                        TropicalWeight::new(cost),
+                        states[i + 1][j + 1],
                     ),
                 );
-
-                if d < k {
-                    // Deletion - skip character in target
-                    fst.add_arc(
-                        current,
-                        Arc::new(
-                            0, // epsilon
-                            target_chars[i] as u32,
-                            TropicalWeight::new(deletion_cost),
-                            states[i + 1][d + 1],
-                        ),
-                    );
-
-                    // Substitution - replace character
-                    for c in b'a'..=b'z' {
-                        if c as char != target_chars[i] {
-                            fst.add_arc(
-                                current,
-                                Arc::new(
-                                    c as u32,
-                                    target_chars[i] as u32,
-                                    TropicalWeight::new(substitution_cost),
-                                    states[i + 1][d + 1],
-                                ),
-                            );
-                        }
-                    }
-                }
             }
 
-            if d < k {
-                // Insertion - consume input character
-                for c in b'a'..=b'z' {
-                    fst.add_arc(
-                        current,
-                        Arc::new(
-                            c as u32,
-                            0, // epsilon
-                            TropicalWeight::new(insertion_cost),
-                            states[i][d + 1],
-                        ),
-                    );
-                }
+            // Deletion - advance source only
+            if i < m {
+                fst.add_arc(
+                    current,
+                    Arc::new(
+                        source_chars[i] as u32,
+                        0, // epsilon output
+                        TropicalWeight::new(deletion_cost),
+                        states[i + 1][j],
+                    ),
+                );
+            }
+
+            // Insertion - advance target only
+            if j < n {
+                fst.add_arc(
+                    current,
+                    Arc::new(
+                        0, // epsilon input
+                        target_chars[j] as u32,
+                        TropicalWeight::new(insertion_cost),
+                        states[i][j + 1],
+                    ),
+                );
             }
         }
     }
 
-    fst
-}
-
-/// Create a simple linear acceptor for a string
-fn string_acceptor(s: &str) -> VectorFst<TropicalWeight> {
-    let mut fst = VectorFst::new();
-    let chars: Vec<char> = s.chars().collect();
-
-    let mut current = fst.add_state();
-    fst.set_start(current);
-
-    for &c in &chars {
-        let next = fst.add_state();
-        fst.add_arc(
-            current,
-            Arc::new(c as u32, c as u32, TropicalWeight::one(), next),
-        );
-        current = next;
-    }
-
-    fst.set_final(current, TropicalWeight::one());
     fst
 }
 
@@ -149,33 +117,22 @@ fn compute_edit_distance(
     deletion_cost: f32,
     substitution_cost: f32,
 ) -> Result<f32> {
-    // Maximum possible edits we'll consider
-    let max_edits = (source.len() + target.len()).max(10);
-
-    // Build edit distance transducer
+    // Build edit distance FST that directly computes the distance
     let edit_fst = build_edit_distance_fst(
+        source,
         target,
-        max_edits,
         insertion_cost,
         deletion_cost,
         substitution_cost,
     );
 
-    // Build source string acceptor
-    let source_fst = string_acceptor(source);
-
-    // Compose to find if source can be transformed to target
-    let composed: VectorFst<TropicalWeight> = compose_default(&source_fst, &edit_fst)?;
-
-    // Find shortest path
+    // Find shortest path from start to final state
     let config = ShortestPathConfig::default();
-    let shortest: VectorFst<TropicalWeight> = shortest_path(&composed, config)?;
+    let shortest: VectorFst<TropicalWeight> = shortest_path(&edit_fst, config)?;
 
     // Get the cost from the shortest path
-    let mut min_cost = f32::INFINITY;
-
     if let Some(start) = shortest.start() {
-        // Find all paths and their costs
+        // Check if there's a path to a final state
         let mut stack = vec![(start, 0.0)];
         let mut visited = std::collections::HashSet::new();
 
@@ -186,7 +143,7 @@ fn compute_edit_distance(
             visited.insert(state);
 
             if shortest.is_final(state) {
-                min_cost = min_cost.min(cost);
+                return Ok(cost);
             }
 
             for arc in shortest.arcs(state) {
@@ -195,11 +152,8 @@ fn compute_edit_distance(
         }
     }
 
-    if min_cost.is_finite() {
-        Ok(min_cost)
-    } else {
-        Ok(f32::INFINITY)
-    }
+    // If no path found, return infinity
+    Ok(f32::INFINITY)
 }
 
 fn main() -> Result<()> {

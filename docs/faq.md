@@ -1,637 +1,474 @@
 # Frequently Asked Questions
 
-This document answers common questions about ArcWeight, from basic usage to advanced optimization techniques.
+Common questions and solutions for ArcWeight users. If you don't find your answer here, check [GitHub Discussions](https://github.com/aaronstevenwhite/arcweight/discussions) or file an [issue](https://github.com/aaronstevenwhite/arcweight/issues).
 
 ## Getting Started
 
-### What is ArcWeight?
-ArcWeight is a high-performance Rust library for weighted finite state transducers (WFSTs). It provides a comprehensive toolkit for constructing, manipulating, optimizing, and analyzing FSTs with support for various semiring types and algorithms.
+### Q: What's the difference between ArcWeight and OpenFST?
 
-### What makes ArcWeight different from other FST libraries?
-- **Type-safe design**: Leverages Rust's type system for correctness
-- **Generic semiring support**: Works with any mathematical semiring
-- **Trait-based architecture**: Clean interfaces and easy extensibility
-- **High performance**: Zero-cost abstractions and optimized algorithms
-- **OpenFST compatibility**: Read/write OpenFST format files
-- **Modern Rust patterns**: Uses async, parallel processing, and memory safety
+**A:** ArcWeight is a pure Rust implementation inspired by OpenFST:
 
-### What are the system requirements?
-- **Rust**: 1.70.0 or later
-- **Memory**: 4GB RAM recommended (2GB minimum)
-- **Storage**: 200MB for library and dependencies
-- **Platforms**: Linux, macOS, Windows (x86_64, ARM64)
-- **Optional**: GPU support for acceleration (feature flag)
+| Feature | ArcWeight | OpenFST |
+|---------|-----------|---------|
+| **Language** | Pure Rust | C++ |
+| **Memory Safety** | Guaranteed by Rust | Manual management |
+| **Dependencies** | Minimal | C++ toolchain |
+| **Performance** | Comparable | Highly optimized |
+| **API Style** | Rust idioms | C++ patterns |
+| **Compatibility** | Read/write OpenFST format | Native format |
 
-## Installation and Setup
+Choose ArcWeight for Rust projects needing memory safety and modern tooling.
 
-### How do I install ArcWeight?
-Add to your `Cargo.toml`:
-```toml
-[dependencies]
-arcweight = "0.1.0"
-```
+### Q: Which semiring should I use for my application?
 
-For development features:
-```toml
-[dependencies]
-arcweight = { version = "0.1.0", features = ["parallel", "serde", "openfst"] }
-```
+**A:** Choose based on your use case:
 
-### What features are available?
-- `parallel`: Multi-threaded algorithms via Rayon
-- `serde`: Serialization support for weights and FSTs
-- `openfst`: OpenFST format compatibility
-- `gpu`: GPU acceleration (experimental)
-- `python`: Python bindings
-- `std`: Standard library support (enabled by default)
+- **TropicalWeight** (min-plus) - Shortest path, optimization, most common
+- **ProbabilityWeight** - Probabilities, language models  
+- **LogWeight** - Numerical stability with small probabilities
+- **BooleanWeight** - Simple accept/reject, no numeric weights
 
-### How do I update ArcWeight?
-```bash
-cargo update arcweight
-```
-
-To update to a specific version:
-```bash
-cargo update arcweight --precise 0.2.0
-```
-
-## Basic Usage
-
-### How do I create my first FST?
 ```rust
-use arcweight::prelude::*;
+// Shortest path / optimization
+let fst = VectorFst::<TropicalWeight>::new();
 
-fn main() -> Result<()> {
-    // Create a simple acceptor for "hello"
-    let mut fst = VectorFst::<TropicalWeight>::new();
+// Probabilistic models
+let fst = VectorFst::<ProbabilityWeight>::new();
+
+// Simple recognition
+let fst = VectorFst::<BooleanWeight>::new();
+```
+
+### Q: How do I convert between different FST types?
+
+**A:** Use conversion functions or rebuild:
+
+```rust
+// VectorFst to ConstFst (for read-only operations)
+let vector_fst = VectorFst::<TropicalWeight>::new();
+let const_fst = ConstFst::from(&vector_fst)?;
+
+// Between different semirings (when mathematically valid)
+let tropical_fst = VectorFst::<TropicalWeight>::new();
+let boolean_fst: VectorFst<BooleanWeight> = weight_convert(&tropical_fst)?;
+```
+
+## Common Operations
+
+### Q: Why does `compose(&fst1, &fst2)` give a compiler error?
+
+**A:** The `compose` function requires a filter parameter. Use `compose_default` for most cases:
+
+```rust
+// ❌ This doesn't work
+let result = compose(&fst1, &fst2)?;
+
+// ✅ Use this instead
+let result: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2)?;
+
+// ✅ Or specify the filter explicitly
+let result = compose(&fst1, &fst2, DefaultComposeFilter::new())?;
+```
+
+### Q: How do I count the total number of arcs in an FST?
+
+**A:** Sum across all states:
+
+```rust
+let total_arcs: usize = fst.states().map(|s| fst.num_arcs(s)).sum();
+println!("Total arcs: {}", total_arcs);
+```
+
+### Q: My FST has way too many states after composition. What can I do?
+
+**A:** Try optimization techniques:
+
+```rust
+// 1. Minimize FSTs before composition
+let min_fst1 = minimize(&fst1)?;
+let min_fst2 = minimize(&fst2)?;
+let composed = compose_default(&min_fst1, &min_fst2)?;
+
+// 2. Use connection to remove unreachable states
+let connected = connect(&composed)?;
+
+// 3. Consider different composition order
+// Sometimes fst2 ∘ fst1 is smaller than fst1 ∘ fst2
+```
+
+### Q: How do I extract the actual strings/paths from an FST?
+
+**A:** Walk through the FST and collect symbols:
+
+```rust
+fn extract_paths(fst: &VectorFst<TropicalWeight>) -> Vec<String> {
+    let mut paths = Vec::new();
     
-    // Add states
-    let s0 = fst.add_state();
-    let s1 = fst.add_state();
-    
-    // Set start and final states
-    fst.set_start(s0);
-    fst.set_final(s1, TropicalWeight::one());
-    
-    // Add arc (input_label, output_label, weight, next_state)
-    fst.add_arc(s0, Arc::new(104, 104, TropicalWeight::one(), s1)); // 'h'
-    
-    println!("Created FST with {} states", fst.num_states());
-    Ok(())
-}
-```
-
-### What semirings are available?
-- `TropicalWeight`: Min-plus semiring (most common, for shortest paths)
-- `ProbabilityWeight`: Real probabilities [0,1]
-- `BooleanWeight`: Boolean semiring for unweighted FSTs
-- `LogWeight`: Log semiring for numerical stability
-- `MinWeight`/`MaxWeight`: Min/max semirings
-- `StringWeight`: String concatenation semiring
-- `ProductWeight`: Cartesian product of two semirings
-
-### How do I choose the right semiring?
-- **Shortest path problems**: Use `TropicalWeight`
-- **Probabilistic models**: Use `ProbabilityWeight` or `LogWeight`
-- **Unweighted FSTs**: Use `BooleanWeight`
-- **Custom needs**: Implement your own `Semiring` trait
-
-## Core Operations
-
-### How do I compose two FSTs?
-```rust
-use arcweight::prelude::*;
-
-let composed = compose(&fst1, &fst2)?;
-// Or with custom filter
-let filtered = compose_with_filter(&fst1, &fst2, ComposeFilter::Sequence)?;
-```
-
-### How do I determinize an FST?
-```rust
-let determinized = determinize(&fst)?;
-```
-
-### How do I minimize an FST?
-```rust
-let minimized = minimize(&fst)?;
-```
-
-### How do I find shortest paths?
-```rust
-// Single shortest path
-let shortest = shortest_path_single(&fst)?;
-
-// Multiple shortest paths
-let config = ShortestPathConfig::new().nshortest(5);
-let paths = shortest_path(&fst, &config)?;
-```
-
-### How do I optimize an FST?
-```rust
-// Basic optimization chain
-let optimized = fst
-    .determinize()?
-    .minimize()?
-    .remove_epsilons()?;
-
-// Or use the optimization function
-let optimized = optimize_fst(&fst)?;
-```
-
-## Performance and Optimization
-
-### How do I improve FST performance?
-1. **Choose appropriate FST type**:
-   - `VectorFst`: General purpose, mutable
-   - `ConstFst`: Read-only, space efficient
-   - `CompactFst`: Memory optimized
-
-2. **Optimize your FSTs**:
-   ```rust
-   let optimized = fst.determinize()?.minimize()?;
-   ```
-
-3. **Use properties for smart algorithms**:
-   ```rust
-   if fst.properties().is_deterministic() {
-       // Use faster deterministic algorithms
-   }
-   ```
-
-4. **Enable parallel processing**:
-   ```rust
-   use rayon::prelude::*;
-   
-   let results: Vec<_> = fsts.par_iter()
-       .map(|fst| process_fst(fst))
-       .collect();
-   ```
-
-### How do I profile FST operations?
-```rust
-use std::time::Instant;
-
-fn profile_operation<F, T>(name: &str, operation: F) -> Result<T>
-where
-    F: FnOnce() -> Result<T>,
-{
-    let start = Instant::now();
-    let result = operation()?;
-    let duration = start.elapsed();
-    
-    println!("{}: {:?}", name, duration);
-    Ok(result)
-}
-
-// Usage
-let result = profile_operation("composition", || {
-    compose(&fst1, &fst2)
-})?;
-```
-
-### How do I reduce memory usage?
-1. **Use compact FST types**:
-   ```rust
-   let compact = CompactFst::from_vector_fst(&vector_fst)?;
-   ```
-
-2. **Enable compression**:
-   ```rust
-   let compressed = fst.compress_arcs()?;
-   ```
-
-3. **Remove unnecessary states**:
-   ```rust
-   let cleaned = fst.connect()?.minimize()?;
-   ```
-
-4. **Use streaming for large datasets**:
-   ```rust
-   for chunk in large_fst.chunks(1000) {
-       process_chunk(chunk)?;
-   }
-   ```
-
-## Troubleshooting
-
-### Common Errors and Solutions
-
-#### `InvalidOperation` Error
-```rust
-Error::InvalidOperation("Cannot compose FSTs with incompatible semirings")
-```
-**Solution**: Ensure both FSTs use the same semiring type, or convert between them:
-```rust
-let converted = weight_convert(&fst, |w: &TropicalWeight| ProbabilityWeight::new(w.value()))?;
-```
-
-#### `Algorithm` Error
-```rust
-Error::Algorithm("Determinization failed: infinite loop detected")
-```
-**Solution**: Check for epsilon cycles or use bounded determinization:
-```rust
-let det = determinize_with_bounds(&fst, 10000, 100000)?;
-```
-
-#### Memory Issues
-```rust
-Error::OutOfMemory
-```
-**Solution**: 
-1. Use more memory-efficient FST types
-2. Process in smaller chunks
-3. Enable compression
-4. Increase system memory
-
-#### Performance Issues
-**Problem**: Operations are too slow
-**Solutions**:
-1. Check FST properties first:
-   ```rust
-   let props = fst.properties();
-   if !props.is_deterministic() {
-       fst = determinize(&fst)?;
-   }
-   ```
-
-2. Use appropriate algorithms:
-   ```rust
-   if props.is_acyclic() {
-       // Use specialized acyclic algorithms
-       let result = acyclic_shortest_path(&fst)?;
-   }
-   ```
-
-### Debugging Techniques
-
-#### Enable verbose logging:
-```bash
-RUST_LOG=arcweight=debug cargo run
-```
-
-#### Verify FST properties:
-```rust
-fn debug_fst(fst: &VectorFst<TropicalWeight>) -> Result<()> {
-    println!("States: {}", fst.num_states());
-    println!("Arcs: {}", fst.num_arcs_total());
-    
-    let props = fst.properties();
-    println!("Deterministic: {}", props.is_deterministic());
-    println!("Acyclic: {}", props.is_acyclic());
-    println!("Connected: {}", props.is_connected());
-    
-    Ok(())
-}
-```
-
-#### Validate FST structure:
-```rust
-fn validate_fst(fst: &VectorFst<TropicalWeight>) -> Result<()> {
-    // Check all arcs point to valid states
-    for state in fst.states() {
-        for arc in fst.arcs(state) {
-            if arc.nextstate >= fst.num_states() as StateId {
-                return Err(Error::InvalidOperation("Arc points to invalid state".to_string()));
+    if let Some(start) = fst.start() {
+        let mut stack = vec![(start, String::new())];
+        
+        while let Some((state, path)) = stack.pop() {
+            if fst.is_final(state) {
+                paths.push(path.clone());
+            }
+            
+            for arc in fst.arcs(state) {
+                let mut new_path = path.clone();
+                if arc.olabel != 0 {  // Not epsilon
+                    new_path.push(char::from_u32(arc.olabel).unwrap_or('?'));
+                }
+                stack.push((arc.nextstate, new_path));
             }
         }
     }
+    
+    paths
+}
+```
+
+## Error Handling
+
+### Q: What does "FST has no start state" mean?
+
+**A:** You forgot to set a start state:
+
+```rust
+let mut fst = VectorFst::<TropicalWeight>::new();
+let s0 = fst.add_state();
+
+// ❌ Missing this:
+fst.set_start(s0);
+
+// ✅ Always set a start state
+```
+
+### Q: Why do I get "Invalid state ID" errors?
+
+**A:** You're using a state ID that doesn't exist:
+
+```rust
+let mut fst = VectorFst::<TropicalWeight>::new();
+let s0 = fst.add_state();  // Returns state ID 0
+
+// ❌ Don't use arbitrary numbers
+fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), 999));  // State 999 doesn't exist!
+
+// ✅ Use actual state IDs
+let s1 = fst.add_state();  // Returns state ID 1
+fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+```
+
+### Q: My semiring operations don't work as expected. What's wrong?
+
+**A:** Check your semiring choice and operations:
+
+```rust
+// ❌ Wrong: trying to add probabilities that sum > 1
+let p1 = ProbabilityWeight::new(0.8);
+let p2 = ProbabilityWeight::new(0.7);
+let sum = p1.plus(&p2);  // Results in 1.5, invalid probability!
+
+// ✅ Use LogWeight for numerical stability
+let l1 = LogWeight::new(-log(0.8));
+let l2 = LogWeight::new(-log(0.7));
+let sum = l1.plus(&l2);  // Proper log-space addition
+```
+
+
+## Performance Issues
+
+### Q: My FST operations are very slow. How can I speed them up?
+
+**A:** Try these optimization strategies:
+
+1. **Use appropriate FST types:**
+   ```rust
+   // For construction
+   let mut builder = VectorFst::<TropicalWeight>::new();
+   
+   // For read-only operations (faster access)
+   let readonly = ConstFst::from(&builder)?;
+   ```
+
+2. **Optimize operation order:**
+   ```rust
+   // ✅ Good: minimize before expensive operations
+   let fst1_min = minimize(&fst1)?;
+   let fst2_min = minimize(&fst2)?;
+   let composed = compose_default(&fst1_min, &fst2_min)?;
+   
+   // ❌ Bad: compose large FSTs then minimize
+   let composed_large = compose_default(&fst1, &fst2)?;
+   let result = minimize(&composed_large)?;
+   ```
+
+3. **Enable parallel features:**
+   ```toml
+   [dependencies]
+   arcweight = { version = "0.1.0", features = ["parallel"] }
+   ```
+
+### Q: How much memory will my FST use?
+
+**A:** Rough estimates:
+
+- **VectorFst**: ~50-100 bytes per state + ~30-50 bytes per arc
+- **ConstFst**: ~30-40% less memory than VectorFst
+- **CompactFst**: ~50-70% less memory than VectorFst
+
+```rust
+// Monitor memory usage during construction
+let states = fst.num_states();
+let total_arcs: usize = fst.states().map(|s| fst.num_arcs(s)).sum();
+let approx_memory = states * 75 + total_arcs * 40;  // Rough bytes
+println!("Estimated memory: {} KB", approx_memory / 1024);
+```
+
+## Debugging
+
+### Q: How do I visualize my FST to debug it?
+
+**A:** Create a simple text representation:
+
+```rust
+fn debug_fst(fst: &VectorFst<TropicalWeight>) {
+    println!("FST Debug:");
+    println!("Start state: {:?}", fst.start());
+    
+    for state in fst.states() {
+        print!("State {}: ", state);
+        
+        // Show outgoing arcs
+        for arc in fst.arcs(state) {
+            let input = if arc.ilabel == 0 { "ε".to_string() } 
+                       else { char::from_u32(arc.ilabel).unwrap_or('?').to_string() };
+            let output = if arc.olabel == 0 { "ε".to_string() }
+                        else { char::from_u32(arc.olabel).unwrap_or('?').to_string() };
+            print!("{}:{}/{}->{} ", input, output, arc.weight.value(), arc.nextstate);
+        }
+        
+        // Show if final
+        if let Some(weight) = fst.final_weight(state) {
+            print!("[FINAL:{}]", weight.value());
+        }
+        println!();
+    }
+}
+```
+
+
+### Q: How do I check if my FST is valid?
+
+**A:** Basic validation checks:
+
+```rust
+fn validate_fst(fst: &VectorFst<TropicalWeight>) -> Result<()> {
+    // Check start state exists
+    if fst.start().is_none() {
+        return Err(Error::Algorithm("No start state".into()));
+    }
+    
+    // Check all arcs point to valid states
+    let max_state = fst.num_states() as u32;
+    for state in fst.states() {
+        for arc in fst.arcs(state) {
+            if arc.nextstate >= max_state {
+                return Err(Error::Algorithm(format!(
+                    "Arc from {} points to invalid state {}", 
+                    state, arc.nextstate
+                )));
+            }
+        }
+    }
+    
+    // Check there's at least one final state
+    let has_final = fst.states().any(|s| fst.is_final(s));
+    if !has_final {
+        println!("Warning: FST has no final states");
+    }
+    
     Ok(())
 }
 ```
 
 ## Advanced Topics
 
-### How do I implement a custom semiring?
-```rust
-use arcweight::prelude::*;
+### Q: How do I implement a custom semiring?
 
+**A:** Implement the `Semiring` trait:
+
+```rust
 #[derive(Debug, Clone, PartialEq)]
-struct FeatureWeight {
-    cost: f32,
-    features: Vec<f32>,
+struct CustomWeight {
+    value: f32,
 }
 
-impl Semiring for FeatureWeight {
+impl Semiring for CustomWeight {
+    type Value = f32;
+    
+    fn new(value: Self::Value) -> Self {
+        CustomWeight { value }
+    }
+    
+    fn value(&self) -> &Self::Value {
+        &self.value
+    }
+    
     fn plus(&self, other: &Self) -> Self {
-        // Take minimum cost
-        if self.cost <= other.cost {
-            self.clone()
-        } else {
-            other.clone()
-        }
+        // Define addition operation
+        CustomWeight { value: self.value.min(other.value) }
     }
     
     fn times(&self, other: &Self) -> Self {
-        FeatureWeight {
-            cost: self.cost + other.cost,
-            features: self.features.iter()
-                .zip(&other.features)
-                .map(|(a, b)| a + b)
-                .collect(),
-        }
+        // Define multiplication operation  
+        CustomWeight { value: self.value + other.value }
     }
     
     fn zero() -> Self {
-        FeatureWeight {
-            cost: f32::INFINITY,
-            features: Vec::new(),
-        }
+        CustomWeight { value: f32::INFINITY }
     }
     
     fn one() -> Self {
-        FeatureWeight {
-            cost: 0.0,
-            features: Vec::new(),
-        }
+        CustomWeight { value: 0.0 }
     }
 }
 ```
 
-### How do I implement custom FST types?
+### Q: Why do I see infinity symbols (∞) in my output instead of numbers?
+
+**A:** Some semirings use infinity to represent their zero element:
+
 ```rust
-use arcweight::prelude::*;
+// TropicalWeight uses ∞ as zero (identity for min operation)
+let zero = TropicalWeight::zero();
+println!("{}", zero);  // Prints: ∞
 
-struct MyCustomFst<W: Semiring> {
-    data: Vec<Vec<Arc<W>>>,
-    start: Option<StateId>,
-    finals: Vec<Option<W>>,
+// To check if a weight is infinity/zero:
+if zero.is_zero() {
+    println!("This is the zero element");
 }
 
-impl<W: Semiring> Fst<W> for MyCustomFst<W> {
-    type ArcIter<'a> = std::slice::Iter<'a, Arc<W>> where Self: 'a;
-    
-    fn start(&self) -> Option<StateId> {
-        self.start
-    }
-    
-    fn final_weight(&self, state: StateId) -> Option<&W> {
-        self.finals.get(state as usize)?.as_ref()
-    }
-    
-    fn num_arcs(&self, state: StateId) -> usize {
-        self.data.get(state as usize).map_or(0, |arcs| arcs.len())
-    }
-    
-    fn num_states(&self) -> usize {
-        self.data.len()
-    }
-    
-    fn properties(&self) -> FstProperties {
-        // Compute and return properties
-        FstProperties::default()
-    }
-    
-    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
-        self.data[state as usize].iter()
-    }
-}
+// Convert for display if needed:
+let display_value = if zero.is_zero() { 
+    "infinity".to_string() 
+} else { 
+    zero.value().to_string() 
+};
 ```
 
-### How do I use FSTs with async code?
+### Q: Can I use ArcWeight with Unicode strings?
+
+**A:** Yes, but convert to/from u32 codes:
+
 ```rust
-use arcweight::prelude::*;
-use tokio;
-
-async fn async_fst_processing(
-    fsts: Vec<VectorFst<TropicalWeight>>,
-) -> Result<Vec<VectorFst<TropicalWeight>>> {
-    let mut results = Vec::new();
+fn add_unicode_arc(fst: &mut VectorFst<TropicalWeight>, from: u32, to: u32, text: &str) {
+    let chars: Vec<char> = text.chars().collect();
+    let mut current = from;
     
-    for fst in fsts {
-        // Process FST asynchronously
-        let result = tokio::task::spawn_blocking(move || {
-            fst.determinize()?.minimize()
-        }).await??;
-        
-        results.push(result);
+    for (i, ch) in chars.iter().enumerate() {
+        let next = if i == chars.len() - 1 { to } else { fst.add_state() };
+        fst.add_arc(current, Arc::new(
+            *ch as u32,
+            *ch as u32,
+            TropicalWeight::one(),
+            next
+        ));
+        current = next;
     }
-    
-    Ok(results)
 }
+
+// Usage
+let mut fst = VectorFst::new();
+let s0 = fst.add_state();
+let s1 = fst.add_state();
+add_unicode_arc(&mut fst, s0, s1, "Hello 世界");
 ```
 
-## Integration and Interoperability
+### Q: Which semirings support which operations?
 
-### How do I use ArcWeight with OpenFST?
+**A:** Different FST operations require specific semiring traits:
+
+| Operation | Required Trait | Supported Semirings |
+|-----------|---------------|---------------------|
+| `closure`, `closure_plus` | `StarSemiring` | BooleanWeight only |
+| `minimize`, `determinize` | `DivisibleSemiring` | TropicalWeight, LogWeight |
+| `push_weights` | `DivisibleSemiring` | TropicalWeight, LogWeight |
+| `shortest_path` | `Semiring` | All semirings |
+| `compose`, `concat`, `union` | `Semiring` | All semirings |
+
 ```rust
-#[cfg(feature = "openfst")]
-use arcweight::prelude::*;
+// Example: Using the right semiring for each operation
+let tropical_fst = VectorFst::<TropicalWeight>::new();
+let minimized = minimize(&tropical_fst)?;  // ✓ Works
 
-#[cfg(feature = "openfst")]
-fn openfst_integration() -> Result<()> {
-    // Read OpenFST file
-    let fst: VectorFst<TropicalWeight> = read_openfst("model.fst")?;
-    
-    // Process with ArcWeight
-    let optimized = fst.determinize()?.minimize()?;
-    
-    // Write back to OpenFST format
-    write_openfst(&optimized, "optimized.fst")?;
-    
-    Ok(())
-}
+let boolean_fst = VectorFst::<BooleanWeight>::new();
+let closed = closure(&boolean_fst)?;  // ✓ Works
 ```
 
-### How do I serialize FSTs?
+### Q: How do I serialize FSTs to disk?
+
+**A:** Enable the serde feature:
+
+```toml
+[dependencies]
+arcweight = { version = "0.1.0", features = ["serde"] }
+```
+
 ```rust
 #[cfg(feature = "serde")]
-use arcweight::prelude::*;
+use arcweight::io::{write_binary, read_binary};
 
 #[cfg(feature = "serde")]
-fn serialization_example() -> Result<()> {
+fn save_and_load() -> Result<()> {
     let fst = VectorFst::<TropicalWeight>::new();
     
-    // Serialize to JSON
-    let json = serde_json::to_string(&fst)?;
+    // Save to binary format
+    write_binary(&fst, "my_fst.bin")?;
     
-    // Deserialize from JSON
-    let loaded_fst: VectorFst<TropicalWeight> = serde_json::from_str(&json)?;
-    
-    // Binary formats are also supported
-    let binary = bincode::serialize(&fst)?;
-    let loaded_fst: VectorFst<TropicalWeight> = bincode::deserialize(&binary)?;
+    // Load from binary format
+    let loaded_fst: VectorFst<TropicalWeight> = read_binary("my_fst.bin")?;
     
     Ok(())
 }
 ```
 
-### How do I create Python bindings?
-```rust
-#[cfg(feature = "python")]
-use pyo3::prelude::*;
 
-#[cfg(feature = "python")]
-#[pyclass]
-struct PyVectorFst {
-    inner: VectorFst<TropicalWeight>,
-}
+## Troubleshooting Checklist
 
-#[cfg(feature = "python")]
-#[pymethods]
-impl PyVectorFst {
-    #[new]
-    fn new() -> Self {
-        Self {
-            inner: VectorFst::new(),
-        }
-    }
-    
-    fn add_state(&mut self) -> u32 {
-        self.inner.add_state()
-    }
-    
-    fn determinize(&self) -> PyResult<PyVectorFst> {
-        Ok(PyVectorFst {
-            inner: self.inner.determinize().map_err(|e| {
-                PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", e))
-            })?,
-        })
-    }
-}
-```
+When things go wrong, check:
 
-## Best Practices
+1. **✅ Set start state** - `fst.set_start(state)`
+2. **✅ Set final states** - `fst.set_final(state, weight)`  
+3. **✅ Valid state IDs** - Use returned values from `add_state()`
+4. **✅ Correct semiring** - Match your problem domain and operations
+5. **✅ Feature flags** - Enable needed features in `Cargo.toml`
 
-### Design Guidelines
-1. **Start simple**: Begin with basic operations before complex compositions
-2. **Understand your data**: Know the properties of your FSTs
-3. **Profile early**: Measure performance before optimizing
-4. **Use appropriate types**: Choose FST and weight types for your use case
-5. **Handle errors**: Always use `Result` types and proper error handling
+## Getting Help
 
-### Code Organization
-```rust
-// Good: Organize by functionality
-mod lexicon {
-    use arcweight::prelude::*;
-    
-    pub fn build_pronunciation_fst() -> Result<VectorFst<TropicalWeight>> {
-        // Implementation
-    }
-}
+### Community Resources
 
-mod morphology {
-    use arcweight::prelude::*;
-    
-    pub fn build_morphology_fst() -> Result<VectorFst<TropicalWeight>> {
-        // Implementation  
-    }
-}
+- **[GitHub Discussions](https://github.com/aaronstevenwhite/arcweight/discussions)** - Ask questions, share ideas
+- **[Issues](https://github.com/aaronstevenwhite/arcweight/issues)** - Report bugs, request features
+- **[Examples](examples/)** - Working code for common tasks
 
-mod pipeline {
-    use super::*;
-    
-    pub fn build_complete_system() -> Result<VectorFst<TropicalWeight>> {
-        let lexicon = lexicon::build_pronunciation_fst()?;
-        let morphology = morphology::build_morphology_fst()?;
-        compose(&lexicon, &morphology)
-    }
-}
-```
+### Documentation
 
-### Testing Strategies
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use proptest::prelude::*;
-    
-    #[test]
-    fn test_fst_properties() {
-        let fst = create_test_fst();
-        assert!(fst.properties().is_deterministic());
-    }
-    
-    proptest! {
-        #[test]
-        fn test_composition_associativity(
-            fst1 in any_fst(),
-            fst2 in any_fst(), 
-            fst3 in any_fst()
-        ) {
-            let left = compose(&compose(&fst1, &fst2)?, &fst3)?;
-            let right = compose(&fst1, &compose(&fst2, &fst3)?)?;
-            
-            // They should be equivalent (up to state renaming)
-            assert_equivalent(&left, &right);
-        }
-    }
-}
-```
+- **[Quick Start](quick-start.md)** - Get started quickly
+- **[Core Concepts](core-concepts/)** - Understand the theory
+- **[Working with FSTs](working-with-fsts/)** - Master FST operations
+- **[API Reference](https://docs.rs/arcweight)** - Complete API documentation
 
-## Community and Support
+### Contributing
 
-### Where can I get help?
-- **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: General questions and community support  
-- **Documentation**: Comprehensive API docs and examples
-- **Matrix Chat**: Real-time community discussion
+Found an issue or have an improvement? We welcome contributions:
 
-### How do I contribute?
-1. **Read the contributing guide**: `CONTRIBUTING.md`
-2. **Check existing issues**: Avoid duplicating work
-3. **Start small**: Begin with documentation or small features
-4. **Follow conventions**: Use `cargo fmt` and `cargo clippy`
-5. **Add tests**: Ensure your changes are well-tested
-6. **Update docs**: Keep documentation current
+1. **Bug reports** - Help us improve reliability
+2. **Documentation improvements** - Make ArcWeight more accessible
+3. **Performance optimizations** - Help us go faster
+4. **New examples** - Show off interesting applications
 
-### How do I report bugs?
-1. **Search existing issues** first
-2. **Use the issue template** 
-3. **Provide minimal reproduction** case
-4. **Include system information**:
-   - Rust version (`rustc --version`)
-   - ArcWeight version
-   - Operating system
-   - Error messages and stack traces
+See the contributing guidelines for details on how to get started.
 
-### How do I request features?
-1. **Check the roadmap** for planned features
-2. **Describe the use case** clearly
-3. **Provide examples** of how it would be used
-4. **Consider implementation** complexity
-5. **Offer to help** with implementation
+---
 
-## License and Legal
-
-### What license is ArcWeight under?
-ArcWeight is licensed under the Apache License 2.0, which allows:
-- Commercial use
-- Modification
-- Distribution
-- Private use
-- Patent use
-
-### How do I properly attribute ArcWeight?
-Include the license file and copyright notice in your distribution:
-```
-Copyright (c) 2025 Aaron Steven White
-Licensed under the Apache License, Version 2.0
-```
-
-### Can I use ArcWeight in proprietary software?
-Yes, the Apache License 2.0 permits use in proprietary software without requiring you to open-source your code. However, you must include the license text and any attribution notices.
-
-## Roadmap and Future
-
-### What features are planned?
-- **GPU acceleration** for large-scale operations
-- **Better parallelization** with work-stealing algorithms
-- **Streaming FST operations** for massive datasets
-- **Neural FST integration** for hybrid models
-- **WebAssembly support** for browser applications
-- **Mobile optimization** for iOS/Android
-
-### How can I stay updated?
-- **Watch the repository** for releases and updates
-- **Follow the project blog** for announcements
-- **Join the community chat** for discussions
-- **Subscribe to the newsletter** for quarterly updates
-
-### How do I influence the roadmap?
-- **Participate in discussions** about new features
-- **Contribute code** for features you need
-- **Sponsor development** for priority features
-- **Provide feedback** on experimental features 
+**Didn't find what you're looking for?** Ask in [GitHub Discussions](https://github.com/aaronstevenwhite/arcweight/discussions) - the community is helpful and responsive!

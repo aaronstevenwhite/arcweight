@@ -6,54 +6,232 @@ use bitflags::bitflags;
 use std::collections::HashSet;
 
 bitflags! {
-    /// FST property flags
+    /// FST property flags for optimization and analysis
+    ///
+    /// These flags track structural and algorithmic properties of FSTs,
+    /// enabling algorithm selection and optimization. Properties are computed
+    /// once and cached for efficient access.
+    ///
+    /// # Property Categories
+    ///
+    /// ## Structural Properties
+    /// - **Acceptor/Transducer:** Whether input equals output labels
+    /// - **Connectivity:** Reachability and strong connectivity
+    /// - **Topology:** Cycles, linearity, and sorting
+    ///
+    /// ## Epsilon Properties
+    /// - **Epsilon transitions:** Presence and location of ε-transitions
+    /// - **Determinism:** Input/output determinism properties
+    ///
+    /// ## Weight Properties
+    /// - **Weighted/Unweighted:** Presence of non-trivial weights
+    /// - **Functional:** Single output per input property
+    ///
+    /// # Usage in Algorithms
+    ///
+    /// ```rust
+    /// use arcweight::prelude::*;
+    ///
+    /// fn optimize_fst<W: DivisibleSemiring + std::hash::Hash + Eq + Ord>(
+    ///     fst: &VectorFst<W>
+    ///     ) -> Result<VectorFst<W>> {
+    ///     let props = compute_properties(fst);
+    ///
+    ///     // Choose algorithm based on properties
+    ///     if props.has_property(PropertyFlags::ACCEPTOR) {
+    ///         // Use standard minimization for acceptors
+    ///         minimize(fst)
+    ///     } else if props.has_property(PropertyFlags::INPUT_DETERMINISTIC) {
+    ///         // Skip determinization step
+    ///         minimize(fst)
+    ///     } else {
+    ///         // Full determinize-then-minimize pipeline
+    ///         let det_fst: VectorFst<W> = determinize(fst)?;
+    ///         minimize(&det_fst)
+    ///     }
+    /// }
+    ///
+    /// // Example usage
+    /// let mut fst = VectorFst::<TropicalWeight>::new();
+    /// let s0 = fst.add_state();
+    /// fst.set_start(s0);
+    /// fst.set_final(s0, TropicalWeight::one());
+    /// let result = optimize_fst(&fst).unwrap();
+    /// assert!(result.num_states() > 0);
+    /// ```
+    ///
+    /// # Performance Benefits
+    ///
+    /// - **Algorithm Selection:** Choose optimal algorithms based on FST structure
+    /// - **Early Termination:** Skip unnecessary operations for certain properties
+    /// - **Memory Optimization:** Specialized data structures for specific properties
+    /// - **Composition Optimization:** Filter selection based on epsilon patterns
+    ///
+    /// # See Also
+    ///
+    /// - [`compute_properties`] for computing properties from FST structure
+    /// - [`FstProperties`] for the property container type
+    /// - [Architecture Guide](../../docs/architecture/README.md) for implementation details
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct PropertyFlags: u64 {
-        /// FST is an acceptor (input = output)
+        /// FST is an acceptor (input labels = output labels on all arcs)
+        ///
+        /// An acceptor FST represents a regular language rather than a transduction.
+        /// This enables optimizations in minimization and determinization algorithms.
+        ///
+        /// **Optimization Impact:** Allows use of acceptor-specific algorithms
         const ACCEPTOR = 1 << 0;
-        /// FST has no epsilon transitions
+
+        /// FST has no epsilon (ε) transitions
+        ///
+        /// No arcs have epsilon (label 0) on either input or output.
+        /// This property enables more efficient composition and search algorithms.
+        ///
+        /// **Optimization Impact:** Avoids epsilon removal preprocessing
         const NO_EPSILONS = 1 << 1;
-        /// FST has epsilon transitions
+
+        /// FST has epsilon (ε) transitions
+        ///
+        /// At least one arc has epsilon (label 0) on input or output.
+        /// Epsilon transitions can consume no input while producing output or vice versa.
         const EPSILONS = 1 << 2;
-        /// FST has no input epsilons
+
+        /// FST has no input epsilon transitions
+        ///
+        /// No arcs have epsilon (label 0) on the input side.
+        /// Input-deterministic FSTs often have this property.
         const NO_INPUT_EPSILONS = 1 << 3;
-        /// FST has input epsilons
+
+        /// FST has input epsilon transitions
+        ///
+        /// At least one arc has epsilon (label 0) on the input side.
+        /// These transitions consume no input symbols.
         const INPUT_EPSILONS = 1 << 4;
-        /// FST has no output epsilons
+
+        /// FST has no output epsilon transitions
+        ///
+        /// No arcs have epsilon (label 0) on the output side.
+        /// This is common in acceptors and some transducers.
         const NO_OUTPUT_EPSILONS = 1 << 5;
-        /// FST has output epsilons
+
+        /// FST has output epsilon transitions
+        ///
+        /// At least one arc has epsilon (label 0) on the output side.
+        /// These transitions produce no output symbols.
         const OUTPUT_EPSILONS = 1 << 6;
-        /// FST is deterministic on input
+
+        /// FST is deterministic on input labels
+        ///
+        /// From any state, there is at most one outgoing arc for each input label.
+        /// This property is crucial for efficient lookup and composition.
+        ///
+        /// **Optimization Impact:** Enables deterministic algorithms, avoids subset construction
         const INPUT_DETERMINISTIC = 1 << 7;
-        /// FST is deterministic on output
+
+        /// FST is deterministic on output labels
+        ///
+        /// From any state, there is at most one outgoing arc for each output label.
+        /// Less commonly used than input determinism but useful for some algorithms.
         const OUTPUT_DETERMINISTIC = 1 << 8;
-        /// FST has functional property
+
+        /// FST is functional (single output sequence per input)
+        ///
+        /// Each input sequence has at most one corresponding output sequence.
+        /// This property is important for unambiguous transductions.
+        ///
+        /// **Optimization Impact:** Simplifies composition and inversion algorithms
         const FUNCTIONAL = 1 << 9;
-        /// FST has no ambiguous paths
+
+        /// FST has no ambiguous input paths
+        ///
+        /// Each input sequence corresponds to a unique path through the FST.
+        /// This is a stronger property than functional.
         const UNAMBIGUOUS = 1 << 10;
-        /// All states are accessible
+
+        /// All states are accessible from the start state
+        ///
+        /// Every state can be reached by following some path from the start state.
+        /// FSTs without this property have unreachable states that can be removed.
+        ///
+        /// **Optimization Impact:** Indicates no dead states to clean up
         const ACCESSIBLE = 1 << 11;
-        /// All states are coaccessible
+
+        /// All states are coaccessible (can reach some final state)
+        ///
+        /// Every state has a path to at least one final state.
+        /// FSTs without this property have dead-end states.
+        ///
+        /// **Optimization Impact:** Indicates no dead-end states to remove
         const COACCESSIBLE = 1 << 12;
-        /// FST is strongly connected
+
+        /// FST is strongly connected (accessible + coaccessible)
+        ///
+        /// Equivalent to having both ACCESSIBLE and COACCESSIBLE properties.
+        /// This is the most connected form an FST can have.
         const CONNECTED = 1 << 13;
-        /// FST is cyclic
+
+        /// FST contains cycles (paths from states back to themselves)
+        ///
+        /// The FST has at least one cycle in its state graph.
+        /// Cyclic FSTs can accept infinite languages.
         const CYCLIC = 1 << 14;
-        /// FST is acyclic
+
+        /// FST is acyclic (no cycles in state graph)
+        ///
+        /// The FST has no cycles, making it a directed acyclic graph (DAG).
+        /// Acyclic FSTs accept finite languages and enable certain optimizations.
+        ///
+        /// **Optimization Impact:** Enables topological sorting and dynamic programming algorithms
         const ACYCLIC = 1 << 15;
-        /// FST has initial state
+
+        /// FST is acyclic when considering only initial state reachability
+        ///
+        /// There are no cycles reachable from the start state.
+        /// This is weaker than full acyclicity.
         const INITIAL_ACYCLIC = 1 << 16;
-        /// FST is topologically sorted
+
+        /// FST states are topologically sorted
+        ///
+        /// State IDs are assigned such that arcs only go from lower to higher state IDs.
+        /// This property implies acyclicity and enables efficient algorithms.
+        ///
+        /// **Optimization Impact:** Enables linear-time algorithms on acyclic FSTs
         const TOP_SORTED = 1 << 17;
-        /// Arcs are sorted by input label
+
+        /// Arcs from each state are sorted by input label
+        ///
+        /// For each state, outgoing arcs are ordered by increasing input label.
+        /// This enables binary search for arc lookup.
+        ///
+        /// **Optimization Impact:** O(log k) arc lookup instead of O(k) where k is the number of arcs
         const INPUT_SORTED = 1 << 18;
-        /// Arcs are sorted by output label
+
+        /// Arcs from each state are sorted by output label
+        ///
+        /// For each state, outgoing arcs are ordered by increasing output label.
+        /// This is less commonly used than input sorting.
         const OUTPUT_SORTED = 1 << 19;
-        /// FST is weighted
+
+        /// FST has non-trivial weights (not all weights are semiring one)
+        ///
+        /// At least one arc or final state has a weight different from the semiring's
+        /// multiplicative identity (one).
         const WEIGHTED = 1 << 20;
-        /// FST is unweighted
+
+        /// FST is unweighted (all weights are semiring one)
+        ///
+        /// All arc weights and final weights equal the semiring's multiplicative identity.
+        /// This enables optimizations that ignore weight computation.
+        ///
+        /// **Optimization Impact:** Simplifies algorithms to focus on structure only
         const UNWEIGHTED = 1 << 21;
-        /// FST is string-like (linear path)
+
+        /// FST is string-like (represents a single linear path)
+        ///
+        /// The FST has no branching - each state has at most one outgoing arc.
+        /// String FSTs represent single sequences rather than languages.
+        ///
+        /// **Optimization Impact:** Enables specialized string algorithms
         const STRING = 1 << 22;
     }
 }
@@ -159,15 +337,120 @@ impl FstProperties {
     }
 }
 
-/// Compute FST properties
+/// Compute FST properties through structural analysis
+///
+/// Analyzes the FST structure to determine which properties hold, including
+/// epsilon patterns, determinism, connectivity, and weight characteristics.
+/// Properties are computed once and can be cached for efficient access.
+///
+/// # Algorithm
+///
+/// - **Time Complexity:** O(|V| + |E|) where V = states, E = arcs
+/// - **Space Complexity:** O(|V|) for visited state tracking
+/// - **Analysis:** Single pass through all states and arcs
+///
+/// # Properties Computed
+///
+/// ## Always Computed
+/// - Epsilon transition patterns
+/// - Acceptor vs transducer classification  
+/// - Weight presence (weighted vs unweighted)
+/// - Connectivity (accessible, coaccessible)
+/// - Topology (cyclic vs acyclic)
+/// - String property (linear vs branching)
+///
+/// ## Not Currently Computed
+/// - Input/output determinism (requires more complex analysis)
+/// - Functional property (requires path analysis)
+/// - Arc sorting properties (requires per-state sorting checks)
+///
+/// # Examples
+///
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Analyze a simple acceptor FST
+/// let mut fst = VectorFst::<BooleanWeight>::new();
+/// let s0 = fst.add_state();
+/// let s1 = fst.add_state();
+/// fst.set_start(s0);
+/// fst.set_final(s1, BooleanWeight::one());
+/// fst.add_arc(s0, Arc::new('a' as u32, 'a' as u32, BooleanWeight::one(), s1));
+///
+/// let props = compute_properties(&fst);
+///
+/// // Check computed properties
+/// assert!(props.has_property(PropertyFlags::ACCEPTOR));
+/// assert!(props.has_property(PropertyFlags::UNWEIGHTED));
+/// assert!(props.has_property(PropertyFlags::ACYCLIC));
+/// assert!(props.has_property(PropertyFlags::NO_EPSILONS));
+/// assert!(props.has_property(PropertyFlags::STRING));
+/// ```
+///
+/// ## Property-Based Optimization
+///
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// fn optimize_based_on_properties<W: StarSemiring + std::hash::Hash + Eq + Ord>(
+///     fst: &VectorFst<W>
+/// ) -> Result<VectorFst<W>> {
+///     let props = compute_properties(fst);
+///     
+///     // Skip operations based on properties
+///     let mut result = fst.clone();
+///     
+///     if !props.has_property(PropertyFlags::ACCESSIBLE) {
+///         result = connect(&result)?; // Remove unreachable states
+///     }
+///     
+///     if props.has_property(PropertyFlags::NO_EPSILONS) {
+///         // Skip epsilon removal
+///         println!("No epsilons detected, skipping removal");
+///     } else {
+///         result = remove_epsilons(&result)?;
+///     }
+///     
+///     if props.has_property(PropertyFlags::ACYCLIC) {
+///         // Use topological sort for acyclic FSTs
+///         result = topsort(&result)?;
+///     }
+///     
+///     Ok(result)
+/// }
+///
+/// // Example usage  
+/// let mut fst = VectorFst::<BooleanWeight>::new();
+/// let s0 = fst.add_state();
+/// let s1 = fst.add_state();
+/// fst.set_start(s0);
+/// fst.set_final(s1, BooleanWeight::one());
+/// fst.add_arc(s0, Arc::new('a' as u32, 'a' as u32, BooleanWeight::one(), s1));
+///
+/// let optimized = optimize_based_on_properties(&fst).unwrap();
+/// assert!(optimized.num_states() > 0);
+/// ```
+///
+/// # Performance Considerations
+///
+/// - **Caching:** Properties should be computed once and cached in the FST
+/// - **Incremental:** Modifying FSTs should invalidate affected properties
+/// - **Selective:** Only compute expensive properties when needed
+/// - **Lazy:** Some properties can be computed on-demand
 ///
 /// # Errors
 ///
 /// This function does not return errors in the current implementation, but future
 /// versions may return errors if:
-/// - The input FST structure is corrupted or invalid
+/// - The input FST structure is corrupted or invalid  
 /// - Memory allocation fails during property computation
 /// - Complex property analysis encounters unsupported FST patterns
+///
+/// # See Also
+///
+/// - [`PropertyFlags`] for the complete list of trackable properties
+/// - [`FstProperties`] for the property container with known/unknown tracking
+/// - [Architecture Guide](../../docs/architecture/README.md) for implementation details
 pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     let mut props = FstProperties::default();
 

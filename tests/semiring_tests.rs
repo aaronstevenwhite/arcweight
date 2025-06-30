@@ -1,7 +1,6 @@
 //! Comprehensive tests for semiring module
 
 use arcweight::prelude::*;
-use arcweight::semiring::*;
 use num_traits::{One, Zero};
 use proptest::prelude::*;
 

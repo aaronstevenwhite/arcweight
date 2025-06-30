@@ -1,6 +1,6 @@
 # Contributing to ArcWeight - Quick Start
 
-Thank you for your interest in contributing to ArcWeight! This is a quick start guide to get you up and running. For comprehensive documentation, see our [Developer Guide](docs/contributing.md).
+Thank you for your interest in contributing to ArcWeight! This guide provides everything you need to get started with contributing to the project.
 
 ## Quick Setup
 
@@ -45,6 +45,12 @@ cargo run --example edit_distance
 
 # Performance testing
 cargo bench
+
+# Build documentation (requires mdbook and mdbook-katex)
+cargo install mdbook mdbook-katex
+mdbook build
+# View locally at http://localhost:3000
+mdbook serve
 ```
 
 ## What to Contribute
@@ -65,8 +71,6 @@ cargo bench
 
 ## Need Help?
 
-- 📖 [Comprehensive Developer Guide](docs/contributing.md)
 - 🐛 [Open an issue](https://github.com/aaronstevenwhite/arcweight/issues)
 - 💬 Ask questions in pull request comments
-
-Ready to dive deeper? Check out our [detailed contributor documentation](docs/contributing.md)!
+- 📖 [Documentation](docs/README.md) - Browse our comprehensive guides

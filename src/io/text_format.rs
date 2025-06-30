@@ -1,4 +1,157 @@
-//! Text format I/O for FSTs
+//! Human-readable text format for FST representation
+//!
+//! This module provides functions to read and write FSTs in a simple text format
+//! that is human-readable, editable, and suitable for version control. The format
+//! is ideal for debugging, testing, and manual FST construction.
+//!
+//! ## Format Specification
+//!
+//! The text format uses line-based records with whitespace-separated fields:
+//!
+//! ### Start State Declaration
+//! ```text
+//! START <stateᵢd>
+//! ```
+//!
+//! ### State Declaration
+//! ```text
+//! STATE <stateᵢd>
+//! ```
+//!
+//! ### Arc Definition
+//! ```text
+//! <source> <dest> <input> <output> <weight>
+//! ```
+//!
+//! ### Final State Declaration
+//! ```text
+//! FINAL <stateᵢd> <weight>
+//! ```
+//!
+//! ## Symbol Tables
+//!
+//! The format supports optional symbol tables for human-readable labels:
+//! - When provided, labels are written as strings (e.g., "hello")
+//! - Without symbol tables, labels are written as integers (e.g., 42)
+//! - Unknown symbols are written as "?"
+//!
+//! ## Examples
+//!
+//! ### Basic Text Format
+//!
+//! ```text
+//! START 0
+//! STATE 0
+//! STATE 1
+//! STATE 2
+//! 0 1 1 2 0.5
+//! 1 2 3 4 0.3
+//! FINAL 2 0.0
+//! ```
+//!
+//! This represents:
+//! - Start state: 0
+//! - Three states: 0, 1, 2
+//! - Arc from 0→1 with labels 1:2 and weight 0.5
+//! - Arc from 1→2 with labels 3:4 and weight 0.3
+//! - State 2 is final with weight 0.0
+//!
+//! ### Reading and Writing
+//!
+//! ```no_run
+//! use arcweight::prelude::*;
+//! use arcweight::io::{read_text, write_text};
+//! use std::fs::File;
+//! use std::io::{BufReader, BufWriter};
+//!
+//! // Write FST to text
+//! let mut fst = VectorFst::<TropicalWeight>::new();
+//! let s0 = fst.add_state();
+//! let s1 = fst.add_state();
+//! fst.set_start(s0);
+//! fst.set_final(s1, TropicalWeight::one());
+//! fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
+//!
+//! let file = File::create("fst.txt")?;
+//! let mut writer = BufWriter::new(file);
+//! write_text(&fst, &mut writer, None, None)?;
+//!
+//! // Read FST from text
+//! let file = File::open("fst.txt")?;
+//! let mut reader = BufReader::new(file);
+//! let loaded: VectorFst<TropicalWeight> = read_text(&mut reader, None, None)?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Using Symbol Tables
+//!
+//! ```no_run
+//! use arcweight::prelude::*;
+//! use arcweight::utils::SymbolTable;
+//! use arcweight::io::{write_text, read_text};
+//! use std::io::{BufReader, BufWriter};
+//! use std::fs::File;
+//!
+//! // Create symbol tables
+//! let mut isyms = SymbolTable::new();
+//! let mut osyms = SymbolTable::new();
+//!
+//! let hello = isyms.add_symbol("hello");
+//! let world = osyms.add_symbol("world");
+//!
+//! // Build FST with symbolic labels
+//! let mut fst = VectorFst::<LogWeight>::new();
+//! let s0 = fst.add_state();
+//! let s1 = fst.add_state();
+//! fst.set_start(s0);
+//! fst.add_arc(s0, Arc::new(hello, world, LogWeight::one(), s1));
+//!
+//! // Write with symbols
+//! let file = File::create("symbolic.txt")?;
+//! let mut writer = BufWriter::new(file);
+//! write_text(&fst, &mut writer, Some(&isyms), Some(&osyms))?;
+//!
+//! // Output contains:
+//! // START 0
+//! // STATE 0
+//! // STATE 1
+//! // 0 1 hello world -0.0
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Manual FST Creation
+//!
+//! Create FST files by hand for testing:
+//!
+//! ```text
+//! # Simple acceptor for "cat"
+//! START 0
+//! 0 1 c c 0.0
+//! 1 2 a a 0.0
+//! 2 3 t t 0.0
+//! FINAL 3 0.0
+//! ```
+//!
+//! ## Format Features
+//!
+//! ### Advantages
+//! - **Human-readable:** Easy to understand and debug
+//! - **Editable:** Can be created/modified with any text editor
+//! - **Version control:** Diff-friendly for tracking changes
+//! - **Portable:** Simple format works across platforms
+//!
+//! ### Limitations
+//! - **Size:** Larger than binary formats
+//! - **Speed:** Slower to parse than binary
+//! - **Precision:** May lose weight precision in text representation
+//!
+//! ## Error Handling
+//!
+//! The parser is lenient:
+//! - Blank lines are ignored
+//! - Comments can be added (lines starting with #)
+//! - Malformed lines are skipped with a warning
+//! - States are created automatically as referenced
 
 use crate::arc::Arc;
 use crate::fst::{Fst, Label, MutableFst, StateId};

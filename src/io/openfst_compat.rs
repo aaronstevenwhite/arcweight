@@ -1,4 +1,119 @@
-//! OpenFST format compatibility
+//! OpenFST binary format compatibility layer
+//!
+//! This module provides read/write support for the OpenFST binary format,
+//! enabling interoperability with the widely-used OpenFST C++ library and
+//! its ecosystem of tools.
+//!
+//! ## Overview
+//!
+//! OpenFST is the de facto standard for FST manipulation, used extensively in:
+//! - **Speech recognition:** Kaldi, ESPnet, wav2vec2
+//! - **Natural language processing:** Pronunciation lexicons, G2P models
+//! - **Machine translation:** Phrase-based and syntax-based systems
+//! - **Text processing:** Tokenization, normalization, transliteration
+//!
+//! This module ensures ArcWeight FSTs can seamlessly integrate with existing
+//! OpenFST-based pipelines and tools.
+//!
+//! ## Format Details
+//!
+//! The OpenFST binary format consists of:
+//! - **Header:** Magic number (2125659606), FST type, arc type, version, flags
+//! - **Properties:** 64-bit property flags for optimization hints
+//! - **State table:** Final weights and arc counts for each state
+//! - **Arc table:** Packed arc data with labels, weights, and destinations
+//!
+//! ## Limitations
+//!
+//! Currently supports:
+//! - **FST Type:** Vector FSTs only
+//! - **Arc Type:** Tropical semiring only
+//! - **Features:** Basic FST structure (no symbol tables or auxiliary data)
+//!
+//! ## Examples
+//!
+//! ### Reading OpenFST Files
+//!
+//! ```no_run
+//! use arcweight::prelude::*;
+//! use arcweight::io::read_openfst;
+//! use arcweight::algorithms::PruneConfig;
+//! use std::fs::File;
+//!
+//! // Read FST created by OpenFST tools
+//! let mut file = File::open("model.fst")?;
+//! let fst: VectorFst<TropicalWeight> = read_openfst(&mut file)?;
+//!
+//! // Use with ArcWeight algorithms
+//! let pruned: VectorFst<TropicalWeight> = prune(&fst, PruneConfig {
+//!     weight_threshold: 10.0,
+//!     state_threshold: Some(1000),
+//!     npath: None,
+//! })?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Writing OpenFST Files
+//!
+//! ```no_run
+//! use arcweight::prelude::*;
+//! use arcweight::io::write_openfst;
+//! use std::fs::File;
+//!
+//! // Create FST with ArcWeight
+//! let mut fst = VectorFst::<TropicalWeight>::new();
+//! // ... build FST ...
+//!
+//! // Write in OpenFST format
+//! let mut file = File::create("output.fst")?;
+//! write_openfst(&fst, &mut file)?;
+//!
+//! // Now usable with OpenFST tools:
+//! // $ fstinfo output.fst
+//! // $ fstdraw output.fst | dot -Tpng > fst.png
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Pipeline Integration
+//!
+//! ```no_run
+//! use arcweight::prelude::*;
+//! use arcweight::io::{read_openfst, write_openfst};
+//! use std::fs::File;
+//! use std::process::Command;
+//!
+//! // Read FST from Kaldi
+//! let mut file = File::open("L.fst")?;
+//! let lexicon: VectorFst<TropicalWeight> = read_openfst(&mut file)?;
+//!
+//! // Process with ArcWeight
+//! let optimized: VectorFst<TropicalWeight> = minimize(&lexicon)?;
+//!
+//! // Write back for Kaldi
+//! let mut out = File::create("L_min.fst")?;
+//! write_openfst(&optimized, &mut out)?;
+//!
+//! // Use in Kaldi pipeline
+//! Command::new("compile-train-graphs")
+//!     .args(&["tree", "L_min.fst", "text", "ark:graphs.ark"])
+//!     .status()?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ## Compatibility Notes
+//!
+//! ### Weight Representation
+//! - Tropical weights use IEEE 754 single precision (f32)
+//! - Infinity represents the zero element (no path)
+//! - Zero represents the one element (identity)
+//!
+//! ### State Numbering
+//! - States are numbered consecutively from 0
+//! - State IDs are preserved during read/write
+//!
+//! ### Property Flags
+//! - Currently writes 0 for properties (forces recomputation)
+//! - Future versions may preserve property flags
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId};

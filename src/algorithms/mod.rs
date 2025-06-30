@@ -10,6 +10,8 @@
 //! - [`concat()`] - Concatenation of FSTs
 //! - [`union()`] - Union of multiple FSTs
 //! - [`closure()`], [`closure_plus()`] - Kleene star and plus operations
+//! - [`intersect()`] - Intersection of acceptor languages
+//! - [`difference()`] - Difference of acceptor languages (A₁ - A₂)
 //!
 //! ## Optimization Algorithms
 //!
@@ -36,7 +38,6 @@
 //! - [`replace()`] - Replace symbols with sub-FSTs
 //! - [`topsort()`] - Topological sort of states
 //! - [`weight_convert()`] - Convert between semiring types
-//! - [`difference()`], [`intersect()`] - Set operations (some not fully implemented)
 //!
 //! ## Usage Examples
 //!
@@ -82,7 +83,7 @@ mod union;
 mod weight_convert;
 
 pub use closure::{closure, closure_plus};
-pub use compose::{compose, compose_default, ComposeFilter};
+pub use compose::{compose, compose_default, ComposeFilter, DefaultComposeFilter};
 pub use concat::concat;
 pub use connect::connect;
 pub use determinize::determinize;
@@ -90,7 +91,7 @@ pub use difference::difference;
 pub use intersect::intersect;
 pub use minimize::minimize;
 pub use project::{project_input, project_output};
-pub use prune::prune;
+pub use prune::{prune, PruneConfig};
 pub use push::{push_labels, push_weights};
 pub use randgen::{randgen, RandGenConfig};
 pub use replace::{replace, ReplaceFst};

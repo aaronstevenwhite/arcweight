@@ -1,6 +1,101 @@
-//! Binary format I/O for FSTs
+//! Native binary format for FST serialization
 //!
-//! This module provides binary serialization support when the `serde` feature is enabled.
+//! This module provides efficient binary serialization and deserialization
+//! of FSTs using Rust's native serialization capabilities. The format is
+//! optimized for speed and preserves all FST properties exactly.
+//!
+//! ## Features
+//!
+//! - **Type-safe:** Preserves exact semiring types and properties
+//! - **Versioned:** Format includes version information for compatibility
+//! - **Efficient:** Uses compact binary representation with compression
+//! - **Complete:** Serializes all FST data including properties and metadata
+//!
+//! ## Format Specification
+//!
+//! The binary format consists of:
+//! 1. **Header:** Magic number (0x46535442 = "FSTB") and version
+//! 2. **Metadata:** Number of states, start state
+//! 3. **State data:** Final weights and arcs for each state
+//! 4. **Arc data:** Labels, weights, and next states
+//!
+//! ## Requirements
+//!
+//! This module requires the `serde` feature to be enabled:
+//! ```toml
+//! [dependencies]
+//! arcweight = { version = "*", features = ["serde"] }
+//! ```
+//!
+//! ## Examples
+//!
+//! ### Basic Serialization
+//!
+//! ```
+//! # #[cfg(feature = "serde")]
+//! # {
+//! use arcweight::prelude::*;
+//! use arcweight::io::{write_binary, read_binary};
+//! use std::io::Cursor;
+//!
+//! # fn example() -> Result<()> {
+//! // Create and populate FST
+//! let mut fst = VectorFst::<TropicalWeight>::new();
+//! let s0 = fst.add_state();
+//! let s1 = fst.add_state();
+//! fst.set_start(s0);
+//! fst.set_final(s1, TropicalWeight::one());
+//! fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
+//!
+//! // Write to in-memory buffer
+//! let mut buffer = Vec::new();
+//! write_binary(&fst, &mut buffer)?;
+//!
+//! // Read back from buffer
+//! let mut cursor = Cursor::new(buffer);
+//! let loaded: VectorFst<TropicalWeight> = read_binary(&mut cursor)?;
+//!
+//! assert_eq!(fst.num_states(), loaded.num_states());
+//! # Ok(())
+//! # }
+//! # }
+//! ```
+//!
+//! ### In-Memory Serialization
+//!
+//! ```
+//! # #[cfg(feature = "serde")]
+//! # {
+//! use arcweight::prelude::*;
+//! use arcweight::io::{write_binary, read_binary};
+//!
+//! # fn example() -> Result<()> {
+//! // Serialize to bytes
+//! let fst = VectorFst::<LogWeight>::new();
+//! let mut buffer = Vec::new();
+//! write_binary(&fst, &mut buffer)?;
+//!
+//! // Deserialize from bytes
+//! let loaded: VectorFst<LogWeight> = read_binary(&mut &buffer[..])?;
+//! # Ok(())
+//! # }
+//! # }
+//! ```
+//!
+//! ## Performance
+//!
+//! - **Write speed:** Limited by I/O and weight serialization
+//! - **Read speed:** Limited by I/O and FST construction
+//! - **Compression:** Weight values are compressed using bincode
+//! - **Memory:** Streaming design minimizes memory usage
+//!
+//! ## Error Handling
+//!
+//! Operations return [`Result<T, Error>`](crate::Result) with specific error types:
+//! - Invalid magic number or version
+//! - Corrupted data during deserialization
+//! - I/O errors from the underlying reader/writer
+//! - Weight serialization failures
 
 #[cfg(feature = "serde")]
 mod inner {

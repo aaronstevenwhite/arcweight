@@ -5,9 +5,25 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Build Status](https://github.com/aaronstevenwhite/arcweight/workflows/CI/badge.svg)](https://github.com/aaronstevenwhite/arcweight/actions)
 
-A high-performance, modular Rust library for weighted finite state transducers (WFSTs).
+**A high-performance, modular Rust library for weighted finite state transducers (WFSTs).**
 
-ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. It offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API.
+ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. It offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API, making it ideal for natural language processing, speech recognition, computational linguistics, and machine learning applications.
+
+## What Are Finite State Transducers?
+
+Finite State Transducers (FSTs) are powerful mathematical models that transform input sequences into output sequences with associated costs or probabilities. Think of them as smart pattern matchers that can:
+
+- **Spell check and correct text** (input: "teh" $\to$ output: "the")
+- **Translate between languages** (input: "hello" $\to$ output: "hola") 
+- **Convert speech to text** (input: audio features $\to$ output: words)
+- **Normalize text** (input: "2nd" $\to$ output: "second")
+- **Parse and generate morphology** (input: "running" $\to$ output: "run+ing")
+
+**Why choose ArcWeight over alternatives?**
+- 🦀 **Pure Rust**: Memory safety, modern tooling, no C++ dependencies
+- ⚡ **Performance**: Optimized algorithms with optional parallelization
+- 🔧 **Flexibility**: Extensible design with custom semirings and FST types
+- 📚 **Complete**: Comprehensive algorithm suite with detailed documentation
 
 ## Features
 
@@ -34,6 +50,8 @@ ArcWeight provides a comprehensive toolkit for constructing, combining, optimizi
 
 ## Quick Start
 
+### Installation
+
 Add ArcWeight to your `Cargo.toml`:
 
 ```toml
@@ -41,138 +59,201 @@ Add ArcWeight to your `Cargo.toml`:
 arcweight = "0.1"
 ```
 
-Basic example:
+**System Requirements:**
+- Rust 1.75.0 or later
+- 64-bit architecture (x86_64 or aarch64)
+
+### Your First FST
+
+Here's a simple spell checker that suggests "hello" for misspelled words:
 
 ```rust
 use arcweight::prelude::*;
 
-// Create a simple acceptor
-let mut fst = VectorFst::<TropicalWeight>::new();
-let s0 = fst.add_state();
-let s1 = fst.add_state();
-let s2 = fst.add_state();
-
-fst.set_start(s0);
-fst.set_final(s2, TropicalWeight::one());
-
-// Add weighted transitions
-fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
-fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.3), s2));
-
-// Find the shortest path
-let shortest = shortest_path(&fst)?;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a simple dictionary FST
+    let mut dictionary = VectorFst::<TropicalWeight>::new();
+    
+    // Build FST that accepts "hello" with cost 0
+    let s0 = dictionary.add_state();  // Start
+    let s1 = dictionary.add_state();  // After 'h'
+    let s2 = dictionary.add_state();  // After 'e'
+    let s3 = dictionary.add_state();  // After 'l'
+    let s4 = dictionary.add_state();  // After 'l'
+    let s5 = dictionary.add_state();  // Final state
+    
+    dictionary.set_start(s0);
+    dictionary.set_final(s5, TropicalWeight::one());
+    
+    // Add arcs for "hello"
+    dictionary.add_arc(s0, Arc::new('h' as u32, 'h' as u32, TropicalWeight::one(), s1));
+    dictionary.add_arc(s1, Arc::new('e' as u32, 'e' as u32, TropicalWeight::one(), s2));
+    dictionary.add_arc(s2, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s3));
+    dictionary.add_arc(s3, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s4));
+    dictionary.add_arc(s4, Arc::new('o' as u32, 'o' as u32, TropicalWeight::one(), s5));
+    
+    // Create edit distance FST (allows 1 character error)
+    let edit_distance = build_edit_distance_fst(1)?;
+    
+    // Compose for spell checking: input_word -> edit_operations -> dictionary_word
+    let spell_checker = compose(&edit_distance, &dictionary)?;
+    
+    println!("Spell checker created with {} states", spell_checker.num_states());
+    Ok(())
+}
 ```
+
+**Want to dive deeper?**
+- **[🧠 Core Concepts](docs/core-concepts.md)** - Understand FSTs and semirings
+- **[💡 Examples](examples/)** - Real-world applications in the examples directory
 
 ## Documentation
 
-- [User Guide](docs/guide.md) - Comprehensive guide to using ArcWeight
-- [API Reference](https://docs.rs/arcweight) - Detailed API documentation
-- [Examples](docs/examples/) - Complete, runnable examples with detailed documentation
+### 📚 Learning Resources
 
-## Examples
+| Resource | Description | Best For |
+|----------|-------------|----------|
+| **[Core Concepts](docs/core-concepts/README.md)** | FSTs, semirings, and mathematical foundations | Understanding theory |
 
-The `examples/` directory contains comprehensive, real-world applications demonstrating ArcWeight's capabilities:
+### 🔗 Reference Documentation
 
-### Text Processing & NLP
-- **`edit_distance.rs`** - Compute edit distance with configurable weights and operations
-  ```bash
-  cargo run --example edit_distance
-  ```
+- **[API Reference](https://docs.rs/arcweight)** - Complete API documentation with examples
 
-- **`word_correction.rs`** - Dictionary-based spell checking and word correction with fuzzy matching
-  ```bash
-  cargo run --example word_correction
-  ```
+## Examples & Applications
 
-### Speech & Phonetics
-- **`pronunciation_lexicon.rs`** - Pronunciation dictionary with grapheme-to-phoneme (G2P) rules
-  ```bash
-  cargo run --example pronunciation_lexicon
-  ```
+### 🚀 Try It Now
 
-- **`phonological_rules.rs`** - Phonological rule systems following Kaplan & Kay's framework
-  ```bash
-  cargo run --example phonological_rules
-  ```
+Run these examples to see ArcWeight in action:
 
-### Morphology & Linguistics
-- **`morphological_analyzer.rs`** - Finite state morphology following Karttunen's two-level framework
-  ```bash
-  cargo run --example morphological_analyzer
-  ```
+```bash
+# Spell checking and correction
+cargo run --example word_correction
 
-- **`transliteration.rs`** - Cross-script transliteration (Cyrillic, Arabic, Greek to Latin)
-  ```bash
-  cargo run --example transliteration
-  ```
+# Edit distance computation
+cargo run --example edit_distance
 
-### Text Normalization
-- **`number_date_normalizer.rs`** - Text normalization for numbers, dates, and measurements
-  ```bash
-  cargo run --example number_date_normalizer
-  ```
+# Morphological analysis
+cargo run --example morphological_analyzer
+```
 
-Each example includes detailed documentation in the [Examples Guide](docs/examples/) with theoretical background and implementation details.
+### 📝 Real-World Examples
+
+Run these examples to see ArcWeight in action:
+
+```bash
+# Text processing examples
+cargo run --example edit_distance
+cargo run --example word_correction
+cargo run --example fst_composition
+
+# Speech and phonetics
+cargo run --example pronunciation_lexicon
+cargo run --example phonological_rules
+
+# Morphology and linguistics
+cargo run --example morphological_analyzer
+cargo run --example transliteration
+
+# Text normalization
+cargo run --example number_date_normalizer
+```
+
+All examples include comprehensive inline documentation with theoretical background and implementation details.
 
 ## Performance & Benchmarking
 
-ArcWeight is designed for high performance with extensive benchmarking:
+ArcWeight is engineered for high performance with extensive optimization and benchmarking:
 
-- **Zero-copy arc iteration** - Minimal allocations in hot paths
-- **Cache-friendly data structures** - Optimized memory layout
-- **Parallel algorithms** - Optional Rayon-based parallelization
-- **Comprehensive benchmarking suite** covering:
-  - Core operations (composition, determinization, minimization)
-  - Memory usage and storage efficiency
-  - I/O and serialization performance
-  - Parallel algorithm scaling
-  - Optimization algorithms (epsilon removal, weight pushing)
+### ⚡ Performance Features
 
-Run benchmarks with:
+- **🔥 Zero-copy arc iteration** - Minimal allocations in hot paths
+- **🏗️ Cache-friendly data structures** - Optimized memory layout for modern CPUs
+- **⚙️ Parallel algorithms** - Optional Rayon-based parallelization for large FSTs
+- **🎯 Algorithm selection** - Automatic optimization based on FST properties
+
+### 📊 Benchmarking Suite
+
 ```bash
+# Run all benchmarks
 cargo bench
+
+# Run specific benchmark categories
+cargo bench core      # Core FST operations
+cargo bench memory    # Memory usage and storage
+cargo bench parallel  # Parallel algorithm scaling
 ```
 
-The `benches/` directory contains organized benchmark suites:
-- `core/` - Basic FST operations and algorithms
-- `memory/` - Memory usage and storage benchmarks
-- `io/` - Serialization and deserialization performance
-- `optimization/` - Advanced optimization algorithms
-- `parallel/` - Parallel processing benchmarks
+**Benchmark Categories:**
 
-## License
+| Category | Focus | Key Metrics |
+|----------|-------|-------------|
+| **Core** | Basic operations (compose, determinize, minimize) | Throughput, latency |
+| **Memory** | Storage efficiency and memory usage | Bytes per state/arc |
+| **I/O** | Serialization and file operations | Read/write speed |
+| **Optimization** | Advanced algorithms (push, prune, connect) | Optimization ratio |
+| **Parallel** | Multi-threaded performance | Scaling factor |
 
-Licensed under [Apache 2.0](LICENSE).
+**Results:** Run `cargo bench` to see performance characteristics on your system
 
-## Development
+## Community & Support
 
-### Code Quality
+### 💬 Getting Help
 
-ArcWeight maintains high code quality standards with comprehensive tooling:
+- **📖 [API Documentation](https://docs.rs/arcweight)** - Complete reference
+- **🐛 [Issues](https://github.com/aaronstevenwhite/arcweight/issues)** - Bug reports and feature requests
+- **💡 [Discussions](https://github.com/aaronstevenwhite/arcweight/discussions)** - Community support and ideas
 
-- **Formatting**: `rustfmt.toml` - Consistent code formatting (100 char width, Unix line endings)
-- **Linting**: `clippy.toml` - Strict linting rules optimized for FST library patterns
-- **Testing**: Extensive test suite with unit, integration, and property-based tests
+### 🤝 Contributing
 
-### Development Commands
+We welcome contributions! Whether you're:
 
+- 🐛 **Reporting bugs** - Help us improve stability
+- 💡 **Suggesting features** - Share your ideas for new functionality  
+- 📝 **Improving docs** - Make ArcWeight more accessible
+- ⚡ **Optimizing performance** - Help us go faster
+- 🧪 **Adding tests** - Increase code coverage and reliability
+
+**Get Started:**
+1. Check out **[good first issues](https://github.com/aaronstevenwhite/arcweight/labels/good%20first%20issue)**
+2. Join the discussion in **[GitHub Discussions](https://github.com/aaronstevenwhite/arcweight/discussions)**
+
+### 🛠️ Development
+
+**Quick Setup:**
 ```bash
-# Build and test
+# Clone and build
+git clone https://github.com/aaronstevenwhite/arcweight.git
+cd arcweight
 cargo build
+
+# Run tests
 cargo test
 cargo test --integration
 
 # Code quality
-cargo fmt        # Format code
-cargo clippy     # Run linter
+cargo fmt && cargo clippy
 
-# Performance
-cargo bench      # Run benchmarks
-
-# Examples
+# Run examples
 cargo run --example edit_distance
+
+# Build documentation book (requires mdbook and mdbook-katex)
+cargo install mdbook mdbook-katex
+mdbook build
 ```
 
-## Contributing
+**Code Quality Standards:**
+- ✅ Comprehensive test coverage (unit, integration, property-based)
+- 🎨 Consistent formatting (`rustfmt.toml`)
+- 🔍 Strict linting (`clippy.toml`)
+- 📚 Documented public APIs
+- ⚡ Performance regression testing
 
-Contributions are welcome! Please read our [Contributing Guide](docs/contributing.md) for details.
+## License
+
+Licensed under [Apache 2.0](LICENSE) - see the license file for details.
+
+---
+
+**Made with ❤️ by the ArcWeight community**
+
+*ArcWeight is designed for researchers, engineers, and developers working with finite state methods in natural language processing, speech recognition, and computational linguistics.*

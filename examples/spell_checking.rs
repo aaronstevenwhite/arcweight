@@ -1,7 +1,7 @@
-//! Word Correction Example
+//! Spell Checking Example
 //!
 //! This example demonstrates how to use Finite State Transducers (FSTs) to find
-//! word corrections within a specified edit distance. It shows:
+//! spelling corrections within a specified edit distance. It shows:
 //! 1. Building a dictionary FST from a list of words
 //! 2. Creating an edit distance FST that accepts strings within distance k
 //! 3. Composing FSTs to find matching words
@@ -13,11 +13,11 @@
 //!
 //! Usage:
 //! ```bash
-//! cargo run --example word_correction
+//! cargo run --example spell_checking
 //! ```
 
 use arcweight::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Creates a dictionary FST from a list of words using a trie structure.
 ///
@@ -187,8 +187,8 @@ fn build_edit_distance_fst(target: &str, k: usize) -> VectorFst<TropicalWeight> 
     fst
 }
 
-/// Finds words in dictionary within edit distance of target
-fn find_corrections(
+/// Finds spelling corrections in dictionary within edit distance of target
+fn find_spelling_corrections(
     dict_fst: &VectorFst<TropicalWeight>,
     target: &str,
     max_distance: usize,
@@ -210,19 +210,22 @@ fn find_corrections(
     let mut results = Vec::new();
 
     if let Some(start) = shortest.start() {
-        extract_paths(
-            &shortest,
-            start,
-            &mut Vec::new(),
-            0.0,
-            &mut results,
-            &mut HashSet::new(),
-        );
+        extract_paths(&shortest, start, &mut Vec::new(), 0.0, &mut results);
     }
 
-    // Sort by distance
-    results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-    Ok(results)
+    // Deduplicate results and keep the best score for each word
+    let mut word_scores: HashMap<String, f32> = HashMap::new();
+    for (word, score) in results {
+        word_scores
+            .entry(word)
+            .and_modify(|e| *e = e.min(score))
+            .or_insert(score);
+    }
+
+    // Convert back to vec and sort by distance
+    let mut final_results: Vec<(String, f32)> = word_scores.into_iter().collect();
+    final_results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+    Ok(final_results)
 }
 
 /// Helper to extract paths from FST
@@ -232,12 +235,7 @@ fn extract_paths(
     path: &mut Vec<char>,
     cost: f32,
     results: &mut Vec<(String, f32)>,
-    visited: &mut HashSet<u32>,
 ) {
-    if visited.contains(&state) {
-        return;
-    }
-
     if fst.is_final(state) {
         let word: String = path.iter().collect();
         if let Some(weight) = fst.final_weight(state) {
@@ -245,37 +243,19 @@ fn extract_paths(
         }
     }
 
-    visited.insert(state);
-
     for arc in fst.arcs(state) {
         if arc.olabel != 0 {
             path.push(arc.olabel as u8 as char);
-            extract_paths(
-                fst,
-                arc.nextstate,
-                path,
-                cost + arc.weight.value(),
-                results,
-                visited,
-            );
+            extract_paths(fst, arc.nextstate, path, cost + arc.weight.value(), results);
             path.pop();
         } else {
-            extract_paths(
-                fst,
-                arc.nextstate,
-                path,
-                cost + arc.weight.value(),
-                results,
-                visited,
-            );
+            extract_paths(fst, arc.nextstate, path, cost + arc.weight.value(), results);
         }
     }
-
-    visited.remove(&state);
 }
 
 fn main() -> Result<()> {
-    println!("Word Correction Example");
+    println!("Spell Checking Example");
     println!("======================\n");
 
     // Build a dictionary of common English words
@@ -340,16 +320,16 @@ fn main() -> Result<()> {
 
     for (misspelled, max_distance) in test_words {
         println!(
-            "Finding corrections for '{}' (max edit distance: {}):",
+            "Finding spelling corrections for '{}' (max edit distance: {}):",
             misspelled, max_distance
         );
         println!("{}", "-".repeat(50));
 
-        let corrections = find_corrections(&dict_fst, misspelled, max_distance)?;
+        let corrections = find_spelling_corrections(&dict_fst, misspelled, max_distance)?;
 
         if corrections.is_empty() {
             println!(
-                "  No corrections found within edit distance {}",
+                "  No spelling corrections found within edit distance {}",
                 max_distance
             );
         } else {
@@ -364,7 +344,7 @@ fn main() -> Result<()> {
     println!("\nWords within edit distance 1 of 'help':");
     println!("{}", "=".repeat(40));
 
-    let corrections = find_corrections(&dict_fst, "help", 1)?;
+    let corrections = find_spelling_corrections(&dict_fst, "help", 1)?;
     for (word, distance) in corrections {
         if distance <= 1.0 {
             println!("  {} (distance: {})", word, distance);
@@ -377,7 +357,7 @@ fn main() -> Result<()> {
 
     for k in 1..=3 {
         println!("\nEdit distance <= {}:", k);
-        let corrections = find_corrections(&dict_fst, "wrld", k)?;
+        let corrections = find_spelling_corrections(&dict_fst, "wrld", k)?;
         for (word, distance) in corrections.iter().take(5) {
             println!("  {} (distance: {})", word, distance);
         }

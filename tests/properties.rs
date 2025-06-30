@@ -1,7 +1,6 @@
 //! Comprehensive tests for properties module
 
 use arcweight::prelude::*;
-use arcweight::properties::*;
 use proptest::prelude::*;
 
 #[cfg(test)]

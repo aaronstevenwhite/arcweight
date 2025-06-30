@@ -6,34 +6,34 @@
 //! ## FST Types
 //!
 //! ### [`VectorFst`] - Mutable Vector FST
-//! - **Use case**: General-purpose, dynamic FST construction
-//! - **Performance**: Fast random access, good for small to medium FSTs
-//! - **Memory**: Moderate memory usage, grows dynamically
-//! - **Best for**: Building FSTs incrementally, frequent modifications
+//! - **Use case:** General-purpose, dynamic FST construction
+//! - **Performance:** Fast random access, good for small to medium FSTs
+//! - **Memory:** Moderate memory usage, grows dynamically
+//! - **Best for:** Building FSTs incrementally, frequent modifications
 //!
 //! ### [`ConstFst`] - Immutable Const FST  
-//! - **Use case**: Read-only FSTs with optimized storage
-//! - **Performance**: Very fast traversal, excellent cache locality
-//! - **Memory**: Minimal memory footprint, contiguous storage
-//! - **Best for**: Large FSTs that don't change, production use
+//! - **Use case:** Read-only FSTs with optimized storage
+//! - **Performance:** Very fast traversal, excellent cache locality
+//! - **Memory:** Minimal memory footprint, contiguous storage
+//! - **Best for:** Large FSTs that don't change, production use
 //!
 //! ### [`CompactFst`] - Memory-Efficient FST
-//! - **Use case**: Large FSTs with limited memory
-//! - **Performance**: Slower access due to compression
-//! - **Memory**: Highly compressed representation
-//! - **Best for**: Very large FSTs where memory is constrained
+//! - **Use case:** Large FSTs with limited memory
+//! - **Performance:** Slower access due to compression
+//! - **Memory:** Highly compressed representation
+//! - **Best for:** Very large FSTs where memory is constrained
 //!
 //! ### [`CacheFst`] - Caching Wrapper
-//! - **Use case**: Expensive computations with repeated access
-//! - **Performance**: Fast for repeated queries, slower for first access
-//! - **Memory**: Additional cache overhead
-//! - **Best for**: Wrapping lazy or remote FSTs
+//! - **Use case:** Expensive computations with repeated access
+//! - **Performance:** Fast for repeated queries, slower for first access
+//! - **Memory:** Additional cache overhead
+//! - **Best for:** Wrapping lazy or remote FSTs
 //!
 //! ### [`LazyFstImpl`] - On-Demand Computation
-//! - **Use case**: FSTs computed dynamically
-//! - **Performance**: Varies by computation complexity
-//! - **Memory**: Only stores computed portions
-//! - **Best for**: Large search spaces, composition chains
+//! - **Use case:** FSTs computed dynamically
+//! - **Performance:** Varies by computation complexity
+//! - **Memory:** Only stores computed portions
+//! - **Best for:** Large search spaces, composition chains
 //!
 //! ## Choosing an FST Type
 //!
@@ -70,8 +70,8 @@ mod traits;
 mod vector_fst;
 
 pub use cache_fst::CacheFst;
-pub use compact_fst::CompactFst;
+pub use compact_fst::{CompactFst, Compactor, DefaultCompactor};
 pub use const_fst::ConstFst;
-pub use lazy_fst::LazyFstImpl;
+pub use lazy_fst::{LazyFstImpl, LazyState};
 pub use traits::*;
 pub use vector_fst::VectorFst;

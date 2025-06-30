@@ -24,37 +24,206 @@ impl<W: Semiring> Default for VectorState<W> {
     }
 }
 
-/// Vector-based FST implementation
+/// Vector-based mutable FST implementation optimized for construction and modification
 ///
-/// A mutable FST implementation that stores states and arcs in vectors,
-/// providing efficient random access and modification operations.
+/// `VectorFst` is the primary mutable FST implementation in ArcWeight, storing states
+/// and arcs in dynamically resizable vectors. This provides excellent performance for
+/// FST construction, modification, and random access to states and arcs.
 ///
-/// # Examples
+/// # Design Characteristics
 ///
-/// Creating a simple acceptor FST:
+/// - **Mutability:** Full support for adding/removing states and arcs
+/// - **Memory Layout:** Contiguous vector storage for cache-friendly access
+/// - **Random Access:** O(1) access to any state or arc by index
+/// - **Dynamic Growth:** Automatically resizes as states and arcs are added
+/// - **Type Safety:** Parameterized by semiring type for compile-time weight verification
 ///
-/// ```
+/// # Performance Profile
+///
+/// | Operation | Time Complexity | Notes |
+/// |-----------|----------------|-------|
+/// | Add State | O(1) amortized | May require vector reallocation |
+/// | Add Arc | O(1) amortized | Appends to state's arc vector |
+/// | State Access | O(1) | Direct vector indexing |
+/// | Arc Iteration | O(k) | k = number of arcs from state |
+/// | Property Computation | O(V + E) | Full graph traversal |
+///
+/// # Memory Characteristics
+///
+/// - **State Storage:** `Vec<VectorState<W>>` with 24 bytes overhead per state
+/// - **Arc Storage:** `Vec<Arc<W>>` per state, ~32 bytes per arc
+/// - **Growth Strategy:** Exponential growth for amortized O(1) insertion
+/// - **Memory Efficiency:** Suitable for FSTs up to millions of states
+///
+/// # Use Cases
+///
+/// ## FST Construction
+/// ```rust
 /// use arcweight::prelude::*;
 ///
-/// let mut fst = VectorFst::<TropicalWeight>::new();
+/// // Build a simple word acceptor for "hello"
+/// fn build_word_acceptor(word: &str) -> VectorFst<BooleanWeight> {
+///     let mut fst = VectorFst::new();
+///     
+///     // Create state chain
+///     let mut states = Vec::new();
+///     for _ in 0..=word.len() {
+///         states.push(fst.add_state());
+///     }
+///     
+///     fst.set_start(states[0]);
+///     fst.set_final(states[word.len()], BooleanWeight::one());
+///     
+///     // Add character transitions
+///     for (i, ch) in word.chars().enumerate() {
+///         fst.add_arc(states[i], Arc::new(
+///             ch as u32, ch as u32, BooleanWeight::one(), states[i + 1]
+///         ));
+///     }
+///     
+///     fst
+/// }
 ///
-/// // Add states
-/// let s0 = fst.add_state();
-/// let s1 = fst.add_state();
-/// let s2 = fst.add_state();
-///
-/// // Set start and final states
-/// fst.set_start(s0);
-/// fst.set_final(s2, TropicalWeight::one());
-///
-/// // Add arcs (label, label, weight, target_state)
-/// fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
-/// fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.3), s2));
-///
-/// // The FST now accepts the sequence [1, 2] with total weight 0.8
-/// assert_eq!(fst.num_states(), 3);
-/// assert_eq!(fst.num_arcs(s0), 1);
+/// let hello_fst = build_word_acceptor("hello");
+/// assert_eq!(hello_fst.num_states(), 6);
 /// ```
+///
+/// ## Weighted Transduction
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Build pronunciation dictionary: orthography -> phonemes
+/// fn build_pronunciation_entry(
+///     orthography: &str,
+///     phonemes: &str,
+///     frequency: f32
+/// ) -> VectorFst<TropicalWeight> {
+///     let mut fst = VectorFst::new();
+///     
+///     let mut current = fst.add_state();
+///     fst.set_start(current);
+///     
+///     // Input: orthographic characters
+///     for ch in orthography.chars() {
+///         let next = fst.add_state();
+///         fst.add_arc(current, Arc::new(
+///             ch as u32, 0, // Input char, epsilon output
+///             TropicalWeight::new(-frequency.ln()), // Negative log frequency
+///             next
+///         ));
+///         current = next;
+///     }
+///     
+///     // Output: phonemic sequence
+///     for ph in phonemes.chars() {
+///         let next = fst.add_state();
+///         fst.add_arc(current, Arc::new(
+///             0, ph as u32, // Epsilon input, phoneme output
+///             TropicalWeight::one(),
+///             next
+///         ));
+///         current = next;
+///     }
+///     
+///     fst.set_final(current, TropicalWeight::one());
+///     fst
+/// }
+/// ```
+///
+/// ## Dynamic FST Modification
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Incrementally build vocabulary FST
+/// fn build_vocabulary_incrementally(words: &[&str]) -> VectorFst<BooleanWeight> {
+///     let mut fst = VectorFst::new();
+///     let root = fst.add_state();
+///     fst.set_start(root);
+///     
+///     for word in words {
+///         // Add word to existing trie structure
+///         add_word_to_trie(&mut fst, root, word);
+///     }
+///     
+///     fst
+/// }
+///
+/// fn add_word_to_trie(fst: &mut VectorFst<BooleanWeight>, mut current: u32, word: &str) {
+///     for ch in word.chars() {
+///         // Find existing arc or create new path
+///         let label = ch as u32;
+///         
+///         if let Some(next) = find_arc_target(fst, current, label) {
+///             current = next;
+///         } else {
+///             let next = fst.add_state();
+///             fst.add_arc(current, Arc::new(label, label, BooleanWeight::one(), next));
+///             current = next;
+///         }
+///     }
+///     fst.set_final(current, BooleanWeight::one());
+/// }
+///
+/// fn find_arc_target(fst: &VectorFst<BooleanWeight>, state: u32, label: u32) -> Option<u32> {
+///     fst.arcs(state).find(|arc| arc.ilabel == label).map(|arc| arc.nextstate)
+/// }
+/// ```
+///
+/// # Optimization Considerations
+///
+/// ## Memory Pre-allocation
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Pre-allocate for known size to avoid reallocations
+/// let mut fst = VectorFst::<TropicalWeight>::new();
+/// fst.reserve_states(1000);  // Reserve space for 1000 states
+///
+/// let state = fst.add_state();
+/// fst.reserve_arcs(state, 50);  // Reserve space for 50 arcs from this state
+/// ```
+///
+/// ## Batch Operations
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Batch state creation for better performance
+/// fn build_linear_chain(length: usize) -> VectorFst<BooleanWeight> {
+///     let mut fst = VectorFst::new();
+///     fst.reserve_states(length + 1);
+///     
+///     // Create all states at once
+///     let states: Vec<_> = (0..=length).map(|_| fst.add_state()).collect();
+///     
+///     fst.set_start(states[0]);
+///     fst.set_final(states[length], BooleanWeight::one());
+///     
+///     // Add transitions
+///     for i in 0..length {
+///         fst.add_arc(states[i], Arc::new(
+///             (i + 1) as u32, (i + 1) as u32, BooleanWeight::one(), states[i + 1]
+///         ));
+///     }
+///     
+///     fst
+/// }
+/// ```
+///
+/// # Thread Safety
+///
+/// `VectorFst` is `Send + Sync` when the semiring type is `Send + Sync`, enabling:
+/// - **Parallel Construction:** Build different FSTs in parallel threads
+/// - **Read-Only Sharing:** Share immutable references across threads
+/// - **Algorithm Parallelization:** Use in parallel FST algorithms
+///
+/// Note: Mutation requires exclusive access (`&mut self`), preventing data races.
+///
+/// # See Also
+///
+/// - `ConstFst` for read-only memory-optimized FSTs
+/// - `CacheFst` for lazy evaluation and large FSTs
+/// - [Quick Start Guide](../../docs/quick-start.md) for construction examples
+/// - [Working with FSTs](../../docs/working-with-fsts/README.md) for manipulation patterns
 #[derive(Debug, Clone)]
 pub struct VectorFst<W: Semiring> {
     states: Vec<VectorState<W>>,

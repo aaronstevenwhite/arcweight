@@ -24,6 +24,7 @@ pub trait ComposeFilter<W: Semiring> {
 }
 
 /// Default composition filter (match on labels)
+#[derive(Debug)]
 pub struct DefaultComposeFilter;
 
 impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
@@ -53,15 +54,33 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
     }
 }
 
-/// Compose two FSTs
+/// Compose two FSTs using a custom composition filter
 ///
-/// Computes the composition of two FSTs using the specified composition filter.
-/// The result FST accepts input sequences that are accepted by the first FST
-/// and whose output is accepted by the second FST.
+/// Computes the composition of two FSTs where the output of the first FST
+/// is matched against the input of the second FST. The result accepts sequences
+/// that are transformed by the first FST into sequences accepted by the second.
+///
+/// **Mathematical Definition:** For FSTs $T₁: Σ* → Γ* and T₂: Γ* → Δ*$,
+/// their composition $T₁ ∘ T₂: Σ* → Δ*$ satisfies:
+/// $(T₁ ∘ T₂)(x) = ⊕_{y ∈ Γ*} T_$(x,y) ⊗ T₂(y)$
+///
+/// # Performance
+///
+/// - **Time Complexity:** $O(|Q₁| × |Q₂| × |δ₁| × |δ₂|)$ worst case
+/// - **Space Complexity:** $O(|Q₁| × |Q₂|)$ for state pairs
+/// - **Optimization:** Use [`ConstFst`] for read-only inputs to improve cache locality
+/// - **Memory:** Consider [`compose_default`] for typical use cases
+///
+/// # Implementation Notes
+///
+/// The algorithm uses on-the-fly construction to avoid creating the full cross-product
+/// of states. State pairs are created only when reachable and necessary.
 ///
 /// # Examples
 ///
-/// ```
+/// ## Basic Composition
+///
+/// ```rust
 /// use arcweight::prelude::*;
 ///
 /// // Create first FST: maps 1 -> 2
@@ -81,17 +100,111 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 /// fst2.add_arc(s0, Arc::new(2, 3, TropicalWeight::new(0.3), s1));
 ///
 /// // Compose: result maps 1 -> 3 with weight 0.8
-/// let composed: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2).unwrap();
-///
+/// let filter = DefaultComposeFilter;
+/// let composed: VectorFst<TropicalWeight> = compose(&fst1, &fst2, filter).unwrap();
 /// assert!(composed.num_states() > 0);
+/// ```
+///
+/// ## NLP Pipeline Example
+///
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Example of chaining two FSTs for NLP pipeline
+/// // FST 1: simple tokenization (example structure)
+/// let mut tokenizer = VectorFst::<TropicalWeight>::new();
+/// let s0 = tokenizer.add_state();
+/// let s1 = tokenizer.add_state();
+/// tokenizer.set_start(s0);
+/// tokenizer.set_final(s1, TropicalWeight::one());
+/// tokenizer.add_arc(s0, Arc::new(1, 2, TropicalWeight::one(), s1));
+///
+/// // FST 2: POS tagging (example structure)  
+/// let mut pos_tagger = VectorFst::<TropicalWeight>::new();
+/// let s0 = pos_tagger.add_state();
+/// let s1 = pos_tagger.add_state();
+/// pos_tagger.set_start(s0);
+/// pos_tagger.set_final(s1, TropicalWeight::one());
+/// pos_tagger.add_arc(s0, Arc::new(2, 3, TropicalWeight::one(), s1));
+///
+/// // Chain them: raw_text -> tagged_tokens
+/// let filter = DefaultComposeFilter;
+/// let pipeline: VectorFst<TropicalWeight> = compose(&tokenizer, &pos_tagger, filter).unwrap();
+/// assert!(pipeline.num_states() > 0);
+/// ```
+///
+/// # Custom Filters
+///
+/// Use custom composition filters for advanced epsilon handling or
+/// special matching criteria:
+///
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// struct CustomFilter {
+///     allow_epsilon: bool,
+/// }
+///
+/// impl<W: Semiring> ComposeFilter<W> for CustomFilter {
+///     type FilterState = i32;
+///     
+///     fn start() -> Self::FilterState { 0 }
+///     
+///     fn filter_arc(
+///         &self,
+///         arc1: &Arc<W>,
+///         arc2: &Arc<W>,
+///         _fs: &Self::FilterState,
+///     ) -> Option<(Arc<W>, Self::FilterState)> {
+///         // Only compose if labels match
+///         if arc1.olabel == arc2.ilabel {
+///             Some((
+///                 Arc::new(
+///                     arc1.ilabel,
+///                     arc2.olabel,
+///                     arc1.weight.times(&arc2.weight),
+///                     0, // nextstate set later
+///                 ),
+///                 0,
+///             ))
+///         } else {
+///             None
+///         }
+///     }
+/// }
+///
+/// // Use the custom filter
+/// let mut fst1 = VectorFst::<TropicalWeight>::new();
+/// let s0 = fst1.add_state();
+/// fst1.set_start(s0);
+/// fst1.set_final(s0, TropicalWeight::one());
+///
+/// let mut fst2 = VectorFst::<TropicalWeight>::new();
+/// let s0 = fst2.add_state();
+/// fst2.set_start(s0);
+/// fst2.set_final(s0, TropicalWeight::one());
+///
+/// let filter = CustomFilter { allow_epsilon: true };
+/// let result: VectorFst<TropicalWeight> = compose(&fst1, &fst2, filter).unwrap();
+/// assert_eq!(result.num_states(), 1);
 /// ```
 ///
 /// # Errors
 ///
-/// Returns an error if:
+/// Returns [`Error::Algorithm`] if:
 /// - Either input FST is invalid or has no start state
 /// - Memory allocation fails during computation
-/// - The composition operation encounters incompatible state structures
+/// - The composition filter produces invalid arc combinations
+/// - State space becomes too large (implementation limit exceeded)
+///
+/// # See Also
+///
+/// - [`compose_default`] for the most common use case
+/// - [Composition Tutorial](../../docs/working-with-fsts/core-operations.md#composition) for detailed examples
+/// - [Core Concepts](../../docs/core-concepts/algorithms.md#composition) for mathematical background
+/// - [`ComposeFilter`] for implementing custom composition logic
+///
+/// [`ConstFst`]: crate::fst::ConstFst
 pub fn compose<W, F1, F2, M, CF>(fst1: &F1, fst2: &F2, filter: CF) -> Result<M>
 where
     W: Semiring,
@@ -150,14 +263,56 @@ where
     Ok(result)
 }
 
-/// Compose with default filter
+/// Compose two FSTs using the default composition filter
+///
+/// This is a convenience function that uses `DefaultComposeFilter` for standard
+/// label-based composition. Use this for most common composition scenarios where
+/// the output labels of the first FST should match the input labels of the second FST.
+///
+/// # Performance
+///
+/// - **Time Complexity:** O(|Q₁| × |Q₂| × |δ₁| × |δ₂|) worst case
+/// - **Space Complexity:** O(|Q₁| × |Q₂|) for state pairs
+/// - **Best Practice:** Use this function unless you need custom epsilon handling
+///
+/// # Examples
+///
+/// ```rust
+/// use arcweight::prelude::*;
+///
+/// // Build a simple translation pipeline
+/// let mut word_to_phone = VectorFst::<TropicalWeight>::new();
+/// let s0 = word_to_phone.add_state();
+/// let s1 = word_to_phone.add_state();
+/// word_to_phone.set_start(s0);
+/// word_to_phone.set_final(s1, TropicalWeight::one());
+/// word_to_phone.add_arc(s0, Arc::new(1, 2, TropicalWeight::one(), s1));
+///
+/// let mut phone_to_french = VectorFst::<TropicalWeight>::new();
+/// let s0 = phone_to_french.add_state();
+/// let s1 = phone_to_french.add_state();
+/// phone_to_french.set_start(s0);
+/// phone_to_french.set_final(s1, TropicalWeight::one());
+/// phone_to_french.add_arc(s0, Arc::new(2, 3, TropicalWeight::one(), s1));
+///
+/// // Compose: English -> French
+/// let translator: VectorFst<TropicalWeight> =
+///     compose_default(&word_to_phone, &phone_to_french)?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 ///
 /// # Errors
 ///
-/// Returns an error if:
+/// Returns [`Error::Algorithm`] if:
 /// - Either input FST is invalid or has no start state
-/// - Memory allocation fails during computation
+/// - Memory allocation fails during computation  
 /// - The composition operation encounters incompatible state structures
+///
+/// # See Also
+///
+/// - [`compose`] for custom composition filters
+/// - [Working with FSTs - Composition](../../docs/working-with-fsts/core-operations.md#composition) for usage patterns
+/// - [Examples](../../docs/examples/README.md) for real-world composition examples
 pub fn compose_default<W, F1, F2, M>(fst1: &F1, fst2: &F2) -> Result<M>
 where
     W: Semiring,

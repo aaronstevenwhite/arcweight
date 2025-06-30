@@ -63,12 +63,13 @@ jobs:
     - name: Run examples
       run: |
         cargo run --example edit_distance
+        cargo run --example string_alignment
         cargo run --example morphological_analyzer
         cargo run --example phonological_rules
         cargo run --example pronunciation_lexicon
         cargo run --example transliteration
         cargo run --example number_date_normalizer
-        cargo run --example word_correction
+        cargo run --example spell_checking
 
   clippy:
     name: Clippy
@@ -119,10 +120,45 @@ jobs:
     - name: Configure Rust cache
       uses: Swatinem/rust-cache@v2
 
-    - name: Build documentation
+    - name: Build API documentation
       run: cargo doc --all-features --no-deps --document-private-items
       env:
         RUSTDOCFLAGS: -D warnings
+
+    - name: Install mdBook
+      run: |
+        mkdir bin
+        curl -L https://github.com/rust-lang/mdBook/releases/latest/download/mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz | tar xz -C bin
+        echo "$(pwd)/bin" >> $GITHUB_PATH
+
+    - name: Build mdBook documentation
+      run: mdbook build
+
+    - name: Setup Pages
+      if: github.ref == 'refs/heads/main'
+      uses: actions/configure-pages@v3
+
+    - name: Upload Pages artifact
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: book
+
+  deploy-docs:
+    name: Deploy Documentation
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: docs
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
 
   msrv:
     name: MSRV Check

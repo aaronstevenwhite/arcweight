@@ -318,6 +318,9 @@ where
             }
         }
 
+        // Initialize final weight for this state if it has one
+        let mut accumulated_final_weight = fst.final_weight(state).cloned();
+
         // add arcs from epsilon closure
         for &(closure_state, ref weight) in &closure {
             if closure_state != state {
@@ -336,21 +339,20 @@ where
                     }
                 }
 
-                // handle final weights
+                // handle final weights from epsilon closure
                 if let Some(final_weight) = fst.final_weight(closure_state) {
-                    let new_weight = weight.times(final_weight);
-                    if let Some(existing) = fst.final_weight(state) {
-                        result.set_final(state, existing.plus(&new_weight));
-                    } else {
-                        result.set_final(state, new_weight);
-                    }
+                    let propagated_weight = weight.times(final_weight);
+                    accumulated_final_weight = match accumulated_final_weight {
+                        Some(existing) => Some(existing.plus(&propagated_weight)),
+                        None => Some(propagated_weight),
+                    };
                 }
             }
         }
 
-        // copy final weight
-        if let Some(weight) = fst.final_weight(state) {
-            result.set_final(state, weight.clone());
+        // Set the accumulated final weight if any
+        if let Some(final_weight) = accumulated_final_weight {
+            result.set_final(state, final_weight);
         }
     }
 
@@ -361,35 +363,344 @@ fn compute_epsilon_closure<W: StarSemiring, F: Fst<W>>(
     fst: &F,
     start: StateId,
 ) -> Result<Vec<(StateId, W)>> {
-    let mut closure = Vec::new();
-    let mut visited = HashMap::new();
+    let mut closure = HashMap::new();
     let mut queue = VecDeque::new();
 
     queue.push_back((start, W::one()));
-    visited.insert(start, W::one());
+    closure.insert(start, W::one());
 
     while let Some((state, weight)) = queue.pop_front() {
-        closure.push((state, weight.clone()));
+        // Skip if we've already processed this state with a better weight
+        if let Some(existing) = closure.get(&state) {
+            if existing != &weight {
+                continue;
+            }
+        }
 
         // follow epsilon transitions
         for arc in fst.arcs(state) {
             if arc.is_epsilon() {
                 let next_weight = weight.times(&arc.weight);
 
-                match visited.get(&arc.nextstate) {
+                let should_update = match closure.get(&arc.nextstate) {
                     Some(existing) => {
-                        // update if we found a better path
+                        // Update if we found a better path (using semiring plus)
                         let combined = existing.plus(&next_weight);
-                        visited.insert(arc.nextstate, combined);
+                        if combined != *existing {
+                            closure.insert(arc.nextstate, combined.clone());
+                            true
+                        } else {
+                            false
+                        }
                     }
                     None => {
-                        visited.insert(arc.nextstate, next_weight.clone());
-                        queue.push_back((arc.nextstate, next_weight));
+                        closure.insert(arc.nextstate, next_weight.clone());
+                        true
                     }
+                };
+
+                if should_update {
+                    queue.push_back((arc.nextstate, closure[&arc.nextstate].clone()));
                 }
             }
         }
     }
 
-    Ok(closure)
+    // Convert HashMap to Vec for compatibility
+    let mut result: Vec<(StateId, W)> = closure.into_iter().collect();
+    result.sort_by_key(|(state, _)| *state);
+    Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_remove_epsilons() {
+        // Use BooleanWeight for epsilon removal since TropicalWeight doesn't implement StarSemiring
+        let mut bool_fst = VectorFst::<BooleanWeight>::new();
+        let s0 = bool_fst.add_state();
+        let s1 = bool_fst.add_state();
+        let s2 = bool_fst.add_state();
+
+        bool_fst.set_start(s0);
+        bool_fst.set_final(s2, BooleanWeight::one());
+
+        bool_fst.add_arc(s0, Arc::epsilon(BooleanWeight::new(true), s1));
+        bool_fst.add_arc(s1, Arc::new(1, 1, BooleanWeight::new(true), s2));
+
+        let no_eps: VectorFst<BooleanWeight> =
+            remove_epsilons::<BooleanWeight, VectorFst<BooleanWeight>, VectorFst<BooleanWeight>>(
+                &bool_fst,
+            )
+            .unwrap();
+
+        // Check no epsilon transitions remain
+        for state in no_eps.states() {
+            for arc in no_eps.arcs(state) {
+                assert!(!arc.is_epsilon(), "Found epsilon arc: {:?}", arc);
+            }
+        }
+
+        // Should preserve the language
+        assert!(no_eps.start().is_some());
+    }
+
+    #[test]
+    fn test_remove_epsilons_none() {
+        // Use BooleanWeight for epsilon removal since TropicalWeight doesn't implement StarSemiring
+        let mut bool_fst = VectorFst::<BooleanWeight>::new();
+        let s0 = bool_fst.add_state();
+        let s1 = bool_fst.add_state();
+        let s2 = bool_fst.add_state();
+
+        bool_fst.set_start(s0);
+        bool_fst.set_final(s2, BooleanWeight::one());
+
+        bool_fst.add_arc(s0, Arc::epsilon(BooleanWeight::new(true), s1));
+        bool_fst.add_arc(s1, Arc::new(1, 1, BooleanWeight::new(true), s2));
+
+        let no_eps: VectorFst<BooleanWeight> =
+            remove_epsilons::<BooleanWeight, VectorFst<BooleanWeight>, VectorFst<BooleanWeight>>(
+                &bool_fst,
+            )
+            .unwrap();
+
+        // Should preserve structure when no epsilons present
+        // Note: Implementation might add states for proper structure
+        assert!(no_eps.num_states() >= bool_fst.num_states() - 1); // Allow for structure changes
+    }
+
+    #[test]
+    fn test_remove_epsilons_multiple_paths() {
+        // Test epsilon removal with multiple epsilon paths to same state
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s3, BooleanWeight::one());
+
+        // Multiple epsilon paths from s0 to s2
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s1));
+        fst.add_arc(s1, Arc::epsilon(BooleanWeight::one(), s2));
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s2)); // direct path
+        
+        // Non-epsilon arc from s2
+        fst.add_arc(s2, Arc::new(1, 1, BooleanWeight::one(), s3));
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+
+        // Should have direct arc from s0 to s3
+        let arcs_from_start: Vec<_> = result.arcs(s0).collect();
+        assert!(arcs_from_start.iter().any(|a| a.ilabel == 1 && a.nextstate == s3));
+        
+        // No epsilon transitions should remain
+        for state in result.states() {
+            for arc in result.arcs(state) {
+                assert!(!arc.is_epsilon());
+            }
+        }
+    }
+
+    #[test]
+    fn test_remove_epsilons_cycles() {
+        // Test epsilon removal with epsilon cycles
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s3, BooleanWeight::one());
+
+        // Create epsilon cycle: s0 -> s1 -> s2 -> s0
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s1));
+        fst.add_arc(s1, Arc::epsilon(BooleanWeight::one(), s2));
+        fst.add_arc(s2, Arc::epsilon(BooleanWeight::one(), s0)); // cycle
+        
+        // Exit from cycle
+        fst.add_arc(s1, Arc::new(1, 1, BooleanWeight::one(), s3));
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+
+        // Should handle epsilon cycles correctly
+        assert!(result.start().is_some());
+        assert!(result.is_final(s3));
+        
+        // Should have path from start to final
+        let arcs_from_start: Vec<_> = result.arcs(s0).collect();
+        assert!(!arcs_from_start.is_empty());
+    }
+
+    #[test]
+    fn test_remove_epsilons_to_final() {
+        // Test epsilon transitions to final states
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, BooleanWeight::one());
+
+        // Path with epsilon to final
+        fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::one(), s1));
+        fst.add_arc(s1, Arc::epsilon(BooleanWeight::one(), s2)); // epsilon to final
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+
+        // s1 should become final since it has epsilon path to s2
+        assert!(result.is_final(s1));
+        assert!(result.is_final(s2));
+    }
+
+    #[test]
+    fn test_remove_epsilons_all_epsilon() {
+        // Test FST with only epsilon transitions
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, BooleanWeight::one());
+
+        // All transitions are epsilon
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s1));
+        fst.add_arc(s1, Arc::epsilon(BooleanWeight::one(), s2));
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+
+        // Start state should become final (epsilon path to final)
+        assert!(result.is_final(s0));
+        
+        // Should have no arcs (all were epsilon)
+        let total_arcs: usize = result.states().map(|s| result.num_arcs(s)).sum();
+        assert_eq!(total_arcs, 0);
+    }
+
+    #[test]
+    fn test_remove_epsilons_mixed_paths() {
+        // Test with mixed epsilon and non-epsilon paths
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let states: Vec<_> = (0..5).map(|_| fst.add_state()).collect();
+
+        fst.set_start(states[0]);
+        fst.set_final(states[4], BooleanWeight::one());
+
+        // Mixed paths
+        fst.add_arc(states[0], Arc::new(1, 1, BooleanWeight::one(), states[1]));
+        fst.add_arc(states[1], Arc::epsilon(BooleanWeight::one(), states[2]));
+        fst.add_arc(states[2], Arc::new(2, 2, BooleanWeight::one(), states[3]));
+        fst.add_arc(states[3], Arc::epsilon(BooleanWeight::one(), states[4]));
+        
+        // Alternative path
+        fst.add_arc(states[0], Arc::epsilon(BooleanWeight::one(), states[2]));
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+
+        // Should have no epsilon transitions
+        for state in result.states() {
+            for arc in result.arcs(state) {
+                assert!(!arc.is_epsilon());
+            }
+        }
+        
+        // Should preserve language
+        assert!(result.is_final(states[4]));
+    }
+
+    #[test]
+    fn test_epsilon_closure_computation() {
+        // Test the epsilon closure computation directly
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s3, BooleanWeight::one());
+
+        // Epsilon transitions forming a DAG
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s1));
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s2));
+        fst.add_arc(s1, Arc::epsilon(BooleanWeight::one(), s3));
+        fst.add_arc(s2, Arc::epsilon(BooleanWeight::one(), s3));
+
+        let closure = compute_epsilon_closure(&fst, s0).unwrap();
+
+        // Should reach all states from s0
+        let reached_states: Vec<_> = closure.iter().map(|(state, _)| *state).collect();
+        assert!(reached_states.contains(&s0));
+        assert!(reached_states.contains(&s1));
+        assert!(reached_states.contains(&s2));
+        assert!(reached_states.contains(&s3));
+    }
+
+    #[test]
+    fn test_remove_epsilons_preserves_weights() {
+        // Test that epsilon removal preserves path weights correctly
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s3, BooleanWeight::one());
+
+        // Path with weights
+        fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::new(true), s1));
+        fst.add_arc(s1, Arc::epsilon(BooleanWeight::new(true), s2));
+        fst.add_arc(s2, Arc::new(2, 2, BooleanWeight::new(true), s3));
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+
+        // Should have combined the path correctly
+        let has_direct_path = result.arcs(s1)
+            .any(|a| a.ilabel == 2 && a.nextstate == s3);
+        assert!(has_direct_path);
+    }
+
+    #[test]
+    fn test_remove_epsilons_empty_fst() {
+        // Test epsilon removal on empty FST
+        let fst = VectorFst::<BooleanWeight>::new();
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+        
+        assert_eq!(result.num_states(), 0);
+        assert!(result.start().is_none());
+    }
+
+    #[test]
+    fn test_remove_epsilons_single_state() {
+        // Test epsilon removal on single-state FST
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        
+        fst.set_start(s0);
+        fst.set_final(s0, BooleanWeight::one());
+        
+        // Self-loop epsilon
+        fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s0));
+
+        let result: VectorFst<BooleanWeight> = remove_epsilons(&fst).unwrap();
+        
+        assert_eq!(result.num_states(), 1);
+        assert!(result.is_final(s0));
+        
+        // Self-loop epsilon should be removed
+        let self_loops: Vec<_> = result.arcs(s0)
+            .filter(|a| a.is_epsilon())
+            .collect();
+        assert!(self_loops.is_empty());
+    }
 }

@@ -348,3 +348,60 @@ where
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_concat_basic() {
+        let mut fst1 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst1.add_state();
+        let s1 = fst1.add_state();
+        fst1.set_start(s0);
+        fst1.set_final(s1, TropicalWeight::one());
+        fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let t0 = fst2.add_state();
+        let t1 = fst2.add_state();
+        fst2.set_start(t0);
+        fst2.set_final(t1, TropicalWeight::one());
+        fst2.add_arc(t0, Arc::new(2, 2, TropicalWeight::new(2.0), t1));
+
+        let concatenated: VectorFst<TropicalWeight> = concat(&fst1, &fst2).unwrap();
+
+        // Should have states from both FSTs
+        assert_eq!(
+            concatenated.num_states(),
+            fst1.num_states() + fst2.num_states()
+        );
+        assert!(concatenated.start().is_some());
+
+        // Original final states of fst1 should no longer be final
+        // Only final states of fst2 (with offset) should be final
+        let mut final_count = 0;
+        for state in concatenated.states() {
+            if concatenated.is_final(state) {
+                final_count += 1;
+            }
+        }
+        assert!(final_count > 0);
+    }
+
+    #[test]
+    fn test_concat_empty() {
+        let fst1 = VectorFst::<TropicalWeight>::new();
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst2.add_state();
+        fst2.set_start(s0);
+        fst2.set_final(s0, TropicalWeight::one());
+
+        let concatenated: VectorFst<TropicalWeight> = concat(&fst1, &fst2).unwrap();
+
+        // Concat with empty should be empty
+        assert!(concatenated.is_empty() || concatenated.num_arcs_total() == 0);
+    }
+}

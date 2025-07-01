@@ -579,3 +579,182 @@ impl Semiring for MaxWeight {
 }
 
 impl NaturallyOrderedSemiring for MaxWeight {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_min_weight_creation() {
+        let w = MinWeight::new(5.0);
+        assert_eq!(*w.value(), 5.0);
+    }
+
+    #[test]
+    fn test_min_zero_one() {
+        let zero = MinWeight::zero();
+        let one = MinWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert!(zero.value().is_infinite());
+        assert!(one.value().is_infinite() && one.value().is_sign_negative());
+    }
+
+    #[test]
+    fn test_min_operations() {
+        let w1 = MinWeight::new(5.0);
+        let w2 = MinWeight::new(3.0);
+
+        let result = w1.plus(&w2);
+        assert_eq!(*result.value(), 3.0); // min operation
+
+        let result = w1.times(&w2);
+        assert_eq!(*result.value(), 5.0); // max operation
+    }
+
+    #[test]
+    fn test_min_display() {
+        let w = MinWeight::new(5.0);
+        let zero = MinWeight::zero();
+        let one = MinWeight::one();
+
+        assert_eq!(format!("{}", w), "5");
+        assert_eq!(format!("{}", zero), "∞");
+        assert_eq!(format!("{}", one), "-∞");
+    }
+
+    #[test]
+    fn test_min_properties() {
+        let props = MinWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative);
+        assert!(props.idempotent);
+        assert!(props.path);
+    }
+
+    #[test]
+    fn test_min_identity_laws() {
+        let w = MinWeight::new(5.0);
+        let zero = MinWeight::zero();
+        let one = MinWeight::one();
+
+        // Additive identity
+        assert_eq!(w + zero, w);
+        assert_eq!(zero + w, w);
+
+        // Multiplicative identity
+        assert_eq!(w * one, w);
+        assert_eq!(one * w, w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w * zero)));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_max_weight_creation() {
+        let w = MaxWeight::new(5.0);
+        assert_eq!(*w.value(), 5.0);
+    }
+
+    #[test]
+    fn test_max_zero_one() {
+        let zero = MaxWeight::zero();
+        let one = MaxWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert!(zero.value().is_infinite() && zero.value().is_sign_negative());
+        assert!(one.value().is_infinite());
+    }
+
+    #[test]
+    fn test_max_operations() {
+        let w1 = MaxWeight::new(5.0);
+        let w2 = MaxWeight::new(3.0);
+
+        let result = w1.plus(&w2);
+        assert_eq!(*result.value(), 5.0); // max operation
+
+        let result = w1.times(&w2);
+        assert_eq!(*result.value(), 3.0); // min operation
+    }
+
+    #[test]
+    fn test_max_display() {
+        let w = MaxWeight::new(5.0);
+        let zero = MaxWeight::zero();
+        let one = MaxWeight::one();
+
+        assert_eq!(format!("{}", w), "5");
+        assert_eq!(format!("{}", zero), "-∞");
+        assert_eq!(format!("{}", one), "∞");
+    }
+
+    #[test]
+    fn test_max_properties() {
+        let props = MaxWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative);
+        assert!(props.idempotent);
+        assert!(props.path);
+    }
+
+    #[test]
+    fn test_max_identity_laws() {
+        let w = MaxWeight::new(5.0);
+        let zero = MaxWeight::zero();
+        let one = MaxWeight::one();
+
+        // Additive identity
+        assert_eq!(w + zero, w);
+        assert_eq!(zero + w, w);
+
+        // Multiplicative identity
+        assert_eq!(w * one, w);
+        assert_eq!(one * w, w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w * zero)));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_minmax_semiring_axioms() {
+        // Test Min semiring
+        let a = MinWeight::new(2.0);
+        let b = MinWeight::new(3.0);
+        let c = MinWeight::new(4.0);
+
+        // Associativity
+        assert_eq!((a + b) + c, a + (b + c));
+        assert_eq!((a * b) * c, a * (b * c));
+
+        // Commutativity
+        assert_eq!(a + b, b + a);
+        assert_eq!(a * b, b * a);
+
+        // Distributivity
+        assert_eq!((a + b) * c, (a * c) + (b * c));
+
+        // Test Max semiring
+        let a = MaxWeight::new(2.0);
+        let b = MaxWeight::new(3.0);
+        let c = MaxWeight::new(4.0);
+
+        // Associativity
+        assert_eq!((a + b) + c, a + (b + c));
+        assert_eq!((a * b) * c, a * (b * c));
+
+        // Commutativity
+        assert_eq!(a + b, b + a);
+        assert_eq!(a * b, b * a);
+
+        // Distributivity
+        assert_eq!((a + b) * c, (a * c) + (b * c));
+    }
+}

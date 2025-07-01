@@ -251,3 +251,200 @@ impl FromStr for TropicalWeight {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_tropical_weight_creation() {
+        let w = TropicalWeight::new(5.0);
+        assert_eq!(*w.value(), 5.0);
+    }
+
+    #[test]
+    fn test_tropical_zero_one() {
+        let zero = TropicalWeight::zero();
+        let one = TropicalWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert_eq!(*one.value(), 0.0);
+        assert!(zero.value().is_infinite());
+    }
+
+    #[test]
+    fn test_tropical_addition() {
+        let w1 = TropicalWeight::new(3.0);
+        let w2 = TropicalWeight::new(5.0);
+        let result = w1.plus(&w2);
+
+        assert_eq!(*result.value(), 3.0); // min operation
+    }
+
+    #[test]
+    fn test_tropical_multiplication() {
+        let w1 = TropicalWeight::new(3.0);
+        let w2 = TropicalWeight::new(5.0);
+        let result = w1.times(&w2);
+
+        assert_eq!(*result.value(), 8.0); // addition operation
+    }
+
+    #[test]
+    fn test_tropical_zero_multiplication() {
+        let w = TropicalWeight::new(5.0);
+        let zero = TropicalWeight::zero();
+        let result = w.times(&zero);
+
+        assert!(Semiring::is_zero(&result));
+    }
+
+    #[test]
+    fn test_tropical_one_multiplication() {
+        let w = TropicalWeight::new(5.0);
+        let one = TropicalWeight::one();
+        let result = w.times(&one);
+
+        assert_eq!(result, w);
+    }
+
+    #[test]
+    fn test_tropical_display() {
+        let w = TropicalWeight::new(5.0);
+        let zero = TropicalWeight::zero();
+
+        assert_eq!(format!("{}", w), "5");
+        assert_eq!(format!("{}", zero), "∞");
+    }
+
+    #[test]
+    fn test_tropical_division() {
+        let w1 = TropicalWeight::new(8.0);
+        let w2 = TropicalWeight::new(3.0);
+
+        let result = w1.divide(&w2).unwrap();
+        assert_eq!(*result.value(), 5.0);
+
+        // Division by zero should return None
+        let zero = TropicalWeight::zero();
+        assert!(w1.divide(&zero).is_none());
+    }
+
+    #[test]
+    fn test_tropical_properties() {
+        let props = TropicalWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative);
+        assert!(props.idempotent);
+        assert!(props.path);
+    }
+
+    #[test]
+    fn test_tropical_approx_eq() {
+        let w1 = TropicalWeight::new(5.000001);
+        let w2 = TropicalWeight::new(5.0);
+
+        assert!(w1.approx_eq(&w2, 0.001));
+        assert!(!w1.approx_eq(&w2, 0.0000001));
+    }
+
+    #[test]
+    fn test_tropical_from_str() {
+        assert_eq!(TropicalWeight::from_str("5.0").unwrap(), TropicalWeight::new(5.0));
+        assert_eq!(TropicalWeight::from_str("∞").unwrap(), TropicalWeight::INFINITY);
+        assert_eq!(TropicalWeight::from_str("inf").unwrap(), TropicalWeight::INFINITY);
+        assert_eq!(TropicalWeight::from_str("infinity").unwrap(), TropicalWeight::INFINITY);
+    }
+
+    #[test]
+    fn test_tropical_operator_overloads() {
+        let w1 = TropicalWeight::new(3.0);
+        let w2 = TropicalWeight::new(5.0);
+
+        // Test + operator (min)
+        assert_eq!(w1 + w2, TropicalWeight::new(3.0));
+
+        // Test * operator (addition)
+        assert_eq!(w1 * w2, TropicalWeight::new(8.0));
+    }
+
+    #[test]
+    fn test_tropical_identity_laws() {
+        let w = TropicalWeight::new(5.0);
+        let zero = TropicalWeight::zero();
+        let one = TropicalWeight::one();
+
+        // Additive identity
+        assert_eq!(w + zero, w);
+        assert_eq!(zero + w, w);
+
+        // Multiplicative identity
+        assert_eq!(w * one, w);
+        assert_eq!(one * w, w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w * zero)));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_tropical_semiring_axioms() {
+        let a = TropicalWeight::new(2.0);
+        let b = TropicalWeight::new(3.0);
+        let c = TropicalWeight::new(4.0);
+
+        // Associativity of addition
+        assert_eq!((a + b) + c, a + (b + c));
+
+        // Associativity of multiplication
+        assert_eq!((a * b) * c, a * (b * c));
+
+        // Commutativity of addition
+        assert_eq!(a + b, b + a);
+
+        // Commutativity of multiplication
+        assert_eq!(a * b, b * a);
+
+        // Distributivity
+        assert_eq!((a + b) * c, (a * c) + (b * c));
+    }
+
+    // Property-based tests
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn test_tropical_associativity_property(a in -100.0..100.0f32, b in -100.0..100.0f32, c in -100.0..100.0f32) {
+                let w1 = TropicalWeight::new(a);
+                let w2 = TropicalWeight::new(b);
+                let w3 = TropicalWeight::new(c);
+
+                // (a + b) + c = a + (b + c)
+                let left = w1.plus(&w2).plus(&w3);
+                let right = w1.plus(&w2.plus(&w3));
+                prop_assert!(left.approx_eq(&right, 1e-4));
+
+                // (a * b) * c = a * (b * c)
+                let left = w1.times(&w2).times(&w3);
+                let right = w1.times(&w2.times(&w3));
+                prop_assert!(left.approx_eq(&right, 1e-4));
+            }
+
+            #[test]
+            fn test_tropical_identity_property(a in -100.0..100.0f32) {
+                let w = TropicalWeight::new(a);
+
+                // w + zero = w
+                prop_assert!(w.plus(&TropicalWeight::zero()).approx_eq(&w, 1e-4));
+
+                // w * one = w
+                prop_assert!(w.times(&TropicalWeight::one()).approx_eq(&w, 1e-4));
+            }
+        }
+    }
+}

@@ -272,3 +272,69 @@ where
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_determinize_simple() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Non-deterministic: two arcs with same input label
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(2.0), s2));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(1.0), s2));
+
+        let det: VectorFst<TropicalWeight> = determinize(&fst).unwrap();
+
+        // Check determinism: no state should have multiple arcs with same input label
+        for state in det.states() {
+            let mut seen_labels = std::collections::HashSet::new();
+            for arc in det.arcs(state) {
+                assert!(
+                    seen_labels.insert(arc.ilabel),
+                    "Found duplicate input label {} from state {}",
+                    arc.ilabel,
+                    state
+                );
+            }
+        }
+
+        // Should preserve language
+        assert!(det.start().is_some());
+        assert!(det.num_states() > 0);
+    }
+
+    #[test]
+    fn test_determinize_already_deterministic() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+
+        let det: VectorFst<TropicalWeight> = determinize(&fst).unwrap();
+
+        // Should be similar to original
+        assert_eq!(det.num_states(), fst.num_states());
+        assert!(det.start().is_some());
+
+        for state in det.states() {
+            let mut seen_labels = std::collections::HashSet::new();
+            for arc in det.arcs(state) {
+                assert!(seen_labels.insert(arc.ilabel));
+            }
+        }
+    }
+}

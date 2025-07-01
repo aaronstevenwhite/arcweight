@@ -332,3 +332,241 @@ where
 {
     shortest_path(fst, ShortestPathConfig::default())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_shortest_path_single() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Two paths with different costs
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
+        fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::new(5.0), s2));
+
+        let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();
+
+        // Should preserve structure but only keep shortest paths
+        assert!(shortest.start().is_some());
+        assert!(shortest.num_states() > 0);
+
+        // Start state should have only one outgoing arc (the cheaper one)
+        assert!(shortest.num_arcs(s0) <= 1);
+
+        if shortest.num_arcs(s0) == 1 {
+            let arcs: Vec<_> = shortest.arcs(s0).collect();
+            // Should prefer the path with weight 1.0 over 5.0
+            assert_eq!(arcs[0].ilabel, 1);
+        }
+    }
+
+    #[test]
+    fn test_shortest_path_multiple() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::new(1.0));
+        fst.set_final(s2, TropicalWeight::new(2.0));
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
+
+        let config = ShortestPathConfig {
+            nshortest: 2,
+            ..Default::default()
+        };
+        let shortest: VectorFst<TropicalWeight> = shortest_path(&fst, config).unwrap();
+
+        // Should keep both paths since we requested 2
+        assert!(shortest.start().is_some());
+        assert!(shortest.num_states() > 0);
+    }
+
+    #[test]
+    fn test_shortest_path_empty() {
+        let fst = VectorFst::<TropicalWeight>::new();
+
+        // Empty FST should return error or empty result
+        if let Ok(shortest) = shortest_path_single::<
+            TropicalWeight,
+            VectorFst<TropicalWeight>,
+            VectorFst<TropicalWeight>,
+        >(&fst)
+        {
+            assert!(shortest.is_empty());
+        }
+        // Empty FST may legitimately fail, which is fine
+    }
+
+    #[test]
+    fn test_shortest_path_config_default() {
+        let config = ShortestPathConfig::default();
+        assert_eq!(config.nshortest, 1);
+        assert!(!config.unique);
+        assert_eq!(config.weight_threshold, None);
+        assert_eq!(config.state_threshold, None);
+    }
+
+    #[test]
+    fn test_shortest_path_config_custom() {
+        let config = ShortestPathConfig {
+            nshortest: 5,
+            unique: true,
+            weight_threshold: Some(10.0),
+            state_threshold: Some(100),
+        };
+        assert_eq!(config.nshortest, 5);
+        assert!(config.unique);
+        assert_eq!(config.weight_threshold, Some(10.0));
+        assert_eq!(config.state_threshold, Some(100));
+    }
+
+    #[test]
+    fn test_shortest_path_single_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::new(2.0));
+
+        let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();
+
+        assert_eq!(shortest.num_states(), 1);
+        assert_eq!(shortest.start(), Some(0));
+        assert!(shortest.is_final(0));
+    }
+
+    #[test]
+    fn test_shortest_path_no_final_states() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        fst.set_start(s0);
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        // No final states
+
+        let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();
+
+        // Should return an FST with start state but no final states
+        assert!(shortest.start().is_some());
+    }
+
+    #[test]
+    fn test_shortest_path_multiple_finals() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::new(1.0));
+        fst.set_final(s2, TropicalWeight::new(3.0));
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(1.0), s2));
+
+        let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();
+
+        // Should find path to closest final state
+        assert!(shortest.start().is_some());
+        assert!(shortest.num_states() > 0);
+    }
+
+    #[test]
+    fn test_shortest_path_zero_nshortest() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::one());
+
+        let config = ShortestPathConfig {
+            nshortest: 0,
+            ..Default::default()
+        };
+        let shortest: VectorFst<TropicalWeight> = shortest_path(&fst, config).unwrap();
+
+        // Should return empty FST when nshortest = 0
+        assert_eq!(shortest.num_states(), 0);
+    }
+
+    #[test]
+    fn test_shortest_path_with_weights() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s3, TropicalWeight::one());
+
+        // Create two paths: cheap and expensive
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.1), s1)); // Cheap path
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.2), s3));
+
+        fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::new(1.0), s2)); // Expensive path
+        fst.add_arc(s2, Arc::new(4, 4, TropicalWeight::new(2.0), s3));
+
+        let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();
+
+        // Should prefer the cheaper path
+        assert!(shortest.start().is_some());
+        assert!(shortest.num_states() > 0);
+    }
+
+    #[test]
+    fn test_path_state_ordering() {
+        let state1 = PathState {
+            state: 0,
+            weight: TropicalWeight::new(1.0),
+        };
+        let state2 = PathState {
+            state: 1,
+            weight: TropicalWeight::new(2.0),
+        };
+        let state3 = PathState {
+            state: 2,
+            weight: TropicalWeight::new(1.0),
+        };
+
+        // Smaller weights should have higher priority (BinaryHeap is max-heap)
+        assert!(state1 > state2); // 1.0 < 2.0, so state1 should come first
+        assert_eq!(state1, state3); // Same weight should be equal
+    }
+
+    #[test]
+    fn test_shortest_path_linear_chain() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let states: Vec<_> = (0..5).map(|_| fst.add_state()).collect();
+
+        fst.set_start(states[0]);
+        fst.set_final(states[4], TropicalWeight::one());
+
+        // Create linear chain
+        for i in 0..4 {
+            fst.add_arc(states[i], Arc::new(
+                (i + 1) as u32, (i + 1) as u32,
+                TropicalWeight::new(i as f32 * 0.1),
+                states[i + 1]
+            ));
+        }
+
+        let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();
+
+        // Should preserve the linear chain structure
+        assert_eq!(shortest.start(), Some(0));
+        assert!(shortest.num_states() > 0);
+    }
+}

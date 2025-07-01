@@ -334,3 +334,183 @@ impl DivisibleSemiring for LogWeight {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_log_weight_creation() {
+        let w = LogWeight::new(2.0);
+        assert_eq!(*w.value(), 2.0);
+    }
+
+    #[test]
+    fn test_log_zero_one() {
+        let zero = LogWeight::zero();
+        let one = LogWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert!(zero.value().is_infinite());
+        assert_eq!(*one.value(), 0.0);
+    }
+
+    #[test]
+    fn test_log_addition() {
+        let w1 = LogWeight::new(1.0);
+        let w2 = LogWeight::new(2.0);
+        let result = w1.plus(&w2);
+
+        // -log(exp(-1) + exp(-2)) ≈ 0.687
+        assert!(result.approx_eq(&LogWeight::new(0.6867), 0.001));
+    }
+
+    #[test]
+    fn test_log_multiplication() {
+        let w1 = LogWeight::new(1.0);
+        let w2 = LogWeight::new(2.0);
+        let result = w1.times(&w2);
+
+        assert_eq!(*result.value(), 3.0); // addition in log space
+    }
+
+    #[test]
+    fn test_log_zero_operations() {
+        let w = LogWeight::new(2.0);
+        let zero = LogWeight::zero();
+
+        // Adding zero returns the other weight
+        assert_eq!(w.plus(&zero), w);
+        assert_eq!(zero.plus(&w), w);
+
+        // Multiplying by zero returns zero
+        assert!(Semiring::is_zero(&w.times(&zero)));
+        assert!(Semiring::is_zero(&zero.times(&w)));
+    }
+
+    #[test]
+    fn test_log_one_operations() {
+        let w = LogWeight::new(2.0);
+        let one = LogWeight::one();
+
+        let mul_result = w.times(&one);
+        assert_eq!(mul_result, w);
+    }
+
+    #[test]
+    fn test_log_display() {
+        let w = LogWeight::new(2.5);
+        let zero = LogWeight::zero();
+
+        assert_eq!(format!("{}", w), "2.5");
+        assert_eq!(format!("{}", zero), "∞");
+    }
+
+    #[test]
+    fn test_log_division() {
+        let w1 = LogWeight::new(5.0);
+        let w2 = LogWeight::new(3.0);
+
+        let result = w1.divide(&w2).unwrap();
+        assert_eq!(*result.value(), 2.0);
+
+        // Division by zero should return None
+        let zero = LogWeight::zero();
+        assert!(w1.divide(&zero).is_none());
+    }
+
+    #[test]
+    fn test_log_from_to_probability() {
+        // Test normal probability conversion
+        let prob = 0.5;
+        let log_weight = LogWeight::from_probability(prob);
+        assert!((log_weight.value() - (-prob.ln())).abs() < 1e-10);
+        assert!((log_weight.to_probability() - prob).abs() < 1e-10);
+
+        // Test zero probability
+        let zero_log = LogWeight::from_probability(0.0);
+        assert!(Semiring::is_zero(&zero_log));
+        assert_eq!(zero_log.to_probability(), 0.0);
+
+        // Test very small probability
+        let small_prob = 1e-100;
+        let small_log = LogWeight::from_probability(small_prob);
+        assert!((small_log.to_probability() - small_prob).abs() < small_prob * 1e-10);
+    }
+
+    #[test]
+    fn test_log_properties() {
+        let props = LogWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative);
+        assert!(!props.idempotent);
+        assert!(!props.path);
+    }
+
+    #[test]
+    fn test_log_approx_eq() {
+        let w1 = LogWeight::new(2.000001);
+        let w2 = LogWeight::new(2.0);
+
+        assert!(w1.approx_eq(&w2, 0.001));
+        assert!(!w1.approx_eq(&w2, 0.0000001));
+    }
+
+    #[test]
+    fn test_log_operator_overloads() {
+        let w1 = LogWeight::new(1.0);
+        let w2 = LogWeight::new(2.0);
+
+        // Test + operator (log-sum-exp)
+        let sum = w1 + w2;
+        assert!(sum.approx_eq(&LogWeight::new(0.6867), 0.001));
+
+        // Test * operator (addition in log space)
+        assert_eq!(w1 * w2, LogWeight::new(3.0));
+    }
+
+    #[test]
+    fn test_log_identity_laws() {
+        let w = LogWeight::new(2.0);
+        let zero = LogWeight::zero();
+        let one = LogWeight::one();
+
+        // Additive identity
+        assert_eq!(w + zero, w);
+        assert_eq!(zero + w, w);
+
+        // Multiplicative identity
+        assert_eq!(w * one, w);
+        assert_eq!(one * w, w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w * zero)));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_log_semiring_axioms() {
+        let a = LogWeight::new(1.0);
+        let b = LogWeight::new(2.0);
+        let c = LogWeight::new(3.0);
+        let tolerance = 1e-10;
+
+        // Associativity of addition
+        assert!(((a + b) + c).approx_eq(&(a + (b + c)), tolerance));
+
+        // Associativity of multiplication
+        assert_eq!((a * b) * c, a * (b * c));
+
+        // Commutativity of addition
+        assert_eq!(a + b, b + a);
+
+        // Commutativity of multiplication
+        assert_eq!(a * b, b * a);
+
+        // Distributivity (approximate due to log-sum-exp)
+        assert!(((a + b) * c).approx_eq(&((a * c) + (b * c)), tolerance));
+    }
+}

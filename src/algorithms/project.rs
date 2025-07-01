@@ -428,3 +428,173 @@ where
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_project_input_simple() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Create FST with different input/output labels
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
+        fst.add_arc(s1, Arc::new(3, 4, TropicalWeight::new(1.0), s2));
+
+        let projected: VectorFst<TropicalWeight> = project_input(&fst).unwrap();
+
+        // Check structure is preserved
+        assert_eq!(projected.num_states(), fst.num_states());
+        assert_eq!(projected.start(), fst.start());
+        assert!(projected.is_final(s2));
+
+        // Check arc projection (input labels should be copied to both input and output)
+        let arcs_s0: Vec<_> = projected.arcs(s0).collect();
+        assert_eq!(arcs_s0.len(), 1);
+        assert_eq!(arcs_s0[0].ilabel, 1); // Original input label
+        assert_eq!(arcs_s0[0].olabel, 1); // Should now match input label
+        assert_eq!(arcs_s0[0].weight, TropicalWeight::new(0.5));
+
+        let arcs_s1: Vec<_> = projected.arcs(s1).collect();
+        assert_eq!(arcs_s1.len(), 1);
+        assert_eq!(arcs_s1[0].ilabel, 3); // Original input label
+        assert_eq!(arcs_s1[0].olabel, 3); // Should now match input label
+    }
+
+    #[test]
+    fn test_project_output_simple() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::new(2.0));
+
+        // Create FST with different input/output labels
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
+        fst.add_arc(s1, Arc::new(3, 4, TropicalWeight::new(1.0), s2));
+
+        let projected: VectorFst<TropicalWeight> = project_output(&fst).unwrap();
+
+        // Check structure is preserved
+        assert_eq!(projected.num_states(), fst.num_states());
+        assert_eq!(projected.start(), fst.start());
+        assert!(projected.is_final(s2));
+        assert_eq!(projected.final_weight(s2), Some(&TropicalWeight::new(2.0)));
+
+        // Check arc projection (output labels should be copied to both input and output)
+        let arcs_s0: Vec<_> = projected.arcs(s0).collect();
+        assert_eq!(arcs_s0.len(), 1);
+        assert_eq!(arcs_s0[0].ilabel, 2); // Should now match original output label
+        assert_eq!(arcs_s0[0].olabel, 2); // Original output label
+        assert_eq!(arcs_s0[0].weight, TropicalWeight::new(0.5));
+
+        let arcs_s1: Vec<_> = projected.arcs(s1).collect();
+        assert_eq!(arcs_s1.len(), 1);
+        assert_eq!(arcs_s1[0].ilabel, 4); // Should now match original output label
+        assert_eq!(arcs_s1[0].olabel, 4); // Original output label
+    }
+
+    #[test]
+    fn test_project_epsilon_labels() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+
+        // Add arc with epsilon input and regular output
+        fst.add_arc(s0, Arc::new(0, 5, TropicalWeight::one(), s1)); // 0 = epsilon
+
+        let input_proj: VectorFst<TropicalWeight> = project_input(&fst).unwrap();
+        let output_proj: VectorFst<TropicalWeight> = project_output(&fst).unwrap();
+
+        // Input projection should have epsilon:epsilon
+        let input_arcs: Vec<_> = input_proj.arcs(s0).collect();
+        assert_eq!(input_arcs[0].ilabel, 0);
+        assert_eq!(input_arcs[0].olabel, 0);
+
+        // Output projection should have 5:5
+        let output_arcs: Vec<_> = output_proj.arcs(s0).collect();
+        assert_eq!(output_arcs[0].ilabel, 5);
+        assert_eq!(output_arcs[0].olabel, 5);
+    }
+
+    #[test]
+    fn test_project_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+        
+        let input_proj: VectorFst<TropicalWeight> = project_input(&fst).unwrap();
+        let output_proj: VectorFst<TropicalWeight> = project_output(&fst).unwrap();
+
+        assert_eq!(input_proj.num_states(), 0);
+        assert_eq!(output_proj.num_states(), 0);
+        assert!(input_proj.is_empty());
+        assert!(output_proj.is_empty());
+    }
+
+    #[test]
+    fn test_project_single_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::new(3.0));
+
+        let input_proj: VectorFst<TropicalWeight> = project_input(&fst).unwrap();
+        let output_proj: VectorFst<TropicalWeight> = project_output(&fst).unwrap();
+
+        assert_eq!(input_proj.num_states(), 1);
+        assert_eq!(output_proj.num_states(), 1);
+        assert_eq!(input_proj.start(), Some(s0));
+        assert_eq!(output_proj.start(), Some(s0));
+        assert_eq!(input_proj.final_weight(s0), Some(&TropicalWeight::new(3.0)));
+        assert_eq!(output_proj.final_weight(s0), Some(&TropicalWeight::new(3.0)));
+    }
+
+    #[test]
+    fn test_project_multiple_arcs() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+
+        // Add multiple arcs with different input/output labels
+        fst.add_arc(s0, Arc::new(1, 10, TropicalWeight::new(0.1), s1));
+        fst.add_arc(s0, Arc::new(2, 20, TropicalWeight::new(0.2), s1));
+        fst.add_arc(s0, Arc::new(3, 30, TropicalWeight::new(0.3), s1));
+
+        let input_proj: VectorFst<TropicalWeight> = project_input(&fst).unwrap();
+        let output_proj: VectorFst<TropicalWeight> = project_output(&fst).unwrap();
+
+        // Check input projection
+        let input_arcs: Vec<_> = input_proj.arcs(s0).collect();
+        assert_eq!(input_arcs.len(), 3);
+        assert_eq!(input_arcs[0].ilabel, 1);
+        assert_eq!(input_arcs[0].olabel, 1);
+        assert_eq!(input_arcs[1].ilabel, 2);
+        assert_eq!(input_arcs[1].olabel, 2);
+        assert_eq!(input_arcs[2].ilabel, 3);
+        assert_eq!(input_arcs[2].olabel, 3);
+
+        // Check output projection
+        let output_arcs: Vec<_> = output_proj.arcs(s0).collect();
+        assert_eq!(output_arcs.len(), 3);
+        assert_eq!(output_arcs[0].ilabel, 10);
+        assert_eq!(output_arcs[0].olabel, 10);
+        assert_eq!(output_arcs[1].ilabel, 20);
+        assert_eq!(output_arcs[1].olabel, 20);
+        assert_eq!(output_arcs[2].ilabel, 30);
+        assert_eq!(output_arcs[2].olabel, 30);
+    }
+}

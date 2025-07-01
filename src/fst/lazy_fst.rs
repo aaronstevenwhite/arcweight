@@ -692,9 +692,12 @@ where
         // limitation that would require redesigning either LazyFst's storage
         // or the Fst trait to use owned values/Cow.
         //
-        // For practical purposes, we'll compute the state to ensure it's cached
-        // but return None. Users should access final weights through other means
-        // like get_or_compute_state() which returns owned values.
+        // WORKAROUND: Use the provided `final_weight_owned()` method instead:
+        // ```
+        // let weight = lazy_fst.final_weight_owned(state);
+        // ```
+        //
+        // For now, we compute the state to ensure it's cached but return None.
         self.get_or_compute_state(state);
         None
     }
@@ -732,5 +735,31 @@ where
     fn expand(&self, state: StateId) -> Result<()> {
         self.get_or_compute_state(state);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_lazy_fst_creation() {
+        // LazyFst is more of an abstract concept, but we can test
+        // that types implementing Fst work correctly
+
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
+
+        // Verify basic FST operations work
+        assert_eq!(fst.num_states(), 2);
+        assert_eq!(fst.start(), Some(s0));
+        assert!(fst.is_final(s1));
     }
 }

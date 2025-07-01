@@ -223,3 +223,168 @@ pub trait ArcIterator<W: Semiring>: Iterator<Item = Arc<W>> {
         // default implementation does nothing
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::semiring::TropicalWeight;
+    use crate::fst::{NO_LABEL, NO_STATE_ID};
+
+    #[test]
+    fn test_arc_creation() {
+        let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+
+        assert_eq!(arc.ilabel, 1);
+        assert_eq!(arc.olabel, 2);
+        assert_eq!(*arc.weight.value(), 3.0);
+        assert_eq!(arc.nextstate, 4);
+    }
+
+    #[test]
+    fn test_epsilon_arc() {
+        let arc = Arc::epsilon(TropicalWeight::new(1.5), 5);
+
+        assert_eq!(arc.ilabel, NO_LABEL);
+        assert_eq!(arc.olabel, NO_LABEL);
+        assert_eq!(*arc.weight.value(), 1.5);
+        assert_eq!(arc.nextstate, 5);
+        assert!(arc.is_epsilon());
+    }
+
+    #[test]
+    fn test_epsilon_checks() {
+        let epsilon_arc = Arc::epsilon(TropicalWeight::new(1.0), 1);
+        let regular_arc = Arc::new(1, 2, TropicalWeight::new(1.0), 1);
+        let epsilon_input = Arc::new(0, 2, TropicalWeight::new(1.0), 1);
+        let epsilon_output = Arc::new(1, 0, TropicalWeight::new(1.0), 1);
+
+        // Full epsilon
+        assert!(epsilon_arc.is_epsilon());
+        assert!(epsilon_arc.is_epsilon_input());
+        assert!(epsilon_arc.is_epsilon_output());
+
+        // Regular arc
+        assert!(!regular_arc.is_epsilon());
+        assert!(!regular_arc.is_epsilon_input());
+        assert!(!regular_arc.is_epsilon_output());
+
+        // Epsilon input only
+        assert!(!epsilon_input.is_epsilon());
+        assert!(epsilon_input.is_epsilon_input());
+        assert!(!epsilon_input.is_epsilon_output());
+
+        // Epsilon output only
+        assert!(!epsilon_output.is_epsilon());
+        assert!(!epsilon_output.is_epsilon_input());
+        assert!(epsilon_output.is_epsilon_output());
+    }
+
+    #[test]
+    fn test_arc_display() {
+        let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let display_str = format!("{}", arc);
+
+        assert!(display_str.contains("1"));
+        assert!(display_str.contains("2"));
+        assert!(display_str.contains("3"));
+        assert!(display_str.contains("4"));
+    }
+
+    #[test]
+    fn test_arc_equality() {
+        let arc1 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let arc2 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let arc3 = Arc::new(1, 2, TropicalWeight::new(3.1), 4);
+        let arc4 = Arc::new(1, 3, TropicalWeight::new(3.0), 4);
+
+        assert_eq!(arc1, arc2);
+        assert_ne!(arc1, arc3);
+        assert_ne!(arc1, arc4);
+    }
+
+    #[test]
+    fn test_arc_clone() {
+        let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let arc_clone = arc.clone();
+
+        assert_eq!(arc, arc_clone);
+        assert_eq!(arc.ilabel, arc_clone.ilabel);
+        assert_eq!(arc.olabel, arc_clone.olabel);
+        assert_eq!(arc.weight, arc_clone.weight);
+        assert_eq!(arc.nextstate, arc_clone.nextstate);
+    }
+
+    #[test]
+    fn test_arc_debug() {
+        let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let debug_str = format!("{:?}", arc);
+
+        assert!(debug_str.contains("Arc"));
+        assert!(debug_str.contains("ilabel"));
+        assert!(debug_str.contains("olabel"));
+        assert!(debug_str.contains("weight"));
+        assert!(debug_str.contains("nextstate"));
+    }
+
+    #[test]
+    fn test_arc_special_labels() {
+        let arc = Arc::new(NO_LABEL, NO_LABEL, TropicalWeight::new(1.0), 0);
+        assert!(arc.is_epsilon());
+
+        let arc = Arc::new(NO_STATE_ID, NO_LABEL, TropicalWeight::new(1.0), 0);
+        assert_eq!(arc.ilabel, NO_STATE_ID);
+    }
+
+    #[test]
+    fn test_arc_display_format() {
+        let arc = Arc::new(10, 20, TropicalWeight::new(0.5), 30);
+        let display = format!("{}", arc);
+        assert_eq!(display, "10:20:0.5 -> 30");
+    }
+
+    #[test]
+    fn test_arc_hash() {
+        use std::collections::HashSet;
+
+        let mut set = HashSet::new();
+        let arc1 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let arc2 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
+        let arc3 = Arc::new(1, 2, TropicalWeight::new(3.1), 4);
+
+        set.insert(arc1);
+        assert!(set.contains(&arc2)); // Same arc
+        assert!(!set.contains(&arc3)); // Different weight
+    }
+
+    // Property-based tests
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn test_arc_consistency_property(
+                ilabel: u32,
+                olabel: u32,
+                weight: f32,
+                nextstate in 0..100u32,
+            ) {
+                let arc = Arc::new(
+                    ilabel,
+                    olabel,
+                    TropicalWeight::new(weight),
+                    nextstate,
+                );
+
+                assert_eq!(arc.ilabel, ilabel);
+                assert_eq!(arc.olabel, olabel);
+                assert_eq!(*arc.weight.value(), weight);
+                assert_eq!(arc.nextstate, nextstate);
+
+                // Epsilon check consistency
+                let is_epsilon = ilabel == NO_LABEL && olabel == NO_LABEL;
+                assert_eq!(arc.is_epsilon(), is_epsilon);
+            }
+        }
+    }
+}

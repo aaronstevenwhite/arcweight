@@ -244,3 +244,43 @@ where
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_reverse_basic() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::new(2.0));
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(3.0), s2));
+
+        let reversed: VectorFst<TropicalWeight> = reverse(&fst).unwrap();
+
+        // Should add a new start state
+        assert_eq!(reversed.num_states(), fst.num_states() + 1);
+        assert!(reversed.start().is_some());
+
+        // Original start should be final in reversed
+        assert!(reversed.is_final(s0));
+
+        // Check that arcs are reversed
+        let mut found_reversed_arc = false;
+        for state in reversed.states() {
+            for arc in reversed.arcs(state) {
+                if arc.nextstate == s1 && arc.ilabel == 2 {
+                    found_reversed_arc = true;
+                }
+            }
+        }
+        assert!(found_reversed_arc);
+    }
+}

@@ -267,3 +267,178 @@ impl FromStr for BooleanWeight {
         s.parse::<bool>().map(Self::new)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_boolean_weight_creation() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        assert!(*w_true.value());
+        assert!(!*w_false.value());
+    }
+
+    #[test]
+    fn test_boolean_zero_one() {
+        let zero = BooleanWeight::zero();
+        let one = BooleanWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert!(!*zero.value());
+        assert!(*one.value());
+    }
+
+    #[test]
+    fn test_boolean_addition() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        // OR operation
+        assert!(*w_true.plus(&w_false).value());
+        assert!(*w_false.plus(&w_true).value());
+        assert!(!*w_false.plus(&w_false).value());
+        assert!(*w_true.plus(&w_true).value());
+    }
+
+    #[test]
+    fn test_boolean_multiplication() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        // AND operation
+        assert!(!*w_true.times(&w_false).value());
+        assert!(!*w_false.times(&w_true).value());
+        assert!(!*w_false.times(&w_false).value());
+        assert!(*w_true.times(&w_true).value());
+    }
+
+    #[test]
+    fn test_boolean_idempotence() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        // w + w = w (idempotent)
+        assert_eq!(w_true.plus(&w_true), w_true);
+        assert_eq!(w_false.plus(&w_false), w_false);
+    }
+
+    #[test]
+    fn test_boolean_display() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        assert_eq!(format!("{}", w_true), "true");
+        assert_eq!(format!("{}", w_false), "false");
+    }
+
+    #[test]
+    fn test_boolean_star() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        // Star is always one for boolean semiring
+        assert_eq!(w_true.star(), BooleanWeight::one());
+        assert_eq!(w_false.star(), BooleanWeight::one());
+    }
+
+    #[test]
+    fn test_boolean_properties() {
+        let props = BooleanWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative);
+        assert!(props.idempotent);
+        assert!(props.path);
+    }
+
+    #[test]
+    fn test_boolean_from_str() {
+        assert_eq!(
+            BooleanWeight::from_str("true").unwrap(),
+            BooleanWeight::new(true)
+        );
+        assert_eq!(
+            BooleanWeight::from_str("false").unwrap(),
+            BooleanWeight::new(false)
+        );
+    }
+
+    #[test]
+    fn test_boolean_operator_overloads() {
+        let w_true = BooleanWeight::new(true);
+        let w_false = BooleanWeight::new(false);
+
+        // Test + operator (OR)
+        assert_eq!(w_true + w_false, BooleanWeight::new(true));
+        assert_eq!(w_false + w_false, BooleanWeight::new(false));
+
+        // Test * operator (AND)
+        assert_eq!(w_true * w_false, BooleanWeight::new(false));
+        assert_eq!(w_true * w_true, BooleanWeight::new(true));
+    }
+
+    #[test]
+    fn test_boolean_identity_laws() {
+        let w = BooleanWeight::new(true);
+        let zero = BooleanWeight::zero();
+        let one = BooleanWeight::one();
+
+        // Additive identity
+        assert_eq!(w + zero, w);
+        assert_eq!(zero + w, w);
+
+        // Multiplicative identity
+        assert_eq!(w * one, w);
+        assert_eq!(one * w, w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w * zero)));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_boolean_semiring_axioms() {
+        let a = BooleanWeight::new(true);
+        let b = BooleanWeight::new(false);
+        let c = BooleanWeight::new(true);
+
+        // Associativity of addition
+        assert_eq!((a + b) + c, a + (b + c));
+
+        // Associativity of multiplication
+        assert_eq!((a * b) * c, a * (b * c));
+
+        // Commutativity of addition
+        assert_eq!(a + b, b + a);
+
+        // Commutativity of multiplication
+        assert_eq!(a * b, b * a);
+
+        // Distributivity
+        assert_eq!((a + b) * c, (a * c) + (b * c));
+    }
+
+    #[test]
+    fn test_boolean_correctness() {
+        // Test all combinations
+        let t = BooleanWeight::new(true);
+        let f = BooleanWeight::new(false);
+
+        // OR truth table
+        assert_eq!(f + f, f);
+        assert_eq!(f + t, t);
+        assert_eq!(t + f, t);
+        assert_eq!(t + t, t);
+
+        // AND truth table
+        assert_eq!(f * f, f);
+        assert_eq!(f * t, f);
+        assert_eq!(t * f, f);
+        assert_eq!(t * t, t);
+    }
+}

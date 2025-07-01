@@ -648,3 +648,164 @@ pub trait InvertibleSemiring: Semiring {
     /// ```
     fn inverse(&self) -> Option<Self>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_semiring_properties_default() {
+        let props = SemiringProperties::default();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(!props.commutative);
+        assert!(!props.idempotent);
+        assert!(!props.path);
+    }
+
+    #[test]
+    fn test_tropical_weight_semiring() {
+        let w1 = TropicalWeight::new(2.0);
+        let w2 = TropicalWeight::new(3.0);
+        let _w3 = TropicalWeight::new(1.0);
+
+        // Test semiring addition (min operation)
+        let sum = w1.plus(&w2);
+        assert_eq!(sum, w1); // min(2.0, 3.0) = 2.0
+
+        // Test semiring multiplication (addition operation)
+        let product = w1.times(&w2);
+        assert_eq!(product, TropicalWeight::new(5.0)); // 2.0 + 3.0 = 5.0
+
+        // Test zero element
+        let zero = TropicalWeight::zero();
+        assert!(Semiring::is_zero(&zero));
+        assert_eq!(w1.plus(&zero), w1);
+        assert_eq!(w1.times(&zero), zero);
+
+        // Test one element
+        let one = TropicalWeight::one();
+        assert!(Semiring::is_one(&one));
+        assert_eq!(w1.times(&one), w1);
+
+        // Test properties
+        let props = TropicalWeight::properties();
+        assert!(props.idempotent);
+        assert!(props.path);
+        assert!(props.commutative);
+    }
+
+    #[test]
+    fn test_boolean_weight_semiring() {
+        let true_w = BooleanWeight::one();
+        let false_w = BooleanWeight::zero();
+
+        // Test semiring addition (OR operation)
+        assert_eq!(true_w.plus(&false_w), true_w);
+        assert_eq!(false_w.plus(&false_w), false_w);
+        assert_eq!(true_w.plus(&true_w), true_w);
+
+        // Test semiring multiplication (AND operation)
+        assert_eq!(true_w.times(&false_w), false_w);
+        assert_eq!(true_w.times(&true_w), true_w);
+        assert_eq!(false_w.times(&false_w), false_w);
+
+        // Test zero and one
+        assert!(Semiring::is_zero(&false_w));
+        assert!(Semiring::is_one(&true_w));
+
+        // Test properties
+        let props = BooleanWeight::properties();
+        assert!(props.idempotent);
+        assert!(props.path);
+        assert!(props.commutative);
+    }
+
+    #[test]
+    fn test_semiring_axioms_tropical() {
+        let a = TropicalWeight::new(1.0);
+        let b = TropicalWeight::new(2.0);
+        let c = TropicalWeight::new(3.0);
+        let zero = TropicalWeight::zero();
+        let one = TropicalWeight::one();
+
+        // Test associativity of addition: (a + b) + c = a + (b + c)
+        let left = a.plus(&b).plus(&c);
+        let right = a.plus(&b.plus(&c));
+        assert_eq!(left, right);
+
+        // Test commutativity of addition: a + b = b + a
+        assert_eq!(a.plus(&b), b.plus(&a));
+
+        // Test additive identity: a + 0 = a
+        assert_eq!(a.plus(&zero), a);
+
+        // Test associativity of multiplication: (a * b) * c = a * (b * c)
+        let left = a.times(&b).times(&c);
+        let right = a.times(&b.times(&c));
+        assert_eq!(left, right);
+
+        // Test multiplicative identity: a * 1 = a
+        assert_eq!(a.times(&one), a);
+
+        // Test annihilation: a * 0 = 0
+        assert_eq!(a.times(&zero), zero);
+    }
+
+    #[test]
+    fn test_in_place_operations() {
+        let mut w = TropicalWeight::new(5.0);
+        let other = TropicalWeight::new(3.0);
+
+        // Test plus_assign
+        w.plus_assign(&other);
+        assert_eq!(w, TropicalWeight::new(3.0)); // min(5.0, 3.0) = 3.0
+
+        // Test times_assign
+        w.times_assign(&other);
+        assert_eq!(w, TropicalWeight::new(6.0)); // 3.0 + 3.0 = 6.0
+    }
+
+    #[test]
+    fn test_approx_eq() {
+        let w1 = TropicalWeight::new(1.0);
+        let w2 = TropicalWeight::new(1.0);
+        let w3 = TropicalWeight::new(2.0);
+
+        // Test exact equality (same values)
+        assert!(w1.approx_eq(&w2, f64::EPSILON));
+        assert!(!w1.approx_eq(&w3, 0.0));
+
+        // Default implementation just uses regular equality
+        assert!(w1.approx_eq(&w2, 1e-6));
+        assert!(!w1.approx_eq(&w3, 1e-6));
+    }
+
+    #[test]
+    fn test_divisible_semiring_tropical() {
+        let a = TropicalWeight::new(5.0);
+        let b = TropicalWeight::new(2.0);
+        let c = a.times(&b); // 5.0 + 2.0 = 7.0
+
+        // Test division: c / b should equal a
+        let result = c.divide(&b).unwrap();
+        assert_eq!(result, a); // 7.0 - 2.0 = 5.0
+
+        // Test division by zero should return None
+        let zero = TropicalWeight::zero();
+        assert!(c.divide(&zero).is_none());
+    }
+
+    #[test]
+    fn test_star_semiring_boolean() {
+        let true_w = BooleanWeight::one();
+        let false_w = BooleanWeight::zero();
+
+        // Star of true should be true (can reach in 0 or more steps)
+        assert_eq!(true_w.star(), true_w);
+
+        // Star of false should be true (can reach in 0 steps via identity)
+        assert_eq!(false_w.star(), true_w);
+    }
+}

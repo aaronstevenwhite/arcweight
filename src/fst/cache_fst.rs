@@ -555,3 +555,19 @@ impl<W: Semiring, F: Fst<W>> Fst<W> for CacheFst<W, F> {
         CacheArcIterator { arcs, pos: 0 }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_cache_fst_lazy_evaluation() {
+        let vector_fst = VectorFst::<TropicalWeight>::new();
+        let cache_fst = CacheFst::new(vector_fst);
+
+        // Basic properties should be accessible
+        assert_eq!(cache_fst.num_states(), 0);
+        assert!(cache_fst.is_empty());
+    }
+}

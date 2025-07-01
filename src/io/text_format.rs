@@ -338,3 +338,153 @@ where
 
     Ok(fst)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use std::io::{BufReader, Cursor};
+    use num_traits::identities::One;
+
+    #[test]
+    fn test_write_read_text_roundtrip() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::new(2.5));
+
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(3, 4, TropicalWeight::new(1.5), s2));
+        fst.add_arc(s0, Arc::epsilon(TropicalWeight::new(0.5), s2));
+
+        // Write to buffer
+        let mut buffer = Vec::new();
+        write_text(&fst, &mut buffer, None, None).unwrap();
+
+        // Read back from buffer
+        let cursor = Cursor::new(buffer);
+        let mut buf_reader = BufReader::new(cursor);
+        let read_fst: VectorFst<TropicalWeight> =
+            read_text::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut buf_reader, None, None)
+                .unwrap();
+
+        // Verify structure is preserved
+        assert_eq!(read_fst.num_states(), fst.num_states());
+        assert_eq!(read_fst.start(), fst.start());
+        assert_eq!(read_fst.num_arcs_total(), fst.num_arcs_total());
+
+        // Check final weights
+        for state in fst.states() {
+            let original_final = fst.final_weight(state);
+            let read_final = read_fst.final_weight(state);
+
+            match (original_final, read_final) {
+                (Some(w1), Some(w2)) => assert_eq!(w1, w2),
+                (None, None) => {}
+                _ => panic!("Final weight mismatch for state {}", state),
+            }
+        }
+
+        // Check arcs
+        for state in fst.states() {
+            let original_arcs: Vec<_> = fst.arcs(state).collect();
+            let read_arcs: Vec<_> = read_fst.arcs(state).collect();
+
+            assert_eq!(original_arcs.len(), read_arcs.len());
+
+            for (orig, read) in original_arcs.iter().zip(read_arcs.iter()) {
+                assert_eq!(orig.ilabel, read.ilabel);
+                assert_eq!(orig.olabel, read.olabel);
+                assert_eq!(orig.weight, read.weight);
+                assert_eq!(orig.nextstate, read.nextstate);
+            }
+        }
+    }
+
+    #[test]
+    fn test_write_read_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+
+        let mut buffer = Vec::new();
+        write_text(&fst, &mut buffer, None, None).unwrap();
+
+        let mut cursor = Cursor::new(buffer);
+        let read_fst: VectorFst<TropicalWeight> =
+            read_text::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut cursor, None, None)
+                .unwrap();
+
+        assert!(read_fst.is_empty());
+        assert_eq!(read_fst.num_states(), 0);
+        assert_eq!(read_fst.start(), None);
+    }
+
+    #[test]
+    fn test_write_read_single_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::one());
+
+        let mut buffer = Vec::new();
+        write_text(&fst, &mut buffer, None, None).unwrap();
+
+        let mut cursor = Cursor::new(buffer);
+        let read_fst: VectorFst<TropicalWeight> =
+            read_text::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut cursor, None, None)
+                .unwrap();
+
+        assert_eq!(read_fst.num_states(), 1);
+        assert_eq!(read_fst.start(), Some(0));
+        assert!(read_fst.is_final(0));
+    }
+
+    #[test]
+    fn test_text_format_different_weights() {
+        // Test with Boolean weight
+        let mut bool_fst = VectorFst::<BooleanWeight>::new();
+        let s0 = bool_fst.add_state();
+        let s1 = bool_fst.add_state();
+
+        bool_fst.set_start(s0);
+        bool_fst.set_final(s1, BooleanWeight::new(true));
+        bool_fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::new(false), s1));
+
+        let mut buffer = Vec::new();
+        write_text(&bool_fst, &mut buffer, None, None).unwrap();
+
+        let mut cursor = Cursor::new(buffer);
+        let read_fst: VectorFst<BooleanWeight> =
+            read_text::<BooleanWeight, VectorFst<BooleanWeight>, _>(&mut cursor, None, None)
+                .unwrap();
+
+        assert_eq!(read_fst.num_states(), bool_fst.num_states());
+        assert_eq!(read_fst.start(), bool_fst.start());
+
+        // Test with Probability weight
+        let mut prob_fst = VectorFst::<ProbabilityWeight>::new();
+        let s0 = prob_fst.add_state();
+        let s1 = prob_fst.add_state();
+
+        prob_fst.set_start(s0);
+        prob_fst.set_final(s1, ProbabilityWeight::new(0.8));
+        prob_fst.add_arc(s0, Arc::new(1, 1, ProbabilityWeight::new(0.3), s1));
+
+        let mut buffer = Vec::new();
+        write_text(&prob_fst, &mut buffer, None, None).unwrap();
+
+        let mut cursor = Cursor::new(buffer);
+        let read_fst: VectorFst<ProbabilityWeight> = read_text::<
+            ProbabilityWeight,
+            VectorFst<ProbabilityWeight>,
+            _,
+        >(&mut cursor, None, None)
+        .unwrap();
+
+        assert_eq!(read_fst.num_states(), prob_fst.num_states());
+        assert_eq!(read_fst.start(), prob_fst.start());
+    }
+}

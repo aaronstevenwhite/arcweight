@@ -495,3 +495,39 @@ impl<W: Semiring> ExpandedFst<W> for ConstFst<W> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_const_fst_from_vector_fst() {
+        let mut vector_fst = VectorFst::<TropicalWeight>::new();
+        let s0 = vector_fst.add_state();
+        let s1 = vector_fst.add_state();
+        let s2 = vector_fst.add_state();
+
+        vector_fst.set_start(s0);
+        vector_fst.set_final(s2, TropicalWeight::new(3.0));
+
+        vector_fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.0), s1));
+        vector_fst.add_arc(s1, Arc::new(3, 4, TropicalWeight::new(2.0), s2));
+
+        let const_fst = ConstFst::from_fst(&vector_fst).unwrap();
+
+        assert_eq!(const_fst.num_states(), vector_fst.num_states());
+        assert_eq!(const_fst.start(), vector_fst.start());
+        assert_eq!(const_fst.num_arcs_total(), vector_fst.num_arcs_total());
+
+        for state in vector_fst.states() {
+            assert_eq!(const_fst.is_final(state), vector_fst.is_final(state));
+            assert_eq!(const_fst.final_weight(state), vector_fst.final_weight(state));
+            assert_eq!(const_fst.num_arcs(state), vector_fst.num_arcs(state));
+
+            let const_arcs: Vec<_> = const_fst.arcs(state).collect();
+            let vector_arcs: Vec<_> = vector_fst.arcs(state).collect();
+            assert_eq!(const_arcs, vector_arcs);
+        }
+    }
+}

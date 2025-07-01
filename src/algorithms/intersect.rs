@@ -298,3 +298,135 @@ where
     // intersection is composition for acceptors
     compose_default(fst1, fst2)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_intersect_simple() {
+        // Create two acceptors that share common strings
+        let mut acc1 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc1.add_state();
+        let s1 = acc1.add_state();
+        acc1.set_start(s0);
+        acc1.set_final(s1, BooleanWeight::one());
+        acc1.add_arc(s0, Arc::new(1, 1, BooleanWeight::one(), s1)); // Accepts "1"
+
+        let mut acc2 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc2.add_state();
+        let s1 = acc2.add_state();
+        acc2.set_start(s0);
+        acc2.set_final(s1, BooleanWeight::one());
+        acc2.add_arc(s0, Arc::new(1, 1, BooleanWeight::one(), s1)); // Also accepts "1"
+
+        let intersection: VectorFst<BooleanWeight> = intersect(&acc1, &acc2).unwrap();
+
+        // Should have states and start state
+        assert!(intersection.num_states() > 0);
+        assert!(intersection.start().is_some());
+    }
+
+    #[test]
+    fn test_intersect_disjoint() {
+        // Create two acceptors with no common strings
+        let mut acc1 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc1.add_state();
+        let s1 = acc1.add_state();
+        acc1.set_start(s0);
+        acc1.set_final(s1, BooleanWeight::one());
+        acc1.add_arc(s0, Arc::new(1, 1, BooleanWeight::one(), s1)); // Accepts "1"
+
+        let mut acc2 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc2.add_state();
+        let s1 = acc2.add_state();
+        acc2.set_start(s0);
+        acc2.set_final(s1, BooleanWeight::one());
+        acc2.add_arc(s0, Arc::new(2, 2, BooleanWeight::one(), s1)); // Accepts "2"
+
+        let intersection: VectorFst<BooleanWeight> = intersect(&acc1, &acc2).unwrap();
+
+        // Should succeed but may have no accepting paths
+        assert!(intersection.start().is_some());
+    }
+
+    #[test]
+    fn test_intersect_weighted() {
+        // Test intersection with tropical weights
+        let mut acc1 = VectorFst::<TropicalWeight>::new();
+        let s0 = acc1.add_state();
+        let s1 = acc1.add_state();
+        acc1.set_start(s0);
+        acc1.set_final(s1, TropicalWeight::new(1.0));
+        acc1.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
+
+        let mut acc2 = VectorFst::<TropicalWeight>::new();
+        let s0 = acc2.add_state();
+        let s1 = acc2.add_state();
+        acc2.set_start(s0);
+        acc2.set_final(s1, TropicalWeight::new(2.0));
+        acc2.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.5), s1));
+
+        let intersection: VectorFst<TropicalWeight> = intersect(&acc1, &acc2).unwrap();
+
+        // Should combine weights appropriately (tropical addition)
+        assert!(intersection.start().is_some());
+        assert!(intersection.num_states() > 0);
+    }
+
+    #[test]
+    fn test_intersect_empty_fsts() {
+        let acc1 = VectorFst::<BooleanWeight>::new();
+        let acc2 = VectorFst::<BooleanWeight>::new();
+
+        // Empty FSTs should return error (no start state)
+        let result = intersect::<BooleanWeight, VectorFst<BooleanWeight>, VectorFst<BooleanWeight>, VectorFst<BooleanWeight>>(&acc1, &acc2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_intersect_single_state() {
+        // Test intersection of single-state acceptors
+        let mut acc1 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc1.add_state();
+        acc1.set_start(s0);
+        acc1.set_final(s0, BooleanWeight::one());
+
+        let mut acc2 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc2.add_state();
+        acc2.set_start(s0);
+        acc2.set_final(s0, BooleanWeight::one());
+
+        let intersection: VectorFst<BooleanWeight> = intersect(&acc1, &acc2).unwrap();
+
+        // Both accept empty string, so intersection should too
+        assert!(intersection.start().is_some());
+    }
+
+    #[test]
+    fn test_intersect_multiple_paths() {
+        // Create acceptors with multiple paths
+        let mut acc1 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc1.add_state();
+        let s1 = acc1.add_state();
+        let s2 = acc1.add_state();
+        acc1.set_start(s0);
+        acc1.set_final(s1, BooleanWeight::one());
+        acc1.set_final(s2, BooleanWeight::one());
+        acc1.add_arc(s0, Arc::new(1, 1, BooleanWeight::one(), s1)); // Path: 1
+        acc1.add_arc(s0, Arc::new(2, 2, BooleanWeight::one(), s2)); // Path: 2
+
+        let mut acc2 = VectorFst::<BooleanWeight>::new();
+        let s0 = acc2.add_state();
+        let s1 = acc2.add_state();
+        acc2.set_start(s0);
+        acc2.set_final(s1, BooleanWeight::one());
+        acc2.add_arc(s0, Arc::new(1, 1, BooleanWeight::one(), s1)); // Only accepts 1
+
+        let intersection: VectorFst<BooleanWeight> = intersect(&acc1, &acc2).unwrap();
+
+        // Should intersect correctly
+        assert!(intersection.start().is_some());
+    }
+}

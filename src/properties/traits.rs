@@ -465,6 +465,10 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
         props.set_property(PropertyFlags::TOP_SORTED, true);
         props.set_property(PropertyFlags::ACCESSIBLE, true);
         props.set_property(PropertyFlags::COACCESSIBLE, true);
+        props.set_property(PropertyFlags::CONNECTED, true);
+        props.set_property(PropertyFlags::INPUT_DETERMINISTIC, true);
+        props.set_property(PropertyFlags::OUTPUT_DETERMINISTIC, true);
+        props.set_property(PropertyFlags::FUNCTIONAL, true);
         props.set_property(PropertyFlags::NO_EPSILONS, true);
         props.set_property(PropertyFlags::EPSILONS, false);
         props.set_property(PropertyFlags::NO_INPUT_EPSILONS, true);
@@ -527,8 +531,8 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     };
 
     // For coaccessible, we need to check if all states can reach a final state
-    // This is a simplified check - assume it's true for now
-    let is_coaccessible = true;
+    // using backward DFS from final states
+    let is_coaccessible = compute_coaccessible(fst);
 
     // Check if FST is string-like (linear path with no branching and no cycles)
     let mut is_string = true;
@@ -544,6 +548,10 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
         is_string = false;
     }
 
+    // Check determinism properties and other arc-based properties
+    let (is_input_deterministic, is_output_deterministic) = compute_determinism(fst);
+    let is_functional = compute_functional(fst);
+    
     // Check other properties by examining arcs
     for state in fst.states() {
         for arc in fst.arcs(state) {
@@ -579,9 +587,544 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     props.set_property(PropertyFlags::CYCLIC, !is_acyclic);
     props.set_property(PropertyFlags::ACCESSIBLE, is_accessible);
     props.set_property(PropertyFlags::COACCESSIBLE, is_coaccessible);
+    props.set_property(PropertyFlags::CONNECTED, is_accessible && is_coaccessible);
+    props.set_property(PropertyFlags::INPUT_DETERMINISTIC, is_input_deterministic);
+    props.set_property(PropertyFlags::OUTPUT_DETERMINISTIC, is_output_deterministic);
+    props.set_property(PropertyFlags::FUNCTIONAL, is_functional);
     props.set_property(PropertyFlags::INITIAL_ACYCLIC, is_acyclic);
     props.set_property(PropertyFlags::TOP_SORTED, is_acyclic);
     props.set_property(PropertyFlags::STRING, is_string);
 
     props
+}
+
+/// Compute coaccessible property using backward reachability analysis
+///
+/// A state is coaccessible if there exists a path from that state to some final state.
+/// This function performs backward reachability analysis starting from all final states.
+fn compute_coaccessible<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
+    if fst.num_states() == 0 {
+        return true; // Empty FST is vacuously coaccessible
+    }
+
+    // Collect all final states
+    let mut final_states = Vec::new();
+    for state in fst.states() {
+        if fst.is_final(state) {
+            final_states.push(state);
+        }
+    }
+
+    if final_states.is_empty() {
+        return false; // No final states means no state is coaccessible
+    }
+
+    // Build reverse graph for backward reachability
+    let mut reverse_graph: std::collections::HashMap<StateId, Vec<StateId>> = 
+        std::collections::HashMap::new();
+    
+    for state in fst.states() {
+        for arc in fst.arcs(state) {
+            reverse_graph.entry(arc.nextstate).or_insert_with(Vec::new).push(state);
+        }
+    }
+
+    // Perform backward DFS from all final states
+    let mut visited = std::collections::HashSet::new();
+    let mut stack = final_states.clone();
+
+    while let Some(state) = stack.pop() {
+        if visited.insert(state) {
+            if let Some(predecessors) = reverse_graph.get(&state) {
+                for &pred in predecessors {
+                    if !visited.contains(&pred) {
+                        stack.push(pred);
+                    }
+                }
+            }
+        }
+    }
+
+    // All states should be reachable from final states for coaccessible property
+    visited.len() == fst.num_states()
+}
+
+/// Compute input and output determinism properties
+///
+/// Returns (is_input_deterministic, is_output_deterministic) where:
+/// - Input deterministic: for each state, at most one arc per input label
+/// - Output deterministic: for each state, at most one arc per output label
+fn compute_determinism<W: Semiring, F: Fst<W>>(fst: &F) -> (bool, bool) {
+    let mut is_input_deterministic = true;
+    let mut is_output_deterministic = true;
+
+    for state in fst.states() {
+        let mut input_labels = std::collections::HashSet::new();
+        let mut output_labels = std::collections::HashSet::new();
+
+        for arc in fst.arcs(state) {
+            // Check input determinism
+            if !input_labels.insert(arc.ilabel) {
+                is_input_deterministic = false;
+            }
+
+            // Check output determinism
+            if !output_labels.insert(arc.olabel) {
+                is_output_deterministic = false;
+            }
+
+            // Early exit if both are false
+            if !is_input_deterministic && !is_output_deterministic {
+                return (false, false);
+            }
+        }
+    }
+
+    (is_input_deterministic, is_output_deterministic)
+}
+
+/// Compute functional property
+///
+/// An FST is functional if each input string has at most one corresponding output string.
+/// This is a conservative approximation - we check if the FST is both input-deterministic
+/// and has no epsilon cycles, which guarantees functionality.
+fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
+    // Simple approximation: functional if input deterministic and no epsilon cycles
+    let (is_input_deterministic, _) = compute_determinism(fst);
+    
+    if !is_input_deterministic {
+        return false;
+    }
+
+    // Check for epsilon cycles - functional FSTs shouldn't have epsilon cycles
+    // that could generate multiple outputs for the same input
+
+    fn has_epsilon_cycle<W: Semiring, F: Fst<W>>(
+        fst: &F,
+        state: StateId,
+        visited: &mut std::collections::HashSet<StateId>,
+        rec_stack: &mut std::collections::HashSet<StateId>,
+    ) -> bool {
+        visited.insert(state);
+        rec_stack.insert(state);
+
+        for arc in fst.arcs(state) {
+            // Only consider epsilon transitions for cycles
+            if arc.is_epsilon() {
+                if !visited.contains(&arc.nextstate) {
+                    if has_epsilon_cycle(fst, arc.nextstate, visited, rec_stack) {
+                        return true;
+                    }
+                } else if rec_stack.contains(&arc.nextstate) {
+                    return true;
+                }
+            }
+        }
+
+        rec_stack.remove(&state);
+        false
+    }
+
+    // Check for epsilon cycles from any reachable state
+    if let Some(start_state) = fst.start() {
+        // First, find all reachable states
+        let mut reachable_states: std::collections::HashSet<StateId> = std::collections::HashSet::new();
+        let mut stack = vec![start_state];
+        
+        while let Some(state) = stack.pop() {
+            if reachable_states.insert(state) {
+                for arc in fst.arcs(state) {
+                    if !reachable_states.contains(&arc.nextstate) {
+                        stack.push(arc.nextstate);
+                    }
+                }
+            }
+        }
+        
+        // Check for epsilon cycles starting from any reachable state
+        for &state in &reachable_states {
+            let mut local_visited: std::collections::HashSet<StateId> = std::collections::HashSet::new();
+            let mut local_rec_stack: std::collections::HashSet<StateId> = std::collections::HashSet::new();
+            if has_epsilon_cycle(fst, state, &mut local_visited, &mut local_rec_stack) {
+                return false;
+            }
+        }
+        
+        true // No epsilon cycles found
+    } else {
+        true // Empty FST is vacuously functional
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_empty_fst_properties() {
+        let fst = VectorFst::<TropicalWeight>::new();
+        let props = compute_properties(&fst);
+
+        // Empty FST should have certain properties
+        assert!(props.contains(PropertyFlags::ACCEPTOR));
+        assert!(props.contains(PropertyFlags::UNWEIGHTED));
+        assert!(props.contains(PropertyFlags::ACYCLIC));
+        assert!(props.contains(PropertyFlags::INITIAL_ACYCLIC));
+        assert!(props.contains(PropertyFlags::TOP_SORTED));
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(props.contains(PropertyFlags::COACCESSIBLE));
+    }
+
+    #[test]
+    fn test_single_state_fst_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::one());
+
+        let props = compute_properties(&fst);
+
+        assert!(props.contains(PropertyFlags::ACCEPTOR));
+        assert!(props.contains(PropertyFlags::UNWEIGHTED));
+        assert!(props.contains(PropertyFlags::ACYCLIC));
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(props.contains(PropertyFlags::COACCESSIBLE));
+    }
+
+    #[test]
+    fn test_simple_acceptor_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+
+        let props = compute_properties(&fst);
+
+        // Should be an acceptor (input == output labels)
+        assert!(props.contains(PropertyFlags::ACCEPTOR));
+        assert!(props.contains(PropertyFlags::UNWEIGHTED));
+        assert!(props.contains(PropertyFlags::ACYCLIC));
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(props.contains(PropertyFlags::COACCESSIBLE));
+    }
+
+    #[test]
+    fn test_transducer_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::one(), s1)); // Different input/output
+
+        let props = compute_properties(&fst);
+
+        // Should NOT be an acceptor
+        assert!(!props.contains(PropertyFlags::ACCEPTOR));
+        assert!(props.contains(PropertyFlags::UNWEIGHTED));
+    }
+
+    #[test]
+    fn test_weighted_fst_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(2.5), s1)); // Non-unit weight
+
+        let props = compute_properties(&fst);
+
+        // Should be weighted
+        assert!(!props.contains(PropertyFlags::UNWEIGHTED));
+        assert!(props.contains(PropertyFlags::ACCEPTOR));
+    }
+
+    #[test]
+    fn test_cyclic_fst_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s0)); // Creates cycle
+
+        let props = compute_properties(&fst);
+
+        // Should be cyclic
+        assert!(!props.contains(PropertyFlags::ACYCLIC));
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(props.contains(PropertyFlags::COACCESSIBLE));
+    }
+
+    #[test]
+    fn test_epsilon_fst_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+        fst.add_arc(s0, Arc::epsilon(TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(1, 1, TropicalWeight::one(), s2));
+
+        let props = compute_properties(&fst);
+
+        // Should have epsilon transitions
+        assert!(props.contains(PropertyFlags::EPSILONS));
+        assert!(props.contains(PropertyFlags::INPUT_EPSILONS));
+        assert!(props.contains(PropertyFlags::OUTPUT_EPSILONS));
+    }
+
+    #[test]
+    fn test_deterministic_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Add two arcs with same input label (non-deterministic)
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::one(), s2));
+
+        let props = compute_properties(&fst);
+
+        // Should not be input deterministic
+        assert!(!props.contains(PropertyFlags::INPUT_DETERMINISTIC));
+        // Should not be functional either
+        assert!(!props.contains(PropertyFlags::FUNCTIONAL));
+    }
+    
+    #[test]
+    fn test_input_deterministic_fst() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Different input labels - should be deterministic
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s2));
+        fst.add_arc(s1, Arc::new(3, 3, TropicalWeight::one(), s2));
+
+        let props = compute_properties(&fst);
+
+        // Should be input deterministic
+        assert!(props.contains(PropertyFlags::INPUT_DETERMINISTIC));
+        // Should be functional
+        assert!(props.contains(PropertyFlags::FUNCTIONAL));
+    }
+    
+    #[test]
+    fn test_output_deterministic_fst() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Same output labels - should not be output deterministic
+        fst.add_arc(s0, Arc::new(1, 10, TropicalWeight::one(), s1));
+        fst.add_arc(s0, Arc::new(2, 10, TropicalWeight::one(), s2)); // Same output label
+
+        let props = compute_properties(&fst);
+
+        // Should be input deterministic but not output deterministic
+        assert!(props.contains(PropertyFlags::INPUT_DETERMINISTIC));
+        assert!(!props.contains(PropertyFlags::OUTPUT_DETERMINISTIC));
+    }
+    
+    #[test]
+    fn test_coaccessible_property() {
+        // Test FST where not all states can reach final states
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state(); // Dead end state
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
+        fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::one(), s3)); // Dead end
+
+        let props = compute_properties(&fst);
+
+        // Should be accessible but not coaccessible (s3 can't reach final state)
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(!props.contains(PropertyFlags::COACCESSIBLE));
+        assert!(!props.contains(PropertyFlags::CONNECTED));
+    }
+    
+    #[test]
+    fn test_fully_connected_fst() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
+
+        let props = compute_properties(&fst);
+
+        // Should be both accessible and coaccessible, hence connected
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(props.contains(PropertyFlags::COACCESSIBLE));
+        assert!(props.contains(PropertyFlags::CONNECTED));
+    }
+    
+    #[test]
+    fn test_functional_with_epsilon_cycles() {
+        // Create an FST that has epsilon cycles that actually affect functionality
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+        fst.set_final(s3, TropicalWeight::one());
+
+        // Create a scenario where epsilon cycles can create multiple outputs
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::epsilon(TropicalWeight::one(), s0)); // Epsilon cycle back to start
+        fst.add_arc(s1, Arc::new(1, 2, TropicalWeight::one(), s2)); // Different output for same input
+        fst.add_arc(s0, Arc::new(1, 3, TropicalWeight::one(), s3)); // Another path for input "1"
+
+        let props = compute_properties(&fst);
+
+        // Should not be functional due to non-determinism (multiple arcs with label 1 from s0)
+        assert!(!props.contains(PropertyFlags::FUNCTIONAL));
+        assert!(!props.contains(PropertyFlags::INPUT_DETERMINISTIC)); // This should be false now
+        assert!(props.contains(PropertyFlags::EPSILONS));
+        assert!(props.contains(PropertyFlags::CYCLIC));
+    }
+    
+    #[test]
+    fn test_empty_fst_special_cases() {
+        let fst = VectorFst::<TropicalWeight>::new();
+        let props = compute_properties(&fst);
+
+        // Empty FST should be vacuously functional and deterministic
+        assert!(props.contains(PropertyFlags::INPUT_DETERMINISTIC));
+        assert!(props.contains(PropertyFlags::OUTPUT_DETERMINISTIC));
+        assert!(props.contains(PropertyFlags::FUNCTIONAL));
+        assert!(props.contains(PropertyFlags::ACCESSIBLE));
+        assert!(props.contains(PropertyFlags::COACCESSIBLE));
+        assert!(props.contains(PropertyFlags::CONNECTED));
+    }
+    
+    #[test]
+    fn test_no_final_states() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        // No final states set
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+
+        let props = compute_properties(&fst);
+
+        // Should not be coaccessible (no final states to reach)
+        assert!(!props.contains(PropertyFlags::COACCESSIBLE));
+        assert!(!props.contains(PropertyFlags::CONNECTED));
+    }
+
+    #[test]
+    fn test_string_properties() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Linear chain (string-like structure)
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
+
+        let props = compute_properties(&fst);
+
+        // Should be string-like
+        assert!(props.contains(PropertyFlags::STRING));
+        assert!(props.contains(PropertyFlags::ACYCLIC));
+        assert!(props.contains(PropertyFlags::TOP_SORTED));
+    }
+
+    #[test]
+    fn test_properties_bitwise_operations() {
+        let props1 = PropertyFlags::ACCEPTOR | PropertyFlags::UNWEIGHTED;
+        let props2 = PropertyFlags::ACYCLIC | PropertyFlags::UNWEIGHTED;
+
+        // Test intersection
+        let intersection = props1 & props2;
+        assert!(intersection.contains(PropertyFlags::UNWEIGHTED));
+        assert!(!intersection.contains(PropertyFlags::ACCEPTOR));
+        assert!(!intersection.contains(PropertyFlags::ACYCLIC));
+
+        // Test union
+        let union = props1 | props2;
+        assert!(union.contains(PropertyFlags::ACCEPTOR));
+        assert!(union.contains(PropertyFlags::UNWEIGHTED));
+        assert!(union.contains(PropertyFlags::ACYCLIC));
+
+        // Test complement
+        let complement = !props1;
+        assert!(!complement.contains(PropertyFlags::ACCEPTOR));
+        assert!(!complement.contains(PropertyFlags::UNWEIGHTED));
+    }
+
+    #[test]
+    fn test_properties_compatibility() {
+        // Test that certain properties are mutually exclusive or inclusive
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::one());
+
+        let props = compute_properties(&fst);
+
+        // Accessible and coaccessible should both be true for connected FSTs
+        if props.contains(PropertyFlags::ACCESSIBLE) {
+            assert!(props.contains(PropertyFlags::COACCESSIBLE));
+        }
+
+        // String implies acyclic
+        if props.contains(PropertyFlags::STRING) {
+            assert!(props.contains(PropertyFlags::ACYCLIC));
+        }
+
+        // Top-sorted implies acyclic
+        if props.contains(PropertyFlags::TOP_SORTED) {
+            assert!(props.contains(PropertyFlags::ACYCLIC));
+        }
+    }
 }

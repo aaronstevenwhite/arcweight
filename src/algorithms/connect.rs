@@ -380,3 +380,48 @@ fn find_coaccessible_states<W: Semiring, F: Fst<W>>(fst: &F) -> HashSet<StateId>
 
     coaccessible
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_connect_removes_unreachable() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state(); // unreachable
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s2, Arc::new(2, 2, TropicalWeight::new(1.0), s3)); // disconnected
+
+        let connected: VectorFst<TropicalWeight> = connect(&fst).unwrap();
+
+        // Should remove unreachable states
+        assert!(connected.num_states() < fst.num_states());
+        assert!(connected.start().is_some());
+    }
+
+    #[test]
+    fn test_connect_already_connected() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+
+        let connected: VectorFst<TropicalWeight> = connect(&fst).unwrap();
+
+        // Should be identical or similar
+        assert_eq!(connected.num_states(), fst.num_states());
+        assert!(connected.start().is_some());
+    }
+}

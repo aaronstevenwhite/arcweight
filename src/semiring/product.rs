@@ -646,3 +646,151 @@ impl<W1: Semiring + Default, W2: Semiring + Default> Default for ProductWeight<W
         Self::new(W1::default(), W2::default())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::semiring::{ProbabilityWeight, TropicalWeight};
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_product_weight_creation() {
+        let w = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.5));
+        assert_eq!(*w.w1.value(), 2.0);
+        assert_eq!(*w.w2.value(), 0.5);
+    }
+
+    #[test]
+    fn test_product_zero_one() {
+        let zero = ProductWeight::<TropicalWeight, ProbabilityWeight>::zero();
+        let one = ProductWeight::<TropicalWeight, ProbabilityWeight>::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert!(Semiring::is_zero(&zero.w1));
+        assert!(Semiring::is_zero(&zero.w2));
+        assert!(Semiring::is_one(&one.w1));
+        assert!(Semiring::is_one(&one.w2));
+    }
+
+    #[test]
+    fn test_product_operations() {
+        let w1 = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.3));
+        let w2 = ProductWeight::new(TropicalWeight::new(3.0), ProbabilityWeight::new(0.5));
+
+        let add_result = w1.plus(&w2);
+        let mul_result = w1.times(&w2);
+
+        // Should apply operations component-wise
+        assert_eq!(*add_result.w1.value(), 2.0); // min(2, 3)
+        assert_eq!(*add_result.w2.value(), 0.8); // 0.3 + 0.5
+
+        assert_eq!(*mul_result.w1.value(), 5.0); // 2 + 3
+        assert_eq!(*mul_result.w2.value(), 0.15); // 0.3 * 0.5
+    }
+
+    #[test]
+    fn test_product_display() {
+        let w = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.5));
+        assert_eq!(format!("{}", w), "(2, 0.5)");
+
+        let zero = ProductWeight::<TropicalWeight, ProbabilityWeight>::zero();
+        assert_eq!(format!("{}", zero), "(∞, 0)");
+    }
+
+    #[test]
+    fn test_product_division() {
+        let w1 = ProductWeight::new(TropicalWeight::new(5.0), ProbabilityWeight::new(0.6));
+        let w2 = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.3));
+
+        let result = w1.divide(&w2).unwrap();
+        assert_eq!(*result.w1.value(), 3.0); // 5 - 2
+        assert_eq!(*result.w2.value(), 2.0); // 0.6 / 0.3
+
+        // Division by zero in either component should return None
+        let zero = ProductWeight::<TropicalWeight, ProbabilityWeight>::zero();
+        assert!(w1.divide(&zero).is_none());
+    }
+
+
+    #[test]
+    fn test_product_properties() {
+        let props = ProductWeight::<TropicalWeight, ProbabilityWeight>::properties();
+        
+        // Properties are intersection of component properties
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative); // Both tropical and probability are commutative
+        assert!(!props.idempotent); // Probability is not idempotent
+        assert!(!props.path); // Probability is not path
+    }
+
+    #[test]
+    fn test_product_approx_eq() {
+        let w1 = ProductWeight::new(TropicalWeight::new(2.0001), ProbabilityWeight::new(0.5001));
+        let w2 = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.5));
+
+        assert!(w1.approx_eq(&w2, 0.001));
+        assert!(!w1.approx_eq(&w2, 0.00001));
+    }
+
+    #[test]
+    fn test_product_operator_overloads() {
+        let w1 = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.3));
+        let w2 = ProductWeight::new(TropicalWeight::new(3.0), ProbabilityWeight::new(0.5));
+
+        // Test + operator
+        let sum = w1 + w2;
+        assert_eq!(*sum.w1.value(), 2.0); // min(2, 3)
+        assert_eq!(*sum.w2.value(), 0.8); // 0.3 + 0.5
+
+        // Test * operator
+        let w1 = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.3));
+        let w2 = ProductWeight::new(TropicalWeight::new(3.0), ProbabilityWeight::new(0.5));
+        let product = w1 * w2;
+        assert_eq!(*product.w1.value(), 5.0); // 2 + 3
+        assert_eq!(*product.w2.value(), 0.15); // 0.3 * 0.5
+    }
+
+    #[test]
+    fn test_product_identity_laws() {
+        let w = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.5));
+        let zero = ProductWeight::<TropicalWeight, ProbabilityWeight>::zero();
+        let one = ProductWeight::<TropicalWeight, ProbabilityWeight>::one();
+
+        // Additive identity
+        assert_eq!(w.clone() + zero.clone(), w);
+        assert_eq!(zero.clone() + w.clone(), w);
+
+        // Multiplicative identity
+        assert_eq!(w.clone() * one.clone(), w);
+        assert_eq!(one.clone() * w.clone(), w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w.clone() * zero.clone())));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_product_semiring_axioms() {
+        let a = ProductWeight::new(TropicalWeight::new(1.0), ProbabilityWeight::new(0.2));
+        let b = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.3));
+        let c = ProductWeight::new(TropicalWeight::new(3.0), ProbabilityWeight::new(0.4));
+        let tolerance = 1e-10;
+
+        // Associativity of addition
+        assert!(((a.clone() + b.clone()) + c.clone()).approx_eq(&(a.clone() + (b.clone() + c.clone())), tolerance));
+
+        // Associativity of multiplication
+        assert!(((a.clone() * b.clone()) * c.clone()).approx_eq(&(a.clone() * (b.clone() * c.clone())), tolerance));
+
+        // Commutativity of addition
+        assert_eq!(a.clone() + b.clone(), b.clone() + a.clone());
+
+        // Commutativity of multiplication
+        assert_eq!(a.clone() * b.clone(), b.clone() * a.clone());
+
+        // Distributivity
+        assert!(((a.clone() + b.clone()) * c.clone()).approx_eq(&((a.clone() * c.clone()) + (b.clone() * c.clone())), tolerance));
+    }
+}

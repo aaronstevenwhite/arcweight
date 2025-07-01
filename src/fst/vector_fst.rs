@@ -467,3 +467,198 @@ impl<W: Semiring> ExpandedFst<W> for VectorFst<W> {
             .unwrap_or(&[])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::semiring::TropicalWeight;
+    use num_traits::One;
+
+    #[test]
+    fn test_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+
+        assert_eq!(fst.num_states(), 0);
+        assert!(fst.is_empty());
+        assert_eq!(fst.start(), None);
+        assert_eq!(fst.num_arcs_total(), 0);
+    }
+
+    #[test]
+    fn test_add_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        assert_eq!(s0, 0);
+        assert_eq!(s1, 1);
+        assert_eq!(fst.num_states(), 2);
+
+        // FST is considered empty until start state is set
+        fst.set_start(s0);
+        assert!(!fst.is_empty());
+    }
+
+    #[test]
+    fn test_start_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+
+        assert_eq!(fst.start(), None);
+
+        fst.set_start(s0);
+        assert_eq!(fst.start(), Some(s0));
+    }
+
+    #[test]
+    fn test_final_states() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        assert!(!fst.is_final(s0));
+        assert!(!fst.is_final(s1));
+
+        fst.set_final(s1, TropicalWeight::new(2.5));
+        assert!(!fst.is_final(s0));
+        assert!(fst.is_final(s1));
+        assert_eq!(*fst.final_weight(s1).unwrap().value(), 2.5);
+
+        fst.remove_final(s1);
+        assert!(!fst.is_final(s1));
+    }
+
+    #[test]
+    fn test_add_arcs() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        assert_eq!(fst.num_arcs(s0), 0);
+        assert_eq!(fst.num_arcs(s1), 0);
+
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.5), s1));
+        fst.add_arc(s0, Arc::new(3, 4, TropicalWeight::new(2.0), s1));
+
+        assert_eq!(fst.num_arcs(s0), 2);
+        assert_eq!(fst.num_arcs(s1), 0);
+        assert_eq!(fst.num_arcs_total(), 2);
+    }
+
+    #[test]
+    fn test_arc_iteration() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.5), s1));
+        fst.add_arc(s0, Arc::new(3, 4, TropicalWeight::new(2.0), s1));
+
+        let arcs: Vec<_> = fst.arcs(s0).collect();
+        assert_eq!(arcs.len(), 2);
+
+        assert_eq!(arcs[0].ilabel, 1);
+        assert_eq!(arcs[0].olabel, 2);
+        assert_eq!(*arcs[0].weight.value(), 1.5);
+        assert_eq!(arcs[0].nextstate, s1);
+
+        assert_eq!(arcs[1].ilabel, 3);
+        assert_eq!(arcs[1].olabel, 4);
+        assert_eq!(*arcs[1].weight.value(), 2.0);
+        assert_eq!(arcs[1].nextstate, s1);
+    }
+
+    #[test]
+    fn test_reserve_states() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        fst.reserve_states(100);
+
+        // Add states and verify they are added efficiently
+        for i in 0..100 {
+            let state = fst.add_state();
+            assert_eq!(state, i);
+        }
+
+        assert_eq!(fst.num_states(), 100);
+    }
+
+    #[test]
+    fn test_reserve_arcs() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.reserve_arcs(s0, 50);
+
+        // Add arcs and verify they are added efficiently
+        for i in 0..50 {
+            fst.add_arc(
+                s0,
+                Arc::new(i, i, TropicalWeight::new(i as f32), s1),
+            );
+        }
+
+        assert_eq!(fst.num_arcs(s0), 50);
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.5), s1));
+
+        assert!(!fst.is_empty());
+        assert_eq!(fst.num_states(), 2);
+
+        fst.clear();
+
+        assert!(fst.is_empty());
+        assert_eq!(fst.num_states(), 0);
+        assert_eq!(fst.start(), None);
+    }
+
+    #[test]
+    fn test_state_iteration() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        let states: Vec<_> = fst.states().collect();
+        assert_eq!(states, vec![s0, s1, s2]);
+    }
+
+    // Property-based tests
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn test_fst_state_consistency_property(num_states in 1..100usize) {
+                let mut fst = VectorFst::<TropicalWeight>::new();
+
+                for _ in 0..num_states {
+                    fst.add_state();
+                }
+
+                assert_eq!(fst.num_states(), num_states);
+
+                // all states should be valid
+                for state in fst.states() {
+                    assert!(state < num_states as StateId);
+                }
+
+                // Arc counts should be consistent
+                let total_arcs = fst.num_arcs_total();
+                let sum_arcs: usize = fst.states().map(|s| fst.num_arcs(s)).sum();
+                assert_eq!(total_arcs, sum_arcs);
+            }
+        }
+    }
+
+}

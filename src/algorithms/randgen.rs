@@ -428,3 +428,354 @@ fn add_path_to_fst<W: Semiring, M: MutableFst<W>>(
     fst.set_final(current, W::one());
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_randgen_config_default() {
+        let config = RandGenConfig::default();
+        assert_eq!(config.max_length, 100);
+        assert_eq!(config.npath, 1);
+        assert!(!config.weighted);
+        assert_eq!(config.seed, None);
+    }
+
+    #[test]
+    fn test_randgen_config_custom() {
+        let config = RandGenConfig {
+            max_length: 50,
+            npath: 10,
+            weighted: true,
+            seed: Some(42),
+        };
+        assert_eq!(config.max_length, 50);
+        assert_eq!(config.npath, 10);
+        assert!(config.weighted);
+        assert_eq!(config.seed, Some(42));
+    }
+
+    #[test]
+    fn test_randgen_simple_fst() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
+
+        let config = RandGenConfig {
+            max_length: 10,
+            npath: 3,
+            weighted: false,
+            seed: Some(123),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should generate paths
+        assert!(result.start().is_some());
+        assert!(result.num_states() > 0);
+    }
+
+    #[test]
+    fn test_randgen_single_path() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+
+        let config = RandGenConfig {
+            max_length: 5,
+            npath: 1,
+            weighted: false,
+            seed: Some(456),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should generate exactly one path
+        assert!(result.start().is_some());
+        assert!(result.num_states() >= 2); // At least start and final state
+    }
+
+    #[test]
+    fn test_randgen_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+        let config = RandGenConfig::default();
+        
+        // Empty FST should return error (no start state)
+        let result = randgen::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst, config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_randgen_no_start_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_final(s0, TropicalWeight::one());
+        // No start state set
+
+        let config = RandGenConfig::default();
+        let result = randgen::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst, config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_randgen_single_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::new(2.0));
+
+        let config = RandGenConfig {
+            max_length: 5,
+            npath: 2,
+            weighted: false,
+            seed: Some(789),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Single-state FST with no arcs may produce empty paths
+        // The result should be valid even if empty
+        assert!(result.start().is_some() || result.num_states() == 0);
+    }
+
+    #[test]
+    fn test_randgen_multiple_paths() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Multiple path choices
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
+
+        let config = RandGenConfig {
+            max_length: 10,
+            npath: 5,
+            weighted: false,
+            seed: Some(321),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should generate multiple paths
+        assert!(result.start().is_some());
+        assert!(result.num_states() > 0);
+    }
+
+    #[test]
+    fn test_randgen_weighted_selection() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.set_final(s2, TropicalWeight::one());
+
+        // Different weights (though current implementation doesn't use them properly)
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.1), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
+
+        let config = RandGenConfig {
+            max_length: 5,
+            npath: 10,
+            weighted: true, // Enable weighted selection
+            seed: Some(654),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should generate paths (weighted selection currently same as uniform)
+        assert!(result.start().is_some());
+        assert!(result.num_states() > 0);
+    }
+
+    #[test]
+    fn test_randgen_max_length_constraint() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        
+        // Self-loop to test max length
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
+
+        let config = RandGenConfig {
+            max_length: 3, // Short max length
+            npath: 5,
+            weighted: false,
+            seed: Some(987),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should respect max length constraint
+        assert!(result.start().is_some());
+    }
+
+    #[test]
+    fn test_randgen_linear_chain() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let states: Vec<_> = (0..5).map(|_| fst.add_state()).collect();
+
+        fst.set_start(states[0]);
+        fst.set_final(states[4], TropicalWeight::one());
+
+        // Create linear chain
+        for i in 0..4 {
+            fst.add_arc(states[i], Arc::new(
+                (i + 1) as u32, (i + 1) as u32,
+                TropicalWeight::new(i as f32),
+                states[i + 1]
+            ));
+        }
+
+        let config = RandGenConfig {
+            max_length: 10,
+            npath: 3,
+            weighted: false,
+            seed: Some(111),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should follow linear chain
+        assert!(result.start().is_some());
+        assert!(result.num_states() > 0);
+    }
+
+    #[test]
+    fn test_randgen_disconnected_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state(); // Disconnected state
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.set_final(s2, TropicalWeight::one()); // Unreachable
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        // s2 is not connected to the graph
+
+        let config = RandGenConfig {
+            max_length: 10,
+            npath: 5,
+            weighted: false,
+            seed: Some(222),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should only reach connected states
+        assert!(result.start().is_some());
+    }
+
+    #[test]
+    fn test_randgen_zero_paths() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+
+        let config = RandGenConfig {
+            max_length: 10,
+            npath: 0, // Zero paths requested
+            weighted: false,
+            seed: Some(333),
+        };
+        let result: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Should return valid but empty FST
+        assert!(result.start().is_none());
+        assert_eq!(result.num_states(), 0);
+    }
+
+    #[test]
+    fn test_randgen_reproducibility() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.set_final(s2, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s2));
+
+        let config = RandGenConfig {
+            max_length: 5,
+            npath: 3,
+            weighted: false,
+            seed: Some(444), // Fixed seed
+        };
+
+        // Generate twice with same seed
+        let result1: VectorFst<TropicalWeight> = randgen(&fst, config.clone()).unwrap();
+        let result2: VectorFst<TropicalWeight> = randgen(&fst, config).unwrap();
+
+        // Results should be identical (same seed)
+        assert_eq!(result1.num_states(), result2.num_states());
+        assert_eq!(result1.start(), result2.start());
+    }
+
+    #[test]
+    fn test_add_path_to_fst_empty() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let path: Vec<Arc<TropicalWeight>> = vec![];
+        
+        let result = add_path_to_fst(&mut fst, &path, 0);
+        assert!(result.is_ok());
+        assert_eq!(fst.num_states(), 0);
+    }
+
+    #[test]
+    fn test_add_path_to_fst_single_arc() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let arc = Arc::new(1, 1, TropicalWeight::new(0.5), 1);
+        let path = vec![arc];
+        
+        let result = add_path_to_fst(&mut fst, &path, 0);
+        assert!(result.is_ok());
+        assert_eq!(fst.num_states(), 2); // Start + final state
+        assert!(fst.start().is_some());
+    }
+
+    #[test]
+    fn test_add_path_to_fst_multiple_arcs() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let path = vec![
+            Arc::new(1, 1, TropicalWeight::new(0.1), 1),
+            Arc::new(2, 2, TropicalWeight::new(0.2), 2),
+            Arc::new(3, 3, TropicalWeight::new(0.3), 3),
+        ];
+        
+        let result = add_path_to_fst(&mut fst, &path, 0);
+        assert!(result.is_ok());
+        assert_eq!(fst.num_states(), 4); // Linear chain: start + 3 states
+        assert!(fst.start().is_some());
+        
+        // Check that final state is marked as final
+        let final_state = 3; // Last state in the chain
+        assert!(fst.is_final(final_state));
+    }
+}

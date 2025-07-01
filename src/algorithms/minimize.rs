@@ -188,3 +188,90 @@ where
     // ensure connected
     connect(&det2)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_minimize_simple_fst() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
+
+        let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
+        
+        // Basic structure should be preserved
+        assert!(minimized.start().is_some());
+        assert!(minimized.num_states() > 0);
+    }
+
+    #[test]
+    fn test_minimize_redundant_states() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state(); // Redundant final state
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+        fst.set_final(s3, TropicalWeight::one()); // Same final weight
+
+        // Two paths that should merge in minimization
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s3));
+
+        let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
+        
+        // Should successfully minimize (exact reduction depends on algorithm)
+        assert!(minimized.start().is_some());
+    }
+
+    #[test]
+    fn test_minimize_already_minimal() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+
+        let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
+        
+        // Should successfully minimize
+        assert!(minimized.start().is_some());
+    }
+
+    #[test]
+    fn test_minimize_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+        let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
+        
+        assert_eq!(minimized.num_states(), 0);
+        assert!(minimized.is_empty());
+    }
+
+    #[test]
+    fn test_minimize_single_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::one());
+
+        let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
+        
+        // Minimization may change state count but should preserve structure
+        assert!(minimized.num_states() > 0);
+        assert!(minimized.start().is_some());
+    }
+}

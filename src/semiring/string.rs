@@ -408,3 +408,154 @@ impl Semiring for StringWeight {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_string_weight_creation() {
+        let w = StringWeight::from_string("hello");
+        assert_eq!(w.to_string().unwrap(), "hello");
+    }
+
+    #[test]
+    fn test_string_zero_one() {
+        let zero = StringWeight::zero();
+        let one = StringWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert_eq!(one.as_bytes(), &[] as &[u8]);
+    }
+
+    #[test]
+    fn test_string_concatenation() {
+        let w1 = StringWeight::from_string("hello");
+        let w2 = StringWeight::from_string("world");
+
+        let result = w1.times(&w2);
+        assert_eq!(result.to_string().unwrap(), "helloworld");
+    }
+
+    #[test]
+    fn test_string_lcp() {
+        let w1 = StringWeight::from_string("hello");
+        let w2 = StringWeight::from_string("help");
+
+        let result = w1.plus(&w2);
+        assert_eq!(result.to_string().unwrap(), "hel");
+    }
+
+    #[test]
+    fn test_string_display() {
+        let w = StringWeight::from_string("test");
+        let zero = StringWeight::zero();
+        let one = StringWeight::one();
+
+        assert_eq!(format!("{}", w), "\"test\"");
+        assert_eq!(format!("{}", zero), "[255]");
+        assert_eq!(format!("{}", one), "\"\"");
+    }
+
+    #[test]
+    fn test_string_from_bytes() {
+        let bytes = vec![72, 101, 108, 108, 111]; // "Hello"
+        let w = StringWeight::from_bytes(bytes.clone());
+        assert_eq!(w.as_bytes(), &bytes);
+        assert_eq!(w.to_string().unwrap(), "Hello");
+    }
+
+    #[test]
+    fn test_string_zero_operations() {
+        let w = StringWeight::from_string("test");
+        let zero = StringWeight::zero();
+
+        // Addition with zero
+        assert_eq!(w.plus(&zero), w);
+        assert_eq!(zero.plus(&w), w);
+
+        // Multiplication with zero
+        assert!(Semiring::is_zero(&w.times(&zero)));
+        assert!(Semiring::is_zero(&zero.times(&w)));
+    }
+
+    #[test]
+    fn test_string_one_operations() {
+        let w = StringWeight::from_string("test");
+        let one = StringWeight::one();
+
+        // Multiplication with one (empty string)
+        assert_eq!(w.times(&one), w);
+        assert_eq!(one.times(&w), w);
+    }
+
+    #[test]
+    fn test_string_lcp_edge_cases() {
+        let w1 = StringWeight::from_string("abc");
+        let w2 = StringWeight::from_string("xyz");
+        
+        // No common prefix
+        let result = w1.plus(&w2);
+        assert_eq!(result.to_string().unwrap(), "");
+        assert!(Semiring::is_one(&result));
+
+        // One string is prefix of another
+        let w3 = StringWeight::from_string("abcdef");
+        let w4 = StringWeight::from_string("abc");
+        let result2 = w3.plus(&w4);
+        assert_eq!(result2.to_string().unwrap(), "abc");
+    }
+
+    #[test]
+    fn test_string_properties() {
+        let props = StringWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(!props.commutative); // String concatenation is not commutative
+        assert!(props.idempotent);
+        assert!(!props.path);
+    }
+
+    #[test]
+    fn test_string_operator_overloads() {
+        let w1 = StringWeight::from_string("hello");
+        let w2 = StringWeight::from_string("world");
+
+        // Test * operator (concatenation)
+        assert_eq!(w1.clone() * w2.clone(), StringWeight::from_string("helloworld"));
+
+        // Test + operator (LCP)
+        let w3 = StringWeight::from_string("help");
+        assert_eq!(w1 + w3, StringWeight::from_string("hel"));
+    }
+
+    #[test]
+    fn test_string_identity_laws() {
+        let w = StringWeight::from_string("test");
+        let zero = StringWeight::zero();
+        let one = StringWeight::one();
+
+        // Additive identity (zero returns the other element)
+        assert_eq!(w.clone() + zero.clone(), w);
+        assert_eq!(zero.clone() + w.clone(), w);
+
+        // Multiplicative identity
+        assert_eq!(w.clone() * one.clone(), w);
+        assert_eq!(one * w.clone(), w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w.clone() * zero.clone())));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_string_non_commutative() {
+        let w1 = StringWeight::from_string("ab");
+        let w2 = StringWeight::from_string("cd");
+
+        // Concatenation is not commutative
+        assert_ne!(w1.clone() * w2.clone(), w2 * w1);
+    }
+}

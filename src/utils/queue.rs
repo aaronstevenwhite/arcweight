@@ -581,3 +581,90 @@ impl Queue for TopOrderQueue {
         self.pos = self.order.len();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lifo_queue() {
+        let mut queue = LifoQueue::new();
+
+        queue.enqueue(1);
+        queue.enqueue(2);
+        queue.enqueue(3);
+
+        // LIFO order
+        assert_eq!(queue.dequeue(), Some(3));
+        assert_eq!(queue.dequeue(), Some(2));
+        assert_eq!(queue.dequeue(), Some(1));
+        assert_eq!(queue.dequeue(), None);
+    }
+
+    #[test]
+    fn test_fifo_queue() {
+        let mut queue = FifoQueue::new();
+
+        queue.enqueue(1);
+        queue.enqueue(2);
+        queue.enqueue(3);
+
+        // FIFO order
+        assert_eq!(queue.dequeue(), Some(1));
+        assert_eq!(queue.dequeue(), Some(2));
+        assert_eq!(queue.dequeue(), Some(3));
+        assert_eq!(queue.dequeue(), None);
+    }
+
+    #[test]
+    fn test_queue_operations() {
+        let mut queue = FifoQueue::new();
+
+        assert!(queue.is_empty());
+
+        queue.enqueue(1);
+        queue.enqueue(2);
+
+        assert!(!queue.is_empty());
+
+        queue.clear();
+        assert!(queue.is_empty());
+    }
+
+    #[test]
+    fn test_state_queue() {
+        let mut queue = StateQueue::new();
+
+        queue.enqueue_with_priority(2, std::cmp::Reverse(2));
+        queue.enqueue_with_priority(1, std::cmp::Reverse(1));
+        queue.enqueue_with_priority(3, std::cmp::Reverse(3));
+
+        // Should dequeue in ascending order (lower values first due to Reverse)
+        assert_eq!(queue.dequeue(), Some(1));
+        assert_eq!(queue.dequeue(), Some(2));
+        assert_eq!(queue.dequeue(), Some(3));
+        assert_eq!(queue.dequeue(), None);
+    }
+
+    #[test]
+    fn test_top_order_queue() {
+        let order = vec![3, 1, 4, 2];
+        let mut queue = TopOrderQueue::from_order(order);
+
+        // Should follow the provided order
+        assert_eq!(queue.dequeue(), Some(3));
+        assert_eq!(queue.dequeue(), Some(1));
+        assert_eq!(queue.dequeue(), Some(4));
+        assert_eq!(queue.dequeue(), Some(2));
+        assert_eq!(queue.dequeue(), None);
+
+        assert!(queue.is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "TopOrderQueue is read-only")]
+    fn test_top_order_queue_enqueue_panics() {
+        let mut queue = TopOrderQueue::from_order(vec![]);
+        queue.enqueue(1); // Should panic
+    }
+}

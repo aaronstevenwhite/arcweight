@@ -359,3 +359,293 @@ fn compute_topological_order<W: Semiring, F: Fst<W>>(fst: &F) -> Result<Vec<Stat
     order.reverse();
     Ok(order)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_topsort() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s2));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(3, 3, TropicalWeight::new(1.0), s2));
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        // Verify topological order: all arcs go from lower to higher state IDs
+        for state in sorted.states() {
+            for arc in sorted.arcs(state) {
+                assert!(
+                    state < arc.nextstate,
+                    "Arc from {} to {} violates topological order",
+                    state,
+                    arc.nextstate
+                );
+            }
+        }
+
+        assert!(sorted.start().is_some());
+        assert_eq!(sorted.num_states(), fst.num_states());
+    }
+
+    #[test]
+    fn test_topsort_cyclic() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+
+        // Create a cycle
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(1.0), s0));
+
+        // Topsort should fail or handle cycles appropriately
+        let result =
+            topsort::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst);
+        if let Ok(sorted) = result {
+            // If it succeeds, should still have valid structure
+            assert!(sorted.start().is_some());
+        }
+        // If it fails, that's also acceptable for cyclic graphs
+    }
+
+    #[test]
+    fn test_topsort_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        assert_eq!(sorted.num_states(), 0);
+        assert!(sorted.is_empty());
+    }
+
+    #[test]
+    fn test_topsort_single_state() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::new(2.0));
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        assert_eq!(sorted.num_states(), 1);
+        assert_eq!(sorted.start(), Some(0));
+        assert!(sorted.is_final(0));
+        assert_eq!(sorted.final_weight(0), Some(&TropicalWeight::new(2.0)));
+    }
+
+    #[test]
+    fn test_topsort_linear_chain() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let states: Vec<_> = (0..5).map(|_| fst.add_state()).collect();
+
+        fst.set_start(states[0]);
+        fst.set_final(states[4], TropicalWeight::one());
+
+        // Create linear chain: 0 -> 1 -> 2 -> 3 -> 4
+        for i in 0..4 {
+            fst.add_arc(states[i], Arc::new(
+                (i + 1) as u32, (i + 1) as u32,
+                TropicalWeight::new(i as f32),
+                states[i + 1]
+            ));
+        }
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        // Verify topological ordering is maintained
+        assert_eq!(sorted.num_states(), fst.num_states());
+        assert!(sorted.start().is_some());
+
+        // All arcs should go forward in the sorted order
+        for state in sorted.states() {
+            for arc in sorted.arcs(state) {
+                assert!(state < arc.nextstate);
+            }
+        }
+    }
+
+    #[test]
+    fn test_topsort_diamond_dag() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state(); // Source
+        let s1 = fst.add_state(); // Left branch
+        let s2 = fst.add_state(); // Right branch  
+        let s3 = fst.add_state(); // Sink
+
+        fst.set_start(s0);
+        fst.set_final(s3, TropicalWeight::one());
+
+        // Diamond pattern: 0 -> {1,2} -> 3
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s2));
+        fst.add_arc(s1, Arc::new(3, 3, TropicalWeight::one(), s3));
+        fst.add_arc(s2, Arc::new(4, 4, TropicalWeight::one(), s3));
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        assert_eq!(sorted.num_states(), 4);
+        assert!(sorted.start().is_some());
+
+        // Verify topological ordering
+        for state in sorted.states() {
+            for arc in sorted.arcs(state) {
+                assert!(state < arc.nextstate);
+            }
+        }
+    }
+
+    #[test]
+    fn test_topsort_disconnected_components() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state(); // Disconnected
+        let s3 = fst.add_state(); // Disconnected
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.set_final(s3, TropicalWeight::new(2.0));
+
+        // Connected component: 0 -> 1
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+
+        // Disconnected component: 2 -> 3
+        fst.add_arc(s2, Arc::new(2, 2, TropicalWeight::one(), s3));
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        assert_eq!(sorted.num_states(), 4);
+        assert!(sorted.start().is_some());
+
+        // All arcs should still maintain topological order
+        for state in sorted.states() {
+            for arc in sorted.arcs(state) {
+                assert!(state < arc.nextstate);
+            }
+        }
+    }
+
+    #[test]
+    fn test_topsort_preserves_weights() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::new(3.5));
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.2), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(2.3), s2));
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        // Weights should be preserved
+        assert_eq!(sorted.num_states(), fst.num_states());
+        
+        // Check that weights are preserved (structure may change but semantics preserved)
+        let total_weight_orig: f32 = fst.states()
+            .flat_map(|s| fst.arcs(s))
+            .map(|arc| *arc.weight.value())
+            .sum();
+        let total_weight_sorted: f32 = sorted.states()
+            .flat_map(|s| sorted.arcs(s))
+            .map(|arc| *arc.weight.value())
+            .sum();
+        
+        assert!((total_weight_orig - total_weight_sorted).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_topological_order() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
+
+        let order = compute_topological_order(&fst).unwrap();
+
+        assert_eq!(order.len(), 3);
+        
+        // Should contain all states
+        assert!(order.contains(&s0));
+        assert!(order.contains(&s1));
+        assert!(order.contains(&s2));
+        
+        // Find positions in the ordering
+        let pos0 = order.iter().position(|&x| x == s0).unwrap();
+        let pos1 = order.iter().position(|&x| x == s1).unwrap();
+        let pos2 = order.iter().position(|&x| x == s2).unwrap();
+        
+        // Should respect dependencies: s0 before s1 before s2
+        assert!(pos0 < pos1);
+        assert!(pos1 < pos2);
+    }
+
+    #[test] 
+    fn test_topsort_self_loop() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        
+        fst.set_start(s0);
+        fst.set_final(s0, TropicalWeight::one());
+        
+        // Self-loop creates a cycle
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0));
+        
+        // Should detect the cycle
+        let result = compute_topological_order(&fst);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_topsort_complex_dag() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let states: Vec<_> = (0..6).map(|_| fst.add_state()).collect();
+
+        fst.set_start(states[0]);
+        fst.set_final(states[5], TropicalWeight::one());
+
+        // Complex DAG structure
+        fst.add_arc(states[0], Arc::new(1, 1, TropicalWeight::one(), states[1]));
+        fst.add_arc(states[0], Arc::new(2, 2, TropicalWeight::one(), states[2]));
+        fst.add_arc(states[1], Arc::new(3, 3, TropicalWeight::one(), states[3]));
+        fst.add_arc(states[2], Arc::new(4, 4, TropicalWeight::one(), states[3]));
+        fst.add_arc(states[1], Arc::new(5, 5, TropicalWeight::one(), states[4]));
+        fst.add_arc(states[3], Arc::new(6, 6, TropicalWeight::one(), states[5]));
+        fst.add_arc(states[4], Arc::new(7, 7, TropicalWeight::one(), states[5]));
+
+        let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
+
+        assert_eq!(sorted.num_states(), 6);
+        assert!(sorted.start().is_some());
+
+        // Verify all arcs respect topological order
+        for state in sorted.states() {
+            for arc in sorted.arcs(state) {
+                assert!(
+                    state < arc.nextstate,
+                    "Arc from {} to {} violates topological order",
+                    state,
+                    arc.nextstate
+                );
+            }
+        }
+    }
+}

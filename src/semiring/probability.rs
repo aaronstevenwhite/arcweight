@@ -359,3 +359,203 @@ impl FromStr for ProbabilityWeight {
         s.parse::<f64>().map(Self::new)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_traits::{One, Zero};
+
+    #[test]
+    fn test_probability_weight_creation() {
+        let w = ProbabilityWeight::new(0.5);
+        assert_eq!(*w.value(), 0.5);
+    }
+
+    #[test]
+    fn test_probability_zero_one() {
+        let zero = ProbabilityWeight::zero();
+        let one = ProbabilityWeight::one();
+
+        assert!(Semiring::is_zero(&zero));
+        assert!(Semiring::is_one(&one));
+        assert_eq!(*zero.value(), 0.0);
+        assert_eq!(*one.value(), 1.0);
+    }
+
+    #[test]
+    fn test_probability_addition() {
+        let w1 = ProbabilityWeight::new(0.3);
+        let w2 = ProbabilityWeight::new(0.5);
+        let result = w1.plus(&w2);
+
+        assert_eq!(*result.value(), 0.8); // regular addition
+    }
+
+    #[test]
+    fn test_probability_multiplication() {
+        let w1 = ProbabilityWeight::new(0.3);
+        let w2 = ProbabilityWeight::new(0.5);
+        let result = w1.times(&w2);
+
+        assert_eq!(*result.value(), 0.15); // regular multiplication
+    }
+
+    #[test]
+    fn test_probability_zero_operations() {
+        let w = ProbabilityWeight::new(0.5);
+        let zero = ProbabilityWeight::zero();
+
+        let add_result = w.plus(&zero);
+        let mul_result = w.times(&zero);
+
+        assert_eq!(add_result, w);
+        assert!(Semiring::is_zero(&mul_result));
+    }
+
+    #[test]
+    fn test_probability_one_operations() {
+        let w = ProbabilityWeight::new(0.5);
+        let one = ProbabilityWeight::one();
+
+        let mul_result = w.times(&one);
+        assert_eq!(mul_result, w);
+    }
+
+    #[test]
+    fn test_probability_display() {
+        let w = ProbabilityWeight::new(0.5);
+        assert_eq!(format!("{}", w), "0.5");
+    }
+
+    #[test]
+    fn test_probability_division() {
+        let w1 = ProbabilityWeight::new(0.6);
+        let w2 = ProbabilityWeight::new(0.3);
+
+        let result = w1.divide(&w2).unwrap();
+        assert_eq!(*result.value(), 2.0);
+
+        // Division by zero should return None
+        let zero = ProbabilityWeight::zero();
+        assert!(w1.divide(&zero).is_none());
+    }
+
+    #[test]
+    fn test_probability_star() {
+        // For p < 1, star should be 1/(1-p)
+        let w = ProbabilityWeight::new(0.5);
+        let star_result = w.star();
+        assert_eq!(*star_result.value(), 2.0);
+
+        // For p >= 1, star should be infinity
+        let w_one = ProbabilityWeight::new(1.0);
+        assert!(w_one.star().value().is_infinite());
+
+        let w_greater = ProbabilityWeight::new(1.5);
+        assert!(w_greater.star().value().is_infinite());
+    }
+
+    #[test]
+    fn test_probability_properties() {
+        let props = ProbabilityWeight::properties();
+        assert!(props.left_semiring);
+        assert!(props.right_semiring);
+        assert!(props.commutative);
+        assert!(!props.idempotent);
+        assert!(!props.path);
+    }
+
+    #[test]
+    fn test_probability_approx_eq() {
+        let w1 = ProbabilityWeight::new(0.5000001);
+        let w2 = ProbabilityWeight::new(0.5);
+
+        assert!(w1.approx_eq(&w2, 0.001));
+        assert!(!w1.approx_eq(&w2, 0.00000001));
+    }
+
+    #[test]
+    fn test_probability_from_str() {
+        assert_eq!(
+            ProbabilityWeight::from_str("0.5").unwrap(),
+            ProbabilityWeight::new(0.5)
+        );
+    }
+
+    #[test]
+    fn test_probability_operator_overloads() {
+        let w1 = ProbabilityWeight::new(0.3);
+        let w2 = ProbabilityWeight::new(0.5);
+
+        // Test + operator (addition)
+        assert_eq!(w1 + w2, ProbabilityWeight::new(0.8));
+
+        // Test * operator (multiplication)
+        assert_eq!(w1 * w2, ProbabilityWeight::new(0.15));
+    }
+
+    #[test]
+    fn test_probability_identity_laws() {
+        let w = ProbabilityWeight::new(0.5);
+        let zero = ProbabilityWeight::zero();
+        let one = ProbabilityWeight::one();
+
+        // Additive identity
+        assert_eq!(w + zero, w);
+        assert_eq!(zero + w, w);
+
+        // Multiplicative identity
+        assert_eq!(w * one, w);
+        assert_eq!(one * w, w);
+
+        // Annihilation by zero
+        assert!(Semiring::is_zero(&(w * zero)));
+        assert!(Semiring::is_zero(&(zero * w)));
+    }
+
+    #[test]
+    fn test_probability_semiring_axioms() {
+        let a = ProbabilityWeight::new(0.2);
+        let b = ProbabilityWeight::new(0.3);
+        let c = ProbabilityWeight::new(0.4);
+        let tolerance = 1e-10;
+
+        // Associativity of addition
+        assert!(((a + b) + c).approx_eq(&(a + (b + c)), tolerance));
+
+        // Associativity of multiplication
+        assert!(((a * b) * c).approx_eq(&(a * (b * c)), tolerance));
+
+        // Commutativity of addition
+        assert_eq!(a + b, b + a);
+
+        // Commutativity of multiplication
+        assert_eq!(a * b, b * a);
+
+        // Distributivity
+        assert!(((a + b) * c).approx_eq(&((a * c) + (b * c)), tolerance));
+    }
+
+    // Property-based tests
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn test_probability_bounds_property(a in 0.0..=1.0, b in 0.0..=1.0) {
+                let w1 = ProbabilityWeight::new(a);
+                let w2 = ProbabilityWeight::new(b);
+
+                // sum should be >= max(a, b)
+                let sum = w1.plus(&w2);
+                assert!(*sum.value() >= a.max(b));
+
+                // product should be <= min(a, b)
+                let prod = w1.times(&w2);
+                assert!(*prod.value() <= a.min(b));
+                assert!(*prod.value() >= 0.0);
+            }
+        }
+    }
+}

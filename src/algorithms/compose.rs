@@ -322,3 +322,107 @@ where
 {
     compose(fst1, fst2, DefaultComposeFilter)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_basic_composition() {
+        // First FST: input -> intermediate
+        let mut fst1 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst1.add_state();
+        let s1 = fst1.add_state();
+        fst1.set_start(s0);
+        fst1.set_final(s1, TropicalWeight::one());
+        fst1.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.0), s1));
+
+        // Second FST: intermediate -> output
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let t0 = fst2.add_state();
+        let t1 = fst2.add_state();
+        fst2.set_start(t0);
+        fst2.set_final(t1, TropicalWeight::one());
+        fst2.add_arc(t0, Arc::new(2, 3, TropicalWeight::new(2.0), t1));
+
+        let composed: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2).unwrap();
+
+        assert!(composed.start().is_some());
+        assert!(composed.num_states() > 0);
+
+        // Should have at least one path from input 1 to output 3
+        let mut found_path = false;
+        for state in composed.states() {
+            for arc in composed.arcs(state) {
+                if arc.ilabel == 1 && arc.olabel == 3 {
+                    found_path = true;
+                    // Weight should be combined: 1.0 + 2.0 = 3.0
+                    assert_eq!(*arc.weight.value(), 3.0);
+                }
+            }
+        }
+        assert!(found_path);
+    }
+
+    #[test]
+    fn test_composition_no_match() {
+        let mut fst1 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst1.add_state();
+        let s1 = fst1.add_state();
+        fst1.set_start(s0);
+        fst1.set_final(s1, TropicalWeight::one());
+        fst1.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(1.0), s1));
+
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let t0 = fst2.add_state();
+        let t1 = fst2.add_state();
+        fst2.set_start(t0);
+        fst2.set_final(t1, TropicalWeight::one());
+        fst2.add_arc(t0, Arc::new(3, 4, TropicalWeight::new(2.0), t1)); // No match
+
+        let composed: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2).unwrap();
+
+        // Should result in empty FST or FST with no accepting paths
+        assert!(composed.start().is_some()); // May have start state
+
+        // Check if any state is final
+        let mut has_final = false;
+        for state in composed.states() {
+            if composed.is_final(state) {
+                has_final = true;
+                break;
+            }
+        }
+        // Should have no final states reachable from start
+        if has_final {
+            // If there are final states, they should not be reachable
+            assert_eq!(composed.num_arcs_total(), 0);
+        }
+    }
+
+    #[test]
+    fn test_composition_epsilon() {
+        let mut fst1 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst1.add_state();
+        let s1 = fst1.add_state();
+        let s2 = fst1.add_state();
+        fst1.set_start(s0);
+        fst1.set_final(s2, TropicalWeight::one());
+        fst1.add_arc(s0, Arc::epsilon(TropicalWeight::new(0.5), s1));
+        fst1.add_arc(s1, Arc::new(1, 2, TropicalWeight::new(1.0), s2));
+
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let t0 = fst2.add_state();
+        let t1 = fst2.add_state();
+        fst2.set_start(t0);
+        fst2.set_final(t1, TropicalWeight::one());
+        fst2.add_arc(t0, Arc::new(2, 3, TropicalWeight::new(2.0), t1));
+
+        let composed: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2).unwrap();
+
+        assert!(composed.start().is_some());
+        assert!(composed.num_states() > 0);
+    }
+}

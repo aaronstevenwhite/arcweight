@@ -299,3 +299,93 @@ pub trait LazyFst<W: Semiring>: Fst<W> {
     /// - The underlying FST computation encounters an error
     fn expand(&self, state: StateId) -> Result<()>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_state_id_constants() {
+        assert_eq!(NO_STATE_ID, u32::MAX);
+        assert_eq!(NO_LABEL, 0);
+    }
+
+    #[test]
+    fn test_fst_trait_default_methods() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
+
+        // Test is_final
+        assert!(!fst.is_final(s0));
+        assert!(fst.is_final(s1));
+
+        // Test states iterator
+        let states: Vec<_> = fst.states().collect();
+        assert_eq!(states, vec![0, 1]);
+
+        // Test num_arcs_total
+        assert_eq!(fst.num_arcs_total(), 1);
+
+        // Test is_empty
+        assert!(!fst.is_empty());
+        
+        let empty_fst = VectorFst::<TropicalWeight>::new();
+        assert!(empty_fst.is_empty());
+    }
+
+    #[test]
+    fn test_mutable_fst_trait_methods() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        
+        // Test add_state
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        assert_eq!(fst.num_states(), 2);
+
+        // Test set_start
+        fst.set_start(s0);
+        assert_eq!(fst.start(), Some(s0));
+
+        // Test add_arc
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(2.0), s1));
+        assert_eq!(fst.num_arcs(s0), 1);
+
+        // Test set_final and remove_final
+        fst.set_final(s1, TropicalWeight::new(3.0));
+        assert!(fst.is_final(s1));
+        
+        fst.remove_final(s1);
+        assert!(!fst.is_final(s1));
+
+        // Test clear
+        fst.clear();
+        assert_eq!(fst.num_states(), 0);
+        assert!(fst.is_empty());
+    }
+
+    #[test]
+    fn test_expanded_fst_trait() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(0.5), s1));
+
+        // Test arcs_slice
+        let arcs = fst.arcs_slice(s0);
+        assert_eq!(arcs.len(), 2);
+        assert_eq!(arcs[0].ilabel, 1);
+        assert_eq!(arcs[1].ilabel, 2);
+
+        // Test empty state
+        let empty_arcs = fst.arcs_slice(s1);
+        assert_eq!(empty_arcs.len(), 0);
+    }
+}

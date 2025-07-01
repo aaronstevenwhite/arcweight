@@ -338,3 +338,51 @@ where
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_union_basic() {
+        let mut fst1 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst1.add_state();
+        let s1 = fst1.add_state();
+        fst1.set_start(s0);
+        fst1.set_final(s1, TropicalWeight::one());
+        fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let t0 = fst2.add_state();
+        let t1 = fst2.add_state();
+        fst2.set_start(t0);
+        fst2.set_final(t1, TropicalWeight::one());
+        fst2.add_arc(t0, Arc::new(2, 2, TropicalWeight::new(2.0), t1));
+
+        let unioned: VectorFst<TropicalWeight> = union(&fst1, &fst2).unwrap();
+
+        // Should have states from both FSTs plus new start state
+        assert!(unioned.num_states() >= fst1.num_states() + fst2.num_states());
+        assert!(unioned.start().is_some());
+
+        // Union might use epsilon transitions or restructure the FST
+        // At minimum, should have preserved the original structure somehow
+        assert!(unioned.num_states() >= 2); // Should have at least the states from both FSTs
+    }
+
+    #[test]
+    fn test_union_empty() {
+        let fst1 = VectorFst::<TropicalWeight>::new();
+        let mut fst2 = VectorFst::<TropicalWeight>::new();
+        let s0 = fst2.add_state();
+        fst2.set_start(s0);
+        fst2.set_final(s0, TropicalWeight::one());
+
+        let unioned: VectorFst<TropicalWeight> = union(&fst1, &fst2).unwrap();
+
+        // Should be equivalent to fst2
+        assert!(unioned.start().is_some());
+    }
+}

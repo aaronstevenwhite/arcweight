@@ -502,3 +502,49 @@ where
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use num_traits::One;
+
+    #[test]
+    fn test_closure_with_boolean_weight() {
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s1, BooleanWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::new(true), s1));
+
+        let star: VectorFst<BooleanWeight> = closure(&fst).unwrap();
+
+        // Closure should add states for start/final
+        assert!(star.num_states() > fst.num_states());
+        assert!(star.start().is_some());
+
+        // Start state should be final (empty string acceptance)
+        let start = star.start().unwrap();
+        assert!(star.is_final(start));
+    }
+
+    #[test]
+    fn test_closure_plus_with_boolean_weight() {
+        let mut fst = VectorFst::<BooleanWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        fst.set_start(s0);
+        fst.set_final(s1, BooleanWeight::one());
+        fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::new(true), s1));
+
+        let plus: VectorFst<BooleanWeight> = closure_plus(&fst).unwrap();
+
+        // Plus closure should not accept empty string
+        assert!(plus.start().is_some());
+
+        // Start state should not be final
+        let start = plus.start().unwrap();
+        assert!(!plus.is_final(start));
+    }
+}

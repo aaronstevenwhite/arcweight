@@ -313,3 +313,162 @@ impl SymbolTable {
         self.symbols.is_empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_symbol_table_creation() {
+        let table = SymbolTable::new();
+
+        // SymbolTable starts with epsilon symbol, so size is 1
+        assert_eq!(table.size(), 1);
+        assert!(!table.is_empty());
+        // Epsilon should be at index 0
+        assert_eq!(table.find_key(0), Some("<eps>"));
+    }
+
+    #[test]
+    fn test_symbol_table_add_symbol() {
+        let mut table = SymbolTable::new();
+
+        let id1 = table.add_symbol("hello");
+        let id2 = table.add_symbol("world");
+        let id3 = table.add_symbol("hello"); // duplicate
+
+        // Table starts with epsilon, so adding 2 unique symbols makes size 3
+        assert_eq!(table.size(), 3);
+        assert_eq!(id1, id3); // same symbol should get same ID
+        assert_ne!(id1, id2); // different symbols should get different IDs
+    }
+
+    #[test]
+    fn test_symbol_table_find_symbol() {
+        let mut table = SymbolTable::new();
+
+        let id = table.add_symbol("test");
+
+        assert_eq!(table.find_symbol("test"), Some(id));
+        assert_eq!(table.find_symbol("nonexistent"), None);
+    }
+
+    #[test]
+    fn test_symbol_table_find_key() {
+        let mut table = SymbolTable::new();
+
+        let id = table.add_symbol("example");
+
+        assert_eq!(table.find_key(id), Some("example"));
+        assert_eq!(table.find_key(999), None); // non-existent ID
+    }
+
+    #[test]
+    fn test_symbol_table_contains() {
+        let mut table = SymbolTable::new();
+
+        table.add_symbol("exists");
+
+        assert!(table.contains_symbol("exists"));
+        assert!(!table.contains_symbol("does_not_exist"));
+
+        let id = table.find_symbol("exists").unwrap();
+        assert!(table.contains_key(id));
+        assert!(!table.contains_key(999));
+    }
+
+    #[test]
+    fn test_symbol_table_clear() {
+        let mut table = SymbolTable::new();
+
+        table.add_symbol("test1");
+        table.add_symbol("test2");
+
+        // Table starts with epsilon + 2 added symbols = 3
+        assert_eq!(table.size(), 3);
+
+        table.clear();
+
+        // After clear, only epsilon remains
+        assert_eq!(table.size(), 1);
+        assert!(!table.is_empty());
+        assert_eq!(table.find_symbol("test1"), None);
+        assert_eq!(table.find_key(0), Some("<eps>"));
+    }
+
+    #[test]
+    fn test_symbol_table_iteration() {
+        let mut table = SymbolTable::new();
+
+        table.add_symbol("apple");
+        table.add_symbol("banana");
+        table.add_symbol("cherry");
+
+        let symbols: HashSet<_> = table.symbols().collect();
+        let keys: HashSet<_> = table.keys().collect();
+
+        assert_eq!(symbols.len(), 4); // epsilon + 3 added
+        assert!(symbols.contains("<eps>"));
+        assert!(symbols.contains("apple"));
+        assert!(symbols.contains("banana"));
+        assert!(symbols.contains("cherry"));
+
+        assert_eq!(keys.len(), 4);
+        assert!(keys.contains(&0)); // epsilon
+        assert!(keys.contains(&1));
+        assert!(keys.contains(&2));
+        assert!(keys.contains(&3));
+    }
+
+    #[test]
+    fn test_symbol_table_len() {
+        let mut table = SymbolTable::new();
+
+        assert_eq!(table.len(), 1); // epsilon
+
+        table.add_symbol("a");
+        assert_eq!(table.len(), 2);
+
+        table.add_symbol("b");
+        assert_eq!(table.len(), 3);
+
+        table.add_symbol("a"); // duplicate
+        assert_eq!(table.len(), 3); // size shouldn't change
+    }
+
+    #[test]
+    fn test_symbol_table_special_symbols() {
+        let mut table = SymbolTable::new();
+
+        // Test adding epsilon again (should return existing ID)
+        let eps_id = table.add_symbol("<eps>");
+        assert_eq!(eps_id, 0);
+
+        // Test special symbols
+        let special_id = table.add_symbol("<unk>");
+        assert_ne!(special_id, 0);
+        assert_eq!(table.find_symbol("<unk>"), Some(special_id));
+    }
+
+    #[test]
+    fn test_symbol_table_debug() {
+        let mut table = SymbolTable::new();
+        table.add_symbol("hello");
+        table.add_symbol("world");
+
+        let debug = format!("{:?}", table);
+        assert!(debug.contains("hello"));
+        assert!(debug.contains("world"));
+    }
+
+    #[test]
+    fn test_symbol_table_aliases() {
+        let mut table = SymbolTable::new();
+
+        // Test that aliases work correctly
+        let id = table.add_symbol("test");
+        assert_eq!(table.find_symbol("test"), Some(id));
+        assert_eq!(table.find_key(id), Some("test"));
+    }
+}

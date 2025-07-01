@@ -247,3 +247,86 @@ where
 
     Ok(fst)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn test_openfst_roundtrip_basic() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s1, TropicalWeight::new(1.5));
+        fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(0.5), s1));
+
+        let buffer = Vec::new();
+        let mut cursor = Cursor::new(buffer);
+        write_openfst(&fst, &mut cursor).unwrap();
+
+        cursor.set_position(0);
+        let read_fst: VectorFst<TropicalWeight> =
+            read_openfst::<VectorFst<TropicalWeight>, _>(&mut cursor).unwrap();
+
+        assert_eq!(read_fst.num_states(), fst.num_states());
+        assert_eq!(read_fst.start(), fst.start());
+        assert_eq!(read_fst.num_arcs_total(), fst.num_arcs_total());
+    }
+
+    #[test]
+    fn test_openfst_empty_fst() {
+        let fst = VectorFst::<TropicalWeight>::new();
+
+        let buffer = Vec::new();
+        let mut cursor = Cursor::new(buffer);
+        write_openfst(&fst, &mut cursor).unwrap();
+
+        cursor.set_position(0);
+        let read_fst: VectorFst<TropicalWeight> =
+            read_openfst::<VectorFst<TropicalWeight>, _>(&mut cursor).unwrap();
+
+        assert!(read_fst.is_empty());
+    }
+
+    #[test]
+    fn test_openfst_compatibility() {
+        // Test that our format can handle typical OpenFST constructs
+        let mut fst = VectorFst::<TropicalWeight>::new();
+
+        // Create a more complex FST structure
+        for _i in 0..10 {
+            fst.add_state();
+        }
+
+        fst.set_start(0);
+        fst.set_final(9, TropicalWeight::new(0.0));
+
+        // Add various arc types
+        fst.add_arc(0, Arc::new(1, 1, TropicalWeight::new(1.0), 1));
+        fst.add_arc(1, Arc::epsilon(TropicalWeight::new(0.0), 2));
+        fst.add_arc(2, Arc::new(2, 3, TropicalWeight::new(2.0), 3));
+
+        // Add some parallel arcs
+        fst.add_arc(0, Arc::new(4, 4, TropicalWeight::new(3.0), 4));
+        fst.add_arc(4, Arc::new(5, 5, TropicalWeight::new(1.0), 9));
+
+        let buffer = Vec::new();
+        let mut cursor = Cursor::new(buffer);
+        write_openfst(&fst, &mut cursor).unwrap();
+
+        cursor.set_position(0);
+        let read_fst: VectorFst<TropicalWeight> =
+            read_openfst::<VectorFst<TropicalWeight>, _>(&mut cursor).unwrap();
+
+        assert_eq!(read_fst.num_states(), fst.num_states());
+        assert_eq!(read_fst.start(), fst.start());
+
+        // Verify specific structural elements
+        assert!(read_fst.is_final(9));
+        assert_eq!(read_fst.num_arcs(0), 2); // Two outgoing arcs from start
+    }
+}

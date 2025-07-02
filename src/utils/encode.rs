@@ -341,8 +341,8 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
             self.reverse_label_map.insert(label, key);
 
             // Track labels in symbol tables
-            self.input_symbols.add_symbol(&format!("i{}", ilabel));
-            self.output_symbols.add_symbol(&format!("o{}", olabel));
+            self.input_symbols.add_symbol(&format!("i{ilabel}"));
+            self.output_symbols.add_symbol(&format!("o{olabel}"));
 
             self.next_label += 1;
             label

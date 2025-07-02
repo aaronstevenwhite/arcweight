@@ -426,7 +426,7 @@ fn convert_weight_to_f64<W: Semiring>(weight: &W) -> f64 {
         name if name.contains("TropicalWeight") => {
             // For TropicalWeight, we need to extract the f32 value
             // This is a workaround since we can't directly access the value
-            let value_str = format!("{}", weight);
+            let value_str = format!("{weight}");
             if value_str == "∞" {
                 f64::INFINITY
             } else {

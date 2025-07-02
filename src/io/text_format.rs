@@ -183,18 +183,18 @@ where
 {
     // write start state first if it exists
     if let Some(start) = fst.start() {
-        writeln!(writer, "START\t{}", start)?;
+        writeln!(writer, "START\t{start}")?;
     }
 
     // write all states (to preserve state count)
     for state in fst.states() {
-        writeln!(writer, "STATE\t{}", state)?;
+        writeln!(writer, "STATE\t{state}")?;
     }
 
     // write arcs
     for state in fst.states() {
         for arc in fst.arcs(state) {
-            write!(writer, "{}\t{}\t", state, arc.nextstate)?;
+            write!(writer, "{state}\t{}\t", arc.nextstate)?;
 
             // write symbols or labels
             if let Some(syms) = isyms {
@@ -214,7 +214,7 @@ where
 
         // write final states
         if let Some(weight) = fst.final_weight(state) {
-            writeln!(writer, "FINAL\t{}\t{}", state, weight)?;
+            writeln!(writer, "FINAL\t{state}\t{weight}")?;
         }
     }
 

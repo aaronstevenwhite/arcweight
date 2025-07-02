@@ -404,7 +404,7 @@ mod tests {
 
         assert_eq!(read_fst.num_states(), 1);
         assert_eq!(read_fst.num_arcs_total(), 1);
-        
+
         let arcs: Vec<_> = read_fst.arcs(s0).collect();
         assert_eq!(arcs.len(), 1);
         assert_eq!(arcs[0].nextstate, s0);
@@ -438,11 +438,11 @@ mod tests {
         let s0 = fst.add_state();
         let s1 = fst.add_state();
         let s2 = fst.add_state();
-        
+
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.set_final(s2, TropicalWeight::one());
-        
+
         // Multiple arcs from s0
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
         fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
@@ -458,10 +458,10 @@ mod tests {
         assert_eq!(read_fst.num_states(), 3);
         assert_eq!(read_fst.num_arcs_total(), 3);
         assert_eq!(read_fst.num_arcs(s0), 3);
-        
+
         let arcs: Vec<_> = read_fst.arcs(s0).collect();
         assert_eq!(arcs.len(), 3);
-        
+
         // Check arc labels and weights are preserved
         let labels: Vec<u32> = arcs.iter().map(|arc| arc.ilabel).collect();
         assert!(labels.contains(&1));
@@ -474,7 +474,7 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.add_arc(s0, Arc::epsilon(TropicalWeight::new(0.1), s1));
@@ -499,7 +499,7 @@ mod tests {
         let mut log_fst = VectorFst::<LogWeight>::new();
         let s0 = log_fst.add_state();
         let s1 = log_fst.add_state();
-        
+
         log_fst.set_start(s0);
         log_fst.set_final(s1, LogWeight::new(std::f64::consts::E));
         log_fst.add_arc(s0, Arc::new(1, 2, LogWeight::new(1.414), s1));
@@ -511,7 +511,10 @@ mod tests {
         let read_fst: VectorFst<LogWeight> =
             read_binary::<LogWeight, VectorFst<LogWeight>, _>(&mut cursor).unwrap();
 
-        assert_eq!(read_fst.final_weight(s1), Some(&LogWeight::new(std::f64::consts::E)));
+        assert_eq!(
+            read_fst.final_weight(s1),
+            Some(&LogWeight::new(std::f64::consts::E))
+        );
         let arcs: Vec<_> = read_fst.arcs(s0).collect();
         assert_eq!(arcs[0].weight, LogWeight::new(1.414));
 
@@ -519,7 +522,7 @@ mod tests {
         let mut bool_fst = VectorFst::<BooleanWeight>::new();
         let s0 = bool_fst.add_state();
         let s1 = bool_fst.add_state();
-        
+
         bool_fst.set_start(s0);
         bool_fst.set_final(s1, BooleanWeight::one());
         bool_fst.add_arc(s0, Arc::new(1, 1, BooleanWeight::zero(), s1));
@@ -541,10 +544,13 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        fst.add_arc(s0, Arc::new(u32::MAX - 1, u32::MAX, TropicalWeight::new(1000.0), s1));
+        fst.add_arc(
+            s0,
+            Arc::new(u32::MAX - 1, u32::MAX, TropicalWeight::new(1000.0), s1),
+        );
 
         let mut buffer = Vec::new();
         write_binary(&fst, &mut buffer).unwrap();
@@ -566,11 +572,11 @@ mod tests {
         let s0 = fst.add_state();
         let s1 = fst.add_state();
         let s2 = fst.add_state();
-        
+
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::new(1000000.0)); // Large but finite weight
-        fst.set_final(s2, TropicalWeight::one());  // Zero
-        
+        fst.set_final(s2, TropicalWeight::one()); // Zero
+
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(-1000.0), s1));
         fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(1000.0), s2));
 
@@ -581,15 +587,18 @@ mod tests {
         let read_fst: VectorFst<TropicalWeight> =
             read_binary::<TropicalWeight, VectorFst<TropicalWeight>, _>(&mut cursor).unwrap();
 
-        assert_eq!(read_fst.final_weight(s1), Some(&TropicalWeight::new(1000000.0)));
+        assert_eq!(
+            read_fst.final_weight(s1),
+            Some(&TropicalWeight::new(1000000.0))
+        );
         assert_eq!(read_fst.final_weight(s2), Some(&TropicalWeight::one()));
-        
+
         let arcs: Vec<_> = read_fst.arcs(s0).collect();
         assert_eq!(arcs.len(), 2);
-        
+
         let arc1 = arcs.iter().find(|arc| arc.ilabel == 1).unwrap();
         let arc2 = arcs.iter().find(|arc| arc.ilabel == 2).unwrap();
-        
+
         assert_eq!(arc1.weight, TropicalWeight::new(-1000.0));
         assert_eq!(arc2.weight, TropicalWeight::new(1000.0));
     }
@@ -598,17 +607,21 @@ mod tests {
     fn test_binary_format_linear_chain() {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let states: Vec<_> = (0..5).map(|_| fst.add_state()).collect();
-        
+
         fst.set_start(states[0]);
         fst.set_final(states[4], TropicalWeight::new(10.0));
-        
+
         // Create linear chain: 0 -> 1 -> 2 -> 3 -> 4
         for i in 0..4 {
-            fst.add_arc(states[i], Arc::new(
-                (i + 1) as u32, (i + 1) as u32,
-                TropicalWeight::new((i + 1) as f32),
-                states[i + 1]
-            ));
+            fst.add_arc(
+                states[i],
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new((i + 1) as f32),
+                    states[i + 1],
+                ),
+            );
         }
 
         let mut buffer = Vec::new();
@@ -620,8 +633,11 @@ mod tests {
 
         assert_eq!(read_fst.num_states(), 5);
         assert_eq!(read_fst.start(), Some(states[0]));
-        assert_eq!(read_fst.final_weight(states[4]), Some(&TropicalWeight::new(10.0)));
-        
+        assert_eq!(
+            read_fst.final_weight(states[4]),
+            Some(&TropicalWeight::new(10.0))
+        );
+
         // Verify chain structure
         for i in 0..4 {
             let arcs: Vec<_> = read_fst.arcs(states[i]).collect();
@@ -637,19 +653,30 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
         let _s1 = fst.add_state();
-        
+
         fst.set_start(s0);
-        
+
         // Test various weight values
         let weights = [
-            0.0, 1.0, -1.0, std::f32::consts::PI, std::f32::consts::E,
-            0.123_456_8, 1e-10, 1e10, -1e-10, -1e10
+            0.0,
+            1.0,
+            -1.0,
+            std::f32::consts::PI,
+            std::f32::consts::E,
+            0.123_456_8,
+            1e-10,
+            1e10,
+            -1e-10,
+            -1e10,
         ];
-        
+
         for (i, &weight_val) in weights.iter().enumerate() {
             let state = fst.add_state();
             fst.set_final(state, TropicalWeight::new(weight_val));
-            fst.add_arc(s0, Arc::new(i as u32, i as u32, TropicalWeight::new(weight_val), state));
+            fst.add_arc(
+                s0,
+                Arc::new(i as u32, i as u32, TropicalWeight::new(weight_val), state),
+            );
         }
 
         let mut buffer = Vec::new();
@@ -664,7 +691,7 @@ mod tests {
         for (i, &expected_weight) in weights.iter().enumerate() {
             let arc = arcs.iter().find(|arc| arc.ilabel == i as u32).unwrap();
             assert_eq!(arc.weight, TropicalWeight::new(expected_weight));
-            
+
             let final_weight = read_fst.final_weight(arc.nextstate).unwrap();
             assert_eq!(*final_weight, TropicalWeight::new(expected_weight));
         }

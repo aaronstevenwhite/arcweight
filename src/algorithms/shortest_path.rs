@@ -556,11 +556,15 @@ mod tests {
 
         // Create linear chain
         for i in 0..4 {
-            fst.add_arc(states[i], Arc::new(
-                (i + 1) as u32, (i + 1) as u32,
-                TropicalWeight::new(i as f32 * 0.1),
-                states[i + 1]
-            ));
+            fst.add_arc(
+                states[i],
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new(i as f32 * 0.1),
+                    states[i + 1],
+                ),
+            );
         }
 
         let shortest: VectorFst<TropicalWeight> = shortest_path_single(&fst).unwrap();

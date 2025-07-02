@@ -381,7 +381,12 @@ mod tests {
         let acc2 = VectorFst::<BooleanWeight>::new();
 
         // Empty FSTs should return error (no start state)
-        let result = intersect::<BooleanWeight, VectorFst<BooleanWeight>, VectorFst<BooleanWeight>, VectorFst<BooleanWeight>>(&acc1, &acc2);
+        let result = intersect::<
+            BooleanWeight,
+            VectorFst<BooleanWeight>,
+            VectorFst<BooleanWeight>,
+            VectorFst<BooleanWeight>,
+        >(&acc1, &acc2);
         assert!(result.is_err());
     }
 

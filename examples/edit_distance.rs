@@ -7,6 +7,10 @@
 //! 3. Computing edit distance with custom weights for insertions, deletions, and substitutions
 //! 4. Demonstrating how different weight schemes affect the computed distance
 //!
+//! Related examples:
+//! - string_alignment.rs: Extends this with path extraction and alignment visualization
+//! - spell_checking.rs: Uses edit distance for spell correction applications
+//!
 //! Usage:
 //! ```bash
 //! cargo run --example edit_distance

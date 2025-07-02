@@ -510,9 +510,11 @@ mod tests {
     fn test_randgen_empty_fst() {
         let fst = VectorFst::<TropicalWeight>::new();
         let config = RandGenConfig::default();
-        
+
         // Empty FST should return error (no start state)
-        let result = randgen::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst, config);
+        let result = randgen::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(
+            &fst, config,
+        );
         assert!(result.is_err());
     }
 
@@ -524,7 +526,9 @@ mod tests {
         // No start state set
 
         let config = RandGenConfig::default();
-        let result = randgen::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst, config);
+        let result = randgen::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(
+            &fst, config,
+        );
         assert!(result.is_err());
     }
 
@@ -612,7 +616,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        
+
         // Self-loop to test max length
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0));
         fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
@@ -639,11 +643,15 @@ mod tests {
 
         // Create linear chain
         for i in 0..4 {
-            fst.add_arc(states[i], Arc::new(
-                (i + 1) as u32, (i + 1) as u32,
-                TropicalWeight::new(i as f32),
-                states[i + 1]
-            ));
+            fst.add_arc(
+                states[i],
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new(i as f32),
+                    states[i + 1],
+                ),
+            );
         }
 
         let config = RandGenConfig {
@@ -742,7 +750,7 @@ mod tests {
     fn test_add_path_to_fst_empty() {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let path: Vec<Arc<TropicalWeight>> = vec![];
-        
+
         let result = add_path_to_fst(&mut fst, &path, 0);
         assert!(result.is_ok());
         assert_eq!(fst.num_states(), 0);
@@ -753,7 +761,7 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let arc = Arc::new(1, 1, TropicalWeight::new(0.5), 1);
         let path = vec![arc];
-        
+
         let result = add_path_to_fst(&mut fst, &path, 0);
         assert!(result.is_ok());
         assert_eq!(fst.num_states(), 2); // Start + final state
@@ -768,12 +776,12 @@ mod tests {
             Arc::new(2, 2, TropicalWeight::new(0.2), 2),
             Arc::new(3, 3, TropicalWeight::new(0.3), 3),
         ];
-        
+
         let result = add_path_to_fst(&mut fst, &path, 0);
         assert!(result.is_ok());
         assert_eq!(fst.num_states(), 4); // Linear chain: start + 3 states
         assert!(fst.start().is_some());
-        
+
         // Check that final state is marked as final
         let final_state = 3; // Last state in the chain
         assert!(fst.is_final(final_state));

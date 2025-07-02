@@ -455,11 +455,15 @@ mod tests {
 
         // Create linear chain: 0 -> 1 -> 2 -> 3 -> 4
         for i in 0..4 {
-            fst.add_arc(states[i], Arc::new(
-                (i + 1) as u32, (i + 1) as u32,
-                TropicalWeight::new(i as f32),
-                states[i + 1]
-            ));
+            fst.add_arc(
+                states[i],
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new(i as f32),
+                    states[i + 1],
+                ),
+            );
         }
 
         let sorted: VectorFst<TropicalWeight> = topsort(&fst).unwrap();
@@ -481,7 +485,7 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state(); // Source
         let s1 = fst.add_state(); // Left branch
-        let s2 = fst.add_state(); // Right branch  
+        let s2 = fst.add_state(); // Right branch
         let s3 = fst.add_state(); // Sink
 
         fst.set_start(s0);
@@ -554,17 +558,19 @@ mod tests {
 
         // Weights should be preserved
         assert_eq!(sorted.num_states(), fst.num_states());
-        
+
         // Check that weights are preserved (structure may change but semantics preserved)
-        let total_weight_orig: f32 = fst.states()
+        let total_weight_orig: f32 = fst
+            .states()
             .flat_map(|s| fst.arcs(s))
             .map(|arc| *arc.weight.value())
             .sum();
-        let total_weight_sorted: f32 = sorted.states()
+        let total_weight_sorted: f32 = sorted
+            .states()
             .flat_map(|s| sorted.arcs(s))
             .map(|arc| *arc.weight.value())
             .sum();
-        
+
         assert!((total_weight_orig - total_weight_sorted).abs() < 1e-6);
     }
 
@@ -582,33 +588,33 @@ mod tests {
         let order = compute_topological_order(&fst).unwrap();
 
         assert_eq!(order.len(), 3);
-        
+
         // Should contain all states
         assert!(order.contains(&s0));
         assert!(order.contains(&s1));
         assert!(order.contains(&s2));
-        
+
         // Find positions in the ordering
         let pos0 = order.iter().position(|&x| x == s0).unwrap();
         let pos1 = order.iter().position(|&x| x == s1).unwrap();
         let pos2 = order.iter().position(|&x| x == s2).unwrap();
-        
+
         // Should respect dependencies: s0 before s1 before s2
         assert!(pos0 < pos1);
         assert!(pos1 < pos2);
     }
 
-    #[test] 
+    #[test]
     fn test_topsort_self_loop() {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
-        
+
         fst.set_start(s0);
         fst.set_final(s0, TropicalWeight::one());
-        
+
         // Self-loop creates a cycle
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0));
-        
+
         // Should detect the cycle
         let result = compute_topological_order(&fst);
         assert!(result.is_err());

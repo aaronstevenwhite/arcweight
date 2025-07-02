@@ -227,8 +227,8 @@ pub trait ArcIterator<W: Semiring>: Iterator<Item = Arc<W>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::semiring::TropicalWeight;
     use crate::fst::{NO_LABEL, NO_STATE_ID};
+    use crate::semiring::TropicalWeight;
 
     #[test]
     fn test_arc_creation() {

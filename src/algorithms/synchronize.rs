@@ -141,8 +141,11 @@ mod tests {
     #[test]
     fn test_synchronize_empty_fst() {
         let fst = VectorFst::<TropicalWeight>::new();
-        let result = synchronize::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst);
-        
+        let result =
+            synchronize::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(
+                &fst,
+            );
+
         // Empty FST should return error (no start state)
         assert!(result.is_err());
     }
@@ -154,7 +157,10 @@ mod tests {
         fst.set_final(s0, TropicalWeight::one());
         // No start state set
 
-        let result = synchronize::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(&fst);
+        let result =
+            synchronize::<TropicalWeight, VectorFst<TropicalWeight>, VectorFst<TropicalWeight>>(
+                &fst,
+            );
         assert!(result.is_err());
     }
 
@@ -181,7 +187,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        
+
         // Simple arc with same input/output labels
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
 
@@ -190,7 +196,7 @@ mod tests {
         // Should maintain basic structure for already synchronized FST
         assert!(result.start().is_some());
         assert!(result.num_states() >= 2);
-        
+
         // Should have at least one final state
         let final_states: Vec<_> = result.states().filter(|&s| result.is_final(s)).collect();
         assert!(!final_states.is_empty());
@@ -205,7 +211,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s2, TropicalWeight::one());
-        
+
         // Epsilon transition (0 means epsilon)
         fst.add_arc(s0, Arc::new(0, 0, TropicalWeight::one(), s1));
         fst.add_arc(s1, Arc::new(1, 1, TropicalWeight::one(), s2));
@@ -225,7 +231,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s2, TropicalWeight::one());
-        
+
         // Arc with input but no output (creates buffer state)
         fst.add_arc(s0, Arc::new(1, 0, TropicalWeight::one(), s1)); // Input only
         fst.add_arc(s1, Arc::new(0, 2, TropicalWeight::one(), s2)); // Output only
@@ -247,7 +253,7 @@ mod tests {
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.set_final(s2, TropicalWeight::one());
-        
+
         // Multiple arcs from start state
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
         fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
@@ -256,7 +262,7 @@ mod tests {
 
         assert!(result.start().is_some());
         assert!(result.num_states() > 0);
-        
+
         // Should have multiple final states
         let final_count = result.states().filter(|&s| result.is_final(s)).count();
         assert!(final_count > 0);
@@ -272,11 +278,15 @@ mod tests {
 
         // Create linear chain with synchronized labels
         for i in 0..3 {
-            fst.add_arc(states[i], Arc::new(
-                (i + 1) as u32, (i + 1) as u32,
-                TropicalWeight::new(i as f32),
-                states[i + 1]
-            ));
+            fst.add_arc(
+                states[i],
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new(i as f32),
+                    states[i + 1],
+                ),
+            );
         }
 
         let result: VectorFst<TropicalWeight> = synchronize(&fst).unwrap();
@@ -295,7 +305,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s3, TropicalWeight::one());
-        
+
         // Complex label sequence requiring buffering
         fst.add_arc(s0, Arc::new(1, 0, TropicalWeight::one(), s1)); // Input 1, no output
         fst.add_arc(s1, Arc::new(2, 0, TropicalWeight::one(), s2)); // Input 2, no output
@@ -316,7 +326,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        
+
         // Self-loop with synchronized labels
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0));
         fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
@@ -341,7 +351,7 @@ mod tests {
 
         assert!(result.start().is_some());
         assert!(result.num_states() > 0);
-        
+
         // Should have no final states
         let final_count = result.states().filter(|&s| result.is_final(s)).count();
         assert_eq!(final_count, 0);
@@ -355,23 +365,25 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::new(3.5));
-        
+
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.5), s1));
 
         let result: VectorFst<TropicalWeight> = synchronize(&fst).unwrap();
 
         assert!(result.start().is_some());
-        
+
         // Check that weights are preserved in some form
-        let total_weight_orig: f32 = fst.states()
+        let total_weight_orig: f32 = fst
+            .states()
             .flat_map(|s| fst.arcs(s))
             .map(|arc| *arc.weight.value())
             .sum();
-        let total_weight_sync: f32 = result.states()
+        let total_weight_sync: f32 = result
+            .states()
             .flat_map(|s| result.arcs(s))
             .map(|arc| *arc.weight.value())
             .sum();
-        
+
         // Weights should be preserved (allowing for synchronization reorganization)
         assert!((total_weight_orig - total_weight_sync).abs() < 1e-6);
     }
@@ -385,7 +397,7 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s2, TropicalWeight::one());
-        
+
         // Already synchronized: same input/output on each arc
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
         fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
@@ -395,7 +407,7 @@ mod tests {
         // Should handle already synchronized FST efficiently
         assert!(result.start().is_some());
         assert!(result.num_states() > 0);
-        
+
         let final_states: Vec<_> = result.states().filter(|&s| result.is_final(s)).collect();
         assert!(!final_states.is_empty());
     }
@@ -433,10 +445,13 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        
+
         // Test with large label values
         let large_label = u32::MAX - 1;
-        fst.add_arc(s0, Arc::new(large_label, large_label, TropicalWeight::one(), s1));
+        fst.add_arc(
+            s0,
+            Arc::new(large_label, large_label, TropicalWeight::one(), s1),
+        );
 
         let result: VectorFst<TropicalWeight> = synchronize(&fst).unwrap();
 
@@ -475,12 +490,12 @@ mod tests {
 
         fst.set_start(s0);
         fst.set_final(s3, TropicalWeight::one());
-        
+
         // Sequence that requires buffering: more inputs than outputs initially
         fst.add_arc(s0, Arc::new(1, 0, TropicalWeight::one(), s1)); // Input only
-        fst.add_arc(s1, Arc::new(2, 0, TropicalWeight::one(), s2)); // Input only  
+        fst.add_arc(s1, Arc::new(2, 0, TropicalWeight::one(), s2)); // Input only
         fst.add_arc(s2, Arc::new(0, 1, TropicalWeight::one(), s3)); // Output only
-        // Missing one output to balance
+                                                                    // Missing one output to balance
 
         let result: VectorFst<TropicalWeight> = synchronize(&fst).unwrap();
 

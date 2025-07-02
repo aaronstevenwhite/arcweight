@@ -712,11 +712,10 @@ mod tests {
         assert!(w1.divide(&zero).is_none());
     }
 
-
     #[test]
     fn test_product_properties() {
         let props = ProductWeight::<TropicalWeight, ProbabilityWeight>::properties();
-        
+
         // Properties are intersection of component properties
         assert!(props.left_semiring);
         assert!(props.right_semiring);
@@ -779,10 +778,12 @@ mod tests {
         let tolerance = 1e-10;
 
         // Associativity of addition
-        assert!(((a.clone() + b.clone()) + c.clone()).approx_eq(&(a.clone() + (b.clone() + c.clone())), tolerance));
+        assert!(((a.clone() + b.clone()) + c.clone())
+            .approx_eq(&(a.clone() + (b.clone() + c.clone())), tolerance));
 
         // Associativity of multiplication
-        assert!(((a.clone() * b.clone()) * c.clone()).approx_eq(&(a.clone() * (b.clone() * c.clone())), tolerance));
+        assert!(((a.clone() * b.clone()) * c.clone())
+            .approx_eq(&(a.clone() * (b.clone() * c.clone())), tolerance));
 
         // Commutativity of addition
         assert_eq!(a.clone() + b.clone(), b.clone() + a.clone());
@@ -791,6 +792,9 @@ mod tests {
         assert_eq!(a.clone() * b.clone(), b.clone() * a.clone());
 
         // Distributivity
-        assert!(((a.clone() + b.clone()) * c.clone()).approx_eq(&((a.clone() * c.clone()) + (b.clone() * c.clone())), tolerance));
+        assert!(((a.clone() + b.clone()) * c.clone()).approx_eq(
+            &((a.clone() * c.clone()) + (b.clone() * c.clone())),
+            tolerance
+        ));
     }
 }

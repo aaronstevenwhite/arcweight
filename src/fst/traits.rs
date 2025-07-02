@@ -316,7 +316,7 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
@@ -334,7 +334,7 @@ mod tests {
 
         // Test is_empty
         assert!(!fst.is_empty());
-        
+
         let empty_fst = VectorFst::<TropicalWeight>::new();
         assert!(empty_fst.is_empty());
     }
@@ -342,7 +342,7 @@ mod tests {
     #[test]
     fn test_mutable_fst_trait_methods() {
         let mut fst = VectorFst::<TropicalWeight>::new();
-        
+
         // Test add_state
         let s0 = fst.add_state();
         let s1 = fst.add_state();
@@ -359,7 +359,7 @@ mod tests {
         // Test set_final and remove_final
         fst.set_final(s1, TropicalWeight::new(3.0));
         assert!(fst.is_final(s1));
-        
+
         fst.remove_final(s1);
         assert!(!fst.is_final(s1));
 
@@ -374,7 +374,7 @@ mod tests {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
         fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(0.5), s1));
 

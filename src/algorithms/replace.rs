@@ -3,14 +3,14 @@
 //! Implements replacement of non-terminal symbols with finite-state transducers,
 //! enabling context-free grammar processing and recursive FST construction.
 
+use crate::arc::Arc;
 use crate::fst::{Fst, Label, MutableFst, StateId, VectorFst};
 use crate::semiring::Semiring;
-use crate::arc::Arc;
 use crate::Result;
 use std::collections::HashMap;
 
 /// Grammar rule mapping non-terminals to VectorFSTs (simplified for now)
-pub type GrammarRules<W> = HashMap<Label, VectorFst<W>>;
+pub type _GrammarRules<W> = HashMap<Label, VectorFst<W>>;
 
 /// Configuration for replacement algorithm
 #[derive(Debug, Clone)]
@@ -52,7 +52,11 @@ impl<W: Semiring> ReplaceFst<W> {
     }
 
     /// Create a new replace FST with custom configuration
-    pub fn with_config(root: Label, rules: HashMap<Label, VectorFst<W>>, config: ReplaceConfig) -> Self {
+    pub fn with_config(
+        root: Label,
+        rules: HashMap<Label, VectorFst<W>>,
+        config: ReplaceConfig,
+    ) -> Self {
         Self {
             root,
             rules,
@@ -156,7 +160,13 @@ where
     // Start replacement from the root symbol
     if let Some(root_fst) = replace_fst.rules.get(&replace_fst.root) {
         // Expand the root FST structure with replacements
-        expand_fst_into_result(root_fst, &mut result, &replace_fst.rules, 0, replace_fst.config.max_depth)?;
+        expand_fst_into_result(
+            root_fst,
+            &mut result,
+            &replace_fst.rules,
+            0,
+            replace_fst.config.max_depth,
+        )?;
     } else {
         // No rule for root, create empty FST
         let s0 = result.add_state();
@@ -180,10 +190,10 @@ where
     M: MutableFst<W>,
 {
     use std::collections::HashMap;
-    
+
     if depth >= max_depth {
         return Err(crate::Error::Algorithm(
-            "Maximum replacement depth exceeded - possible recursive grammar".into()
+            "Maximum replacement depth exceeded - possible recursive grammar".into(),
         ));
     }
 
@@ -233,12 +243,10 @@ where
                 )?;
             } else {
                 // Regular terminal symbol - copy the arc
-                result.add_arc(mapped_state, Arc::new(
-                    arc.ilabel,
-                    arc.olabel,
-                    arc.weight.clone(),
-                    mapped_nextstate,
-                ));
+                result.add_arc(
+                    mapped_state,
+                    Arc::new(arc.ilabel, arc.olabel, arc.weight.clone(), mapped_nextstate),
+                );
             }
         }
     }
@@ -268,12 +276,15 @@ where
     if let Some(replacement_start) = replacement_fst.start() {
         if let Some(&mapped_start) = replacement_map.get(&replacement_start) {
             // Add epsilon transition from from_state to replacement start
-            result.add_arc(from_state, Arc::new(
-                0, // epsilon input
-                original_arc.olabel,
-                original_arc.weight.clone(),
-                mapped_start,
-            ));
+            result.add_arc(
+                from_state,
+                Arc::new(
+                    0, // epsilon input
+                    original_arc.olabel,
+                    original_arc.weight.clone(),
+                    mapped_start,
+                ),
+            );
         }
     }
 
@@ -282,12 +293,15 @@ where
         if let Some(final_weight) = replacement_fst.final_weight(state) {
             if let Some(&mapped_state) = replacement_map.get(&state) {
                 // Add epsilon transition from replacement final state to to_state
-                result.add_arc(mapped_state, Arc::new(
-                    0, // epsilon input
-                    0, // epsilon output
-                    final_weight.clone(),
-                    to_state,
-                ));
+                result.add_arc(
+                    mapped_state,
+                    Arc::new(
+                        0, // epsilon input
+                        0, // epsilon output
+                        final_weight.clone(),
+                        to_state,
+                    ),
+                );
             }
         }
     }
@@ -332,10 +346,13 @@ mod tests {
         // Implementation should create single-state FST when no rules
         assert!(result.start().is_some());
         assert_eq!(result.num_states(), 1);
-        
+
         let start_state = result.start().unwrap();
         assert!(result.is_final(start_state));
-        assert_eq!(result.final_weight(start_state), Some(&TropicalWeight::one()));
+        assert_eq!(
+            result.final_weight(start_state),
+            Some(&TropicalWeight::one())
+        );
     }
 
     #[test]
@@ -356,7 +373,7 @@ mod tests {
     fn test_replace_consistency() {
         // Test that multiple calls with same input produce same result
         let replace_fst = ReplaceFst::<TropicalWeight>::simple(5);
-        
+
         let result1: VectorFst<TropicalWeight> = replace(&replace_fst).unwrap();
         let result2: VectorFst<TropicalWeight> = replace(&replace_fst).unwrap();
 
@@ -374,7 +391,7 @@ mod tests {
         assert!(result.start().is_some());
         assert_eq!(result.num_states(), 1);
         assert_eq!(result.num_arcs_total(), 0); // No arcs in single-state FST
-        
+
         let start_state = result.start().unwrap();
         assert_eq!(start_state, 0); // Should be state 0
         assert!(result.is_final(start_state));
@@ -385,14 +402,17 @@ mod tests {
         // Test with TropicalWeight
         let tropical_replace = ReplaceFst::<TropicalWeight>::simple(1);
         let tropical_result: VectorFst<TropicalWeight> = replace(&tropical_replace).unwrap();
-        
+
         let start = tropical_result.start().unwrap();
-        assert_eq!(tropical_result.final_weight(start), Some(&TropicalWeight::one()));
+        assert_eq!(
+            tropical_result.final_weight(start),
+            Some(&TropicalWeight::one())
+        );
 
         // Test with LogWeight
         let log_replace = ReplaceFst::<LogWeight>::simple(1);
         let log_result: VectorFst<LogWeight> = replace(&log_replace).unwrap();
-        
+
         let start = log_result.start().unwrap();
         assert_eq!(log_result.final_weight(start), Some(&LogWeight::one()));
     }
@@ -401,7 +421,7 @@ mod tests {
     fn test_replace_fst_debug() {
         let replace_fst = ReplaceFst::<TropicalWeight>::simple(123);
         let debug_str = format!("{:?}", replace_fst);
-        
+
         // Should contain the root label and type information
         assert!(debug_str.contains("ReplaceFst"));
         assert!(debug_str.contains("root: 123"));
@@ -413,7 +433,7 @@ mod tests {
         let large_label = u32::MAX;
         let replace_fst = ReplaceFst::<TropicalWeight>::simple(large_label);
         assert_eq!(replace_fst.root, large_label);
-        
+
         let result: VectorFst<TropicalWeight> = replace(&replace_fst).unwrap();
         assert!(result.start().is_some());
         assert_eq!(result.num_states(), 1);
@@ -427,11 +447,11 @@ mod tests {
         // Test FST properties
         assert!(!result.is_empty()); // Has start state
         assert!(result.start().is_some());
-        
+
         let start_state = result.start().unwrap();
         assert!(result.is_final(start_state));
         assert_eq!(result.num_arcs(start_state), 0); // No outgoing arcs
-        
+
         // Test that it accepts empty string
         assert!(result.is_final(start_state));
     }
@@ -440,11 +460,11 @@ mod tests {
     fn test_replace_multiple_creations() {
         // Test creating multiple ReplaceFst instances
         let labels = vec![1, 10, 100, 1000];
-        
+
         for label in labels {
             let replace_fst = ReplaceFst::<TropicalWeight>::simple(label);
             assert_eq!(replace_fst.root, label);
-            
+
             let result: VectorFst<TropicalWeight> = replace(&replace_fst).unwrap();
             assert!(result.start().is_some());
             assert_eq!(result.num_states(), 1);
@@ -454,11 +474,11 @@ mod tests {
     #[test]
     fn test_replace_fst_different_semirings() {
         // Test ReplaceFst works with different semiring types
-        
+
         // TropicalWeight
         let tropical = ReplaceFst::<TropicalWeight>::simple(1);
         assert_eq!(tropical.root, 1);
-        
+
         // LogWeight
         let log = ReplaceFst::<LogWeight>::simple(2);
         assert_eq!(log.root, 2);
@@ -466,7 +486,7 @@ mod tests {
         // Both should work with replace function
         let tropical_result: VectorFst<TropicalWeight> = replace(&tropical).unwrap();
         let log_result: VectorFst<LogWeight> = replace(&log).unwrap();
-        
+
         assert!(tropical_result.start().is_some());
         assert!(log_result.start().is_some());
     }
@@ -503,20 +523,23 @@ mod tests {
     fn test_replace_with_rules() {
         // Test replacement with actual grammar rules
         let mut rules = HashMap::new();
-        
+
         // Create a simple rule: 1 -> "a"
         let mut rule_fst = VectorFst::<TropicalWeight>::new();
         let s0 = rule_fst.add_state();
         let s1 = rule_fst.add_state();
         rule_fst.set_start(s0);
         rule_fst.set_final(s1, TropicalWeight::one());
-        rule_fst.add_arc(s0, Arc::new('a' as u32, 'a' as u32, TropicalWeight::one(), s1));
-        
+        rule_fst.add_arc(
+            s0,
+            Arc::new('a' as u32, 'a' as u32, TropicalWeight::one(), s1),
+        );
+
         rules.insert(1, rule_fst);
-        
+
         let replace_fst = ReplaceFst::new(1, rules);
         let result: VectorFst<TropicalWeight> = replace(&replace_fst).unwrap();
-        
+
         // Should have created an FST with the rule structure
         assert!(result.start().is_some());
         assert!(result.num_states() >= 2); // At least start and final states

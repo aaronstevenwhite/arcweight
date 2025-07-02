@@ -495,7 +495,7 @@ mod tests {
     fn test_string_lcp_edge_cases() {
         let w1 = StringWeight::from_string("abc");
         let w2 = StringWeight::from_string("xyz");
-        
+
         // No common prefix
         let result = w1.plus(&w2);
         assert_eq!(result.to_string().unwrap(), "");
@@ -524,7 +524,10 @@ mod tests {
         let w2 = StringWeight::from_string("world");
 
         // Test * operator (concatenation)
-        assert_eq!(w1.clone() * w2.clone(), StringWeight::from_string("helloworld"));
+        assert_eq!(
+            w1.clone() * w2.clone(),
+            StringWeight::from_string("helloworld")
+        );
 
         // Test + operator (LCP)
         let w3 = StringWeight::from_string("help");

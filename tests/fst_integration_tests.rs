@@ -41,7 +41,7 @@ fn test_fst_types_conversion() {
 #[test]
 fn test_fst_iteration() {
     let mut fst = VectorFst::<TropicalWeight>::new();
-    
+
     // Create a more complex FST
     let states: Vec<_> = (0..5).map(|_| fst.add_state()).collect();
     fst.set_start(states[0]);
@@ -49,7 +49,15 @@ fn test_fst_iteration() {
 
     // Add arcs in a pattern
     for i in 0..4 {
-        fst.add_arc(states[i], Arc::new(i as u32 + 1, i as u32 + 1, TropicalWeight::new(i as f32), states[i + 1]));
+        fst.add_arc(
+            states[i],
+            Arc::new(
+                i as u32 + 1,
+                i as u32 + 1,
+                TropicalWeight::new(i as f32),
+                states[i + 1],
+            ),
+        );
     }
 
     // Test state iteration
@@ -67,7 +75,7 @@ fn test_fst_iteration() {
 #[test]
 fn test_fst_properties_computation() {
     // Test various FST configurations and their properties
-    
+
     // Empty FST
     let empty_fst = VectorFst::<TropicalWeight>::new();
     let empty_props = empty_fst.properties();
@@ -102,28 +110,28 @@ fn test_fst_properties_computation() {
 #[test]
 fn test_fst_mutability() {
     let mut fst = VectorFst::<TropicalWeight>::new();
-    
+
     // Add and remove states
     let s0 = fst.add_state();
     let s1 = fst.add_state();
     let s2 = fst.add_state();
-    
+
     assert_eq!(fst.num_states(), 3);
-    
+
     fst.set_start(s0);
     fst.set_final(s2, TropicalWeight::new(5.0));
-    
+
     // Add arcs
     fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
     fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
-    
+
     // Modify final weight
     assert!(fst.is_final(s2));
     assert_eq!(*fst.final_weight(s2).unwrap().value(), 5.0);
-    
+
     fst.set_final(s2, TropicalWeight::new(10.0));
     assert_eq!(*fst.final_weight(s2).unwrap().value(), 10.0);
-    
+
     // Remove final status
     fst.remove_final(s2);
     assert!(!fst.is_final(s2));
@@ -140,12 +148,12 @@ fn test_fst_cloning_and_equality() {
 
     // Clone the FST
     let cloned = original.clone();
-    
+
     // Verify they have the same structure
     assert_eq!(cloned.num_states(), original.num_states());
     assert_eq!(cloned.num_arcs_total(), original.num_arcs_total());
     assert_eq!(cloned.start(), original.start());
-    
+
     // Verify independence
     original.add_state();
     assert_ne!(cloned.num_states(), original.num_states());

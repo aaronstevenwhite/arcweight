@@ -532,7 +532,7 @@ mod tests {
     #[test]
     fn test_project_empty_fst() {
         let fst = VectorFst::<TropicalWeight>::new();
-        
+
         let input_proj: VectorFst<TropicalWeight> = project_input(&fst).unwrap();
         let output_proj: VectorFst<TropicalWeight> = project_output(&fst).unwrap();
 
@@ -557,7 +557,10 @@ mod tests {
         assert_eq!(input_proj.start(), Some(s0));
         assert_eq!(output_proj.start(), Some(s0));
         assert_eq!(input_proj.final_weight(s0), Some(&TropicalWeight::new(3.0)));
-        assert_eq!(output_proj.final_weight(s0), Some(&TropicalWeight::new(3.0)));
+        assert_eq!(
+            output_proj.final_weight(s0),
+            Some(&TropicalWeight::new(3.0))
+        );
     }
 
     #[test]

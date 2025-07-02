@@ -207,7 +207,7 @@ mod tests {
         fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2));
 
         let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
-        
+
         // Basic structure should be preserved
         assert!(minimized.start().is_some());
         assert!(minimized.num_states() > 0);
@@ -231,7 +231,7 @@ mod tests {
         fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s3));
 
         let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
-        
+
         // Should successfully minimize (exact reduction depends on algorithm)
         assert!(minimized.start().is_some());
     }
@@ -247,7 +247,7 @@ mod tests {
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
 
         let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
-        
+
         // Should successfully minimize
         assert!(minimized.start().is_some());
     }
@@ -256,7 +256,7 @@ mod tests {
     fn test_minimize_empty_fst() {
         let fst = VectorFst::<TropicalWeight>::new();
         let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
-        
+
         assert_eq!(minimized.num_states(), 0);
         assert!(minimized.is_empty());
     }
@@ -269,7 +269,7 @@ mod tests {
         fst.set_final(s0, TropicalWeight::one());
 
         let minimized: VectorFst<TropicalWeight> = minimize(&fst).unwrap();
-        
+
         // Minimization may change state count but should preserve structure
         assert!(minimized.num_states() > 0);
         assert!(minimized.start().is_some());

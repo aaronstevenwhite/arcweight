@@ -16,6 +16,10 @@
 //! - Koskenniemi, K. (1983). Two-level morphology
 //! - Karttunen, L. (1994). Constructing lexical transducers
 //!
+//! Related examples:
+//! - phonological_rules.rs: Demonstrates phonological rule application with FST composition
+//! - transliteration.rs: Shows related string transformation techniques
+//!
 //! Usage:
 //! ```bash
 //! cargo run --example morphological_analyzer

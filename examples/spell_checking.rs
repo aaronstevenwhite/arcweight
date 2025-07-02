@@ -11,6 +11,10 @@
 //! This is a practical application showing how FSTs can be used for spell
 //! checking and fuzzy string matching in real-world applications.
 //!
+//! Related examples:
+//! - edit_distance.rs: Shows the basic edit distance computation that this builds upon
+//! - string_alignment.rs: Shows how to visualize the actual transformations
+//!
 //! Usage:
 //! ```bash
 //! cargo run --example spell_checking

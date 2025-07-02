@@ -174,8 +174,13 @@ mod tests {
 
         // Convert using threshold at 2.0
         let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |w| {
-            if *w.value() < 2.0 { BooleanWeight::one() } else { BooleanWeight::zero() }
-        }).unwrap();
+            if *w.value() < 2.0 {
+                BooleanWeight::one()
+            } else {
+                BooleanWeight::zero()
+            }
+        })
+        .unwrap();
 
         // Structure should be preserved
         assert_eq!(converted.num_states(), fst.num_states());
@@ -203,9 +208,8 @@ mod tests {
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(2.0), s1));
 
         // Convert Tropical to Log (direct value transfer)
-        let converted: VectorFst<LogWeight> = weight_convert(&fst, |w| {
-            LogWeight::new((*w.value()) as f64)
-        }).unwrap();
+        let converted: VectorFst<LogWeight> =
+            weight_convert(&fst, |w| LogWeight::new((*w.value()) as f64)).unwrap();
 
         assert_eq!(converted.num_states(), fst.num_states());
         assert_eq!(converted.start(), fst.start());
@@ -219,7 +223,8 @@ mod tests {
     #[test]
     fn test_weight_convert_empty_fst() {
         let fst = VectorFst::<TropicalWeight>::new();
-        let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
+        let converted: VectorFst<BooleanWeight> =
+            weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
 
         assert_eq!(converted.num_states(), 0);
         assert!(converted.is_empty());
@@ -233,7 +238,8 @@ mod tests {
         fst.set_start(s0);
         fst.set_final(s0, TropicalWeight::new(3.5));
 
-        let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
+        let converted: VectorFst<BooleanWeight> =
+            weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
 
         assert_eq!(converted.num_states(), 1);
         assert_eq!(converted.start(), Some(s0));
@@ -249,7 +255,8 @@ mod tests {
         fst.set_final(s0, TropicalWeight::one());
         // No start state set
 
-        let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
+        let converted: VectorFst<BooleanWeight> =
+            weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
 
         assert_eq!(converted.num_states(), 1);
         assert!(converted.start().is_none());
@@ -273,20 +280,19 @@ mod tests {
         fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::new(3.0), s1));
 
         // Convert with weight doubling
-        let converted: VectorFst<TropicalWeight> = weight_convert(&fst, |w| {
-            TropicalWeight::new(*w.value() * 2.0)
-        }).unwrap();
+        let converted: VectorFst<TropicalWeight> =
+            weight_convert(&fst, |w| TropicalWeight::new(*w.value() * 2.0)).unwrap();
 
         assert_eq!(converted.num_states(), fst.num_states());
         assert_eq!(converted.num_arcs_total(), fst.num_arcs_total());
 
         let arcs: Vec<_> = converted.arcs(s0).collect();
         assert_eq!(arcs.len(), 3);
-        
+
         // Check that weights were doubled
         let weights: Vec<f32> = arcs.iter().map(|arc| *arc.weight.value()).collect();
         assert!(weights.contains(&2.0)); // 1.0 * 2
-        assert!(weights.contains(&4.0)); // 2.0 * 2  
+        assert!(weights.contains(&4.0)); // 2.0 * 2
         assert!(weights.contains(&6.0)); // 3.0 * 2
     }
 
@@ -305,20 +311,25 @@ mod tests {
 
         // Convert to Boolean with threshold
         let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |w| {
-            if *w.value() < 2.0 { BooleanWeight::one() } else { BooleanWeight::zero() }
-        }).unwrap();
+            if *w.value() < 2.0 {
+                BooleanWeight::one()
+            } else {
+                BooleanWeight::zero()
+            }
+        })
+        .unwrap();
 
         assert_eq!(converted.num_states(), 2);
         assert_eq!(converted.num_arcs_total(), 2);
 
         let arcs: Vec<_> = converted.arcs(s0).collect();
         assert_eq!(arcs.len(), 2);
-        
+
         // Find self-loop and regular arc
         let self_loop = arcs.iter().find(|arc| arc.nextstate == s0).unwrap();
         let regular_arc = arcs.iter().find(|arc| arc.nextstate == s1).unwrap();
-        
-        assert_eq!(self_loop.weight, BooleanWeight::one());  // 1.5 < 2.0
+
+        assert_eq!(self_loop.weight, BooleanWeight::one()); // 1.5 < 2.0
         assert_eq!(regular_arc.weight, BooleanWeight::zero()); // 2.5 >= 2.0
     }
 
@@ -332,21 +343,27 @@ mod tests {
 
         // Create linear chain
         for i in 0..3 {
-            fst.add_arc(states[i], Arc::new(
-                (i + 1) as u32, (i + 1) as u32,
-                TropicalWeight::new((i + 1) as f32),
-                states[i + 1]
-            ));
+            fst.add_arc(
+                states[i],
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new((i + 1) as f32),
+                    states[i + 1],
+                ),
+            );
         }
 
         // Convert to LogWeight
-        let converted: VectorFst<LogWeight> = weight_convert(&fst, |w| {
-            LogWeight::new((*w.value()) as f64)
-        }).unwrap();
+        let converted: VectorFst<LogWeight> =
+            weight_convert(&fst, |w| LogWeight::new((*w.value()) as f64)).unwrap();
 
         assert_eq!(converted.num_states(), 4);
         assert_eq!(converted.num_arcs_total(), 3);
-        assert_eq!(converted.final_weight(states[3]), Some(&LogWeight::new(4.0)));
+        assert_eq!(
+            converted.final_weight(states[3]),
+            Some(&LogWeight::new(4.0))
+        );
 
         // Check arc weights preserved
         for (i, &state) in states[..3].iter().enumerate() {
@@ -374,15 +391,16 @@ mod tests {
             } else {
                 LogWeight::zero()
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(converted.num_states(), 2);
-        
+
         // Check transformed weights: ln(3+1) = ln(4), ln(5+1) = ln(6)
         let arcs: Vec<_> = converted.arcs(s0).collect();
         assert_eq!(arcs.len(), 1);
         assert!((*arcs[0].weight.value() - 4.0_f64.ln()).abs() < 1e-6);
-        
+
         let final_weight = converted.final_weight(s1).unwrap();
         assert!((*final_weight.value() - 6.0_f64.ln()).abs() < 1e-6);
     }
@@ -399,7 +417,8 @@ mod tests {
         // Arc with specific input/output labels
         fst.add_arc(s0, Arc::new(100, 200, TropicalWeight::new(1.5), s1));
 
-        let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |_| BooleanWeight::zero()).unwrap();
+        let converted: VectorFst<BooleanWeight> =
+            weight_convert(&fst, |_| BooleanWeight::zero()).unwrap();
 
         let arcs: Vec<_> = converted.arcs(s0).collect();
         assert_eq!(arcs.len(), 1);
@@ -423,7 +442,8 @@ mod tests {
         fst.add_arc(s0, Arc::new(0, 0, TropicalWeight::new(0.1), s1));
         fst.add_arc(s1, Arc::new(1, 1, TropicalWeight::new(0.2), s2));
 
-        let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
+        let converted: VectorFst<BooleanWeight> =
+            weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
 
         assert_eq!(converted.num_states(), 3);
         assert_eq!(converted.num_arcs_total(), 2);
@@ -446,15 +466,19 @@ mod tests {
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
         // No final states
 
-        let converted: VectorFst<BooleanWeight> = weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
+        let converted: VectorFst<BooleanWeight> =
+            weight_convert(&fst, |_| BooleanWeight::one()).unwrap();
 
         assert_eq!(converted.num_states(), 2);
         assert!(converted.start().is_some());
-        
+
         // No final states in result
-        let final_count = converted.states().filter(|&s| converted.is_final(s)).count();
+        let final_count = converted
+            .states()
+            .filter(|&s| converted.is_final(s))
+            .count();
         assert_eq!(final_count, 0);
-        
+
         // Arc should still be converted
         assert_eq!(converted.num_arcs_total(), 1);
     }
@@ -475,10 +499,10 @@ mod tests {
         assert_eq!(converted.num_states(), fst.num_states());
         assert_eq!(converted.start(), fst.start());
         assert_eq!(converted.num_arcs_total(), fst.num_arcs_total());
-        
+
         // Weights should be identical
         assert_eq!(converted.final_weight(s1), fst.final_weight(s1));
-        
+
         let orig_arcs: Vec<_> = fst.arcs(s0).collect();
         let conv_arcs: Vec<_> = converted.arcs(s0).collect();
         assert_eq!(orig_arcs.len(), conv_arcs.len());

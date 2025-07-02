@@ -179,6 +179,55 @@ name = "weight_processing"
 harness = false
 path = "benches/parallel/weight_processing.rs"
 
+# New algorithm benchmarks
+[[bench]]
+name = "union"
+harness = false
+path = "benches/core/union.rs"
+
+[[bench]]
+name = "concat"
+harness = false
+path = "benches/core/concat.rs"
+
+[[bench]]
+name = "closure_ops"
+harness = false
+path = "benches/core/closure_ops.rs"
+
+[[bench]]
+name = "intersect"
+harness = false
+path = "benches/core/intersect.rs"
+
+[[bench]]
+name = "reverse"
+harness = false
+path = "benches/core/reverse.rs"
+
+# Semiring benchmarks
+[[bench]]
+name = "semiring_operations"
+harness = false
+path = "benches/semirings/semiring_operations.rs"
+
+[[bench]]
+name = "semiring_fst_ops"
+harness = false
+path = "benches/semirings/semiring_fst_ops.rs"
+
+# FST type benchmarks
+[[bench]]
+name = "fst_type_comparison"
+harness = false
+path = "benches/fst_types/fst_type_comparison.rs"
+
+# Binary I/O benchmarks
+[[bench]]
+name = "binary_format"
+harness = false
+path = "benches/io/binary_format.rs"
+
 # Main benchmark harness
 [[bench]]
 name = "benchmarks"

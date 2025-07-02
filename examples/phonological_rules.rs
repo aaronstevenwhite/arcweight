@@ -19,6 +19,10 @@
 //! - Johnson, C. D. (1972). Formal aspects of phonological description.
 //! - Koskenniemi, K. (1983). Two-level morphology.
 //!
+//! Related examples:
+//! - morphological_analyzer.rs: Shows how phonological rules integrate with morphology
+//! - transliteration.rs: Demonstrates related phonetic transformation techniques
+//!
 //! Usage:
 //! ```bash
 //! cargo run --example phonological_rules

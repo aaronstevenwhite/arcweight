@@ -343,8 +343,8 @@ where
 mod tests {
     use super::*;
     use crate::prelude::*;
-    use std::io::{BufReader, Cursor};
     use num_traits::identities::One;
+    use std::io::{BufReader, Cursor};
 
     #[test]
     fn test_write_read_text_roundtrip() {

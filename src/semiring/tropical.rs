@@ -353,10 +353,22 @@ mod tests {
 
     #[test]
     fn test_tropical_from_str() {
-        assert_eq!(TropicalWeight::from_str("5.0").unwrap(), TropicalWeight::new(5.0));
-        assert_eq!(TropicalWeight::from_str("∞").unwrap(), TropicalWeight::INFINITY);
-        assert_eq!(TropicalWeight::from_str("inf").unwrap(), TropicalWeight::INFINITY);
-        assert_eq!(TropicalWeight::from_str("infinity").unwrap(), TropicalWeight::INFINITY);
+        assert_eq!(
+            TropicalWeight::from_str("5.0").unwrap(),
+            TropicalWeight::new(5.0)
+        );
+        assert_eq!(
+            TropicalWeight::from_str("∞").unwrap(),
+            TropicalWeight::INFINITY
+        );
+        assert_eq!(
+            TropicalWeight::from_str("inf").unwrap(),
+            TropicalWeight::INFINITY
+        );
+        assert_eq!(
+            TropicalWeight::from_str("infinity").unwrap(),
+            TropicalWeight::INFINITY
+        );
     }
 
     #[test]

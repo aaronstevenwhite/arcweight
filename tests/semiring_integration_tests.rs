@@ -40,7 +40,8 @@ fn test_semiring_conversions() {
     // Convert to log semiring using a converter function
     let log_fst: VectorFst<LogWeight> = weight_convert(&tropical_fst, |w: &TropicalWeight| {
         LogWeight::new(-(*w.value() as f64).ln())
-    }).unwrap();
+    })
+    .unwrap();
     assert_eq!(log_fst.num_states(), tropical_fst.num_states());
     assert_eq!(log_fst.num_arcs_total(), tropical_fst.num_arcs_total());
 }
@@ -48,7 +49,7 @@ fn test_semiring_conversions() {
 #[test]
 fn test_semiring_in_algorithms() {
     // Test that algorithms work correctly with different semirings
-    
+
     // Boolean semiring for closure
     let mut bool_fst = VectorFst::<BooleanWeight>::new();
     let s0 = bool_fst.add_state();
@@ -59,7 +60,7 @@ fn test_semiring_in_algorithms() {
 
     let star: VectorFst<BooleanWeight> = closure(&bool_fst).unwrap();
     assert!(star.num_states() > bool_fst.num_states());
-    
+
     // Boolean semiring for epsilon removal
     let mut bool_eps_fst = VectorFst::<BooleanWeight>::new();
     let s0 = bool_eps_fst.add_state();

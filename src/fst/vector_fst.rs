@@ -593,10 +593,7 @@ mod tests {
 
         // Add arcs and verify they are added efficiently
         for i in 0..50 {
-            fst.add_arc(
-                s0,
-                Arc::new(i, i, TropicalWeight::new(i as f32), s1),
-            );
+            fst.add_arc(s0, Arc::new(i, i, TropicalWeight::new(i as f32), s1));
         }
 
         assert_eq!(fst.num_arcs(s0), 50);
@@ -660,5 +657,4 @@ mod tests {
             }
         }
     }
-
 }

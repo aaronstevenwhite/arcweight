@@ -1,7 +1,7 @@
 //! End-to-end integration tests for complete workflows
 
-use arcweight::prelude::*;
 use arcweight::algorithms::PruneConfig;
+use arcweight::prelude::*;
 use num_traits::One;
 
 #[test]
@@ -81,58 +81,58 @@ fn test_determinization_workflow() {
 #[test]
 fn test_optimization_pipeline() {
     // Test full optimization pipeline with appropriate semirings
-    
+
     // Part 1: Epsilon removal with BooleanWeight (implements StarSemiring)
     let mut bool_fst = VectorFst::<BooleanWeight>::new();
-    
+
     let s0 = bool_fst.add_state();
     let s1 = bool_fst.add_state();
     let s2 = bool_fst.add_state();
     let s3 = bool_fst.add_state();
-    
+
     bool_fst.set_start(s0);
     bool_fst.set_final(s3, BooleanWeight::one());
-    
+
     // Add epsilon transitions
     bool_fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s1));
     bool_fst.add_arc(s0, Arc::epsilon(BooleanWeight::one(), s2));
-    
+
     // Add regular transitions
     bool_fst.add_arc(s1, Arc::new(1, 1, BooleanWeight::one(), s3));
     bool_fst.add_arc(s2, Arc::new(1, 1, BooleanWeight::one(), s3));
-    
+
     // Remove epsilons
     let no_eps: VectorFst<BooleanWeight> = remove_epsilons(&bool_fst).unwrap();
-    
+
     // Verify no epsilons remain
     for state in no_eps.states() {
         for arc in no_eps.arcs(state) {
             assert!(!arc.is_epsilon());
         }
     }
-    
+
     // Part 2: Determinization and minimization with TropicalWeight (implements DivisibleSemiring)
     let mut tropical_fst = VectorFst::<TropicalWeight>::new();
-    
+
     let t0 = tropical_fst.add_state();
     let t1 = tropical_fst.add_state();
     let t2 = tropical_fst.add_state();
     let t3 = tropical_fst.add_state();
-    
+
     tropical_fst.set_start(t0);
     tropical_fst.set_final(t3, TropicalWeight::one());
-    
+
     // Non-deterministic transitions (same label from t0)
     tropical_fst.add_arc(t0, Arc::new(1, 1, TropicalWeight::new(1.0), t1));
     tropical_fst.add_arc(t0, Arc::new(1, 1, TropicalWeight::new(2.0), t2));
-    
+
     // Regular transitions
     tropical_fst.add_arc(t1, Arc::new(2, 2, TropicalWeight::one(), t3));
     tropical_fst.add_arc(t2, Arc::new(2, 2, TropicalWeight::one(), t3));
-    
+
     // Determinize
     let det: VectorFst<TropicalWeight> = determinize(&tropical_fst).unwrap();
-    
+
     // Verify deterministic
     for state in det.states() {
         let mut labels = std::collections::HashSet::new();
@@ -140,10 +140,10 @@ fn test_optimization_pipeline() {
             assert!(labels.insert(arc.ilabel));
         }
     }
-    
+
     // Minimize
     let min: VectorFst<TropicalWeight> = minimize(&det).unwrap();
-    
+
     // Verify minimization completed successfully
     // Note: Brzozowski's algorithm may temporarily increase states
     assert!(min.start().is_some());
@@ -153,32 +153,32 @@ fn test_optimization_pipeline() {
 fn test_transducer_operations() {
     // Create a transducer that maps digits to words
     let mut digit_to_word = VectorFst::<TropicalWeight>::new();
-    
+
     let s0 = digit_to_word.add_state();
     let s1 = digit_to_word.add_state();
-    
+
     digit_to_word.set_start(s0);
     digit_to_word.set_final(s1, TropicalWeight::one());
-    
+
     // Map 1 -> 100 (one), 2 -> 200 (two), etc.
     digit_to_word.add_arc(s0, Arc::new(1, 100, TropicalWeight::new(1.0), s1));
     digit_to_word.add_arc(s0, Arc::new(2, 200, TropicalWeight::new(1.0), s1));
-    
+
     // Create an input FST
     let mut input = VectorFst::<TropicalWeight>::new();
     let i0 = input.add_state();
     let i1 = input.add_state();
-    
+
     input.set_start(i0);
     input.set_final(i1, TropicalWeight::one());
     input.add_arc(i0, Arc::new(1, 1, TropicalWeight::new(2.0), i1));
-    
+
     // Compose to get the transduction
     let result: VectorFst<TropicalWeight> = compose_default(&input, &digit_to_word).unwrap();
-    
+
     assert!(result.start().is_some());
     assert!(result.num_states() > 0);
-    
+
     // The result should map 1 -> 100 with combined weight
     let start = result.start().unwrap();
     let mut found_mapping = false;
@@ -263,30 +263,30 @@ fn test_connect_prune_operations() {
 
     // should only have accessible and coaccessible states
     assert!(connected.num_states() < fst.num_states());
-    
+
     // Test pruning with weight threshold
     let mut weighted_fst = VectorFst::<TropicalWeight>::new();
     let w0 = weighted_fst.add_state();
     let w1 = weighted_fst.add_state();
     let w2 = weighted_fst.add_state();
-    
+
     weighted_fst.set_start(w0);
     weighted_fst.set_final(w1, TropicalWeight::one());
     weighted_fst.set_final(w2, TropicalWeight::one());
-    
+
     // Path to w1 has weight 1, path to w2 has weight 10
     weighted_fst.add_arc(w0, Arc::new(1, 1, TropicalWeight::new(1.0), w1));
     weighted_fst.add_arc(w0, Arc::new(2, 2, TropicalWeight::new(10.0), w2));
-    
+
     // Prune paths with weight > 5
     let config = PruneConfig {
         weight_threshold: 5.0,
         state_threshold: None,
         npath: None,
     };
-    
+
     let pruned: VectorFst<TropicalWeight> = prune(&weighted_fst, config).unwrap();
-    
+
     // The prune implementation now properly removes paths exceeding the weight threshold
     // Verify that pruning has occurred (exact behavior depends on implementation details)
     assert!(pruned.num_states() <= weighted_fst.num_states());

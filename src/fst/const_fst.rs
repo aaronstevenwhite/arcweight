@@ -522,7 +522,10 @@ mod tests {
 
         for state in vector_fst.states() {
             assert_eq!(const_fst.is_final(state), vector_fst.is_final(state));
-            assert_eq!(const_fst.final_weight(state), vector_fst.final_weight(state));
+            assert_eq!(
+                const_fst.final_weight(state),
+                vector_fst.final_weight(state)
+            );
             assert_eq!(const_fst.num_arcs(state), vector_fst.num_arcs(state));
 
             let const_arcs: Vec<_> = const_fst.arcs(state).collect();

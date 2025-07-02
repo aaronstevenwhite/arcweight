@@ -270,30 +270,45 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
         match self.encode_type {
             EncodeType::EncodeLabelsAndWeights | EncodeType::LabelsAndWeights => {
                 // Decode both labels and weights
-                let (ilabel, olabel) = self.reverse_label_map
+                let (ilabel, olabel) = self
+                    .reverse_label_map
                     .get(&arc.ilabel)
                     .ok_or("Label not found in reverse mapping")?;
-                let weight = self.reverse_weight_map
+                let weight = self
+                    .reverse_weight_map
                     .get(&arc.olabel)
                     .ok_or("Weight not found in reverse mapping")?;
                 Ok(Arc::new(*ilabel, *olabel, weight.clone(), arc.nextstate))
             }
             EncodeType::EncodeWeightsOnly | EncodeType::Weights => {
                 // Decode only weights, recover original labels
-                let weight = self.reverse_weight_map
+                let weight = self
+                    .reverse_weight_map
                     .get(&arc.olabel)
                     .ok_or("Weight not found in reverse mapping")?;
-                let original_olabel = self.original_olabel_map
+                let original_olabel = self
+                    .original_olabel_map
                     .get(&arc.ilabel)
                     .ok_or("Original output label not found")?;
-                Ok(Arc::new(arc.ilabel, *original_olabel, weight.clone(), arc.nextstate))
+                Ok(Arc::new(
+                    arc.ilabel,
+                    *original_olabel,
+                    weight.clone(),
+                    arc.nextstate,
+                ))
             }
             EncodeType::EncodeLabelsOnly | EncodeType::Labels => {
                 // Decode only labels, weight is preserved
-                let (ilabel, olabel) = self.reverse_label_map
+                let (ilabel, olabel) = self
+                    .reverse_label_map
                     .get(&arc.ilabel)
                     .ok_or("Label not found in reverse mapping")?;
-                Ok(Arc::new(*ilabel, *olabel, arc.weight.clone(), arc.nextstate))
+                Ok(Arc::new(
+                    *ilabel,
+                    *olabel,
+                    arc.weight.clone(),
+                    arc.nextstate,
+                ))
             }
         }
     }
@@ -324,11 +339,11 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
             let label = self.next_label;
             self.label_map.insert(key, label);
             self.reverse_label_map.insert(label, key);
-            
+
             // Track labels in symbol tables
             self.input_symbols.add_symbol(&format!("i{}", ilabel));
             self.output_symbols.add_symbol(&format!("o{}", olabel));
-            
+
             self.next_label += 1;
             label
         }
@@ -484,7 +499,7 @@ mod tests {
         // After encoding, should track labels
         let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
         mapper.encode(&arc);
-        
+
         // Should have added symbols for the labels
         assert!(mapper.input_symbols().size() > 1);
         assert!(mapper.output_symbols().size() > 1);
@@ -493,147 +508,147 @@ mod tests {
     #[test]
     fn test_encode_decode_labels_only() {
         let mut mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsOnly);
-        
+
         let arc1 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
         let arc2 = Arc::new(1, 2, TropicalWeight::new(5.0), 6);
         let arc3 = Arc::new(3, 4, TropicalWeight::new(3.0), 7);
-        
+
         let encoded1 = mapper.encode(&arc1);
         let encoded2 = mapper.encode(&arc2);
         let encoded3 = mapper.encode(&arc3);
-        
+
         // Same labels should get same encoding
         assert_eq!(encoded1.ilabel, encoded2.ilabel);
         assert_eq!(encoded1.olabel, encoded2.olabel);
-        
+
         // Different labels should get different encoding
         assert_ne!(encoded1.ilabel, encoded3.ilabel);
-        
+
         // Weights should be preserved
         assert_eq!(encoded1.weight, arc1.weight);
         assert_eq!(encoded2.weight, arc2.weight);
-        
+
         // Decode should recover original arcs
         let decoded1 = mapper.decode(&encoded1).unwrap();
         let decoded2 = mapper.decode(&encoded2).unwrap();
         let decoded3 = mapper.decode(&encoded3).unwrap();
-        
+
         assert_eq!(decoded1.ilabel, arc1.ilabel);
         assert_eq!(decoded1.olabel, arc1.olabel);
         assert_eq!(decoded1.weight, arc1.weight);
         assert_eq!(decoded1.nextstate, arc1.nextstate);
-        
+
         assert_eq!(decoded2.ilabel, arc2.ilabel);
         assert_eq!(decoded2.olabel, arc2.olabel);
         assert_eq!(decoded2.weight, arc2.weight);
         assert_eq!(decoded2.nextstate, arc2.nextstate);
-        
+
         assert_eq!(decoded3.ilabel, arc3.ilabel);
         assert_eq!(decoded3.olabel, arc3.olabel);
         assert_eq!(decoded3.weight, arc3.weight);
         assert_eq!(decoded3.nextstate, arc3.nextstate);
     }
-    
+
     #[test]
     fn test_encode_decode_weights_only() {
         let mut mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeWeightsOnly);
-        
+
         let arc1 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
         let arc2 = Arc::new(5, 6, TropicalWeight::new(3.0), 7);
         let arc3 = Arc::new(1, 2, TropicalWeight::new(8.0), 9);
-        
+
         let encoded1 = mapper.encode(&arc1);
         let encoded2 = mapper.encode(&arc2);
         let encoded3 = mapper.encode(&arc3);
-        
+
         // Same weights should get same encoding
         assert_eq!(encoded1.olabel, encoded2.olabel);
-        
+
         // Different weights should get different encoding
         assert_ne!(encoded1.olabel, encoded3.olabel);
-        
+
         // Labels should be preserved
         assert_eq!(encoded1.ilabel, arc1.ilabel);
         assert_eq!(encoded2.ilabel, arc2.ilabel);
         assert_eq!(encoded3.ilabel, arc3.ilabel);
-        
+
         // Encoded weight should be one
         assert_eq!(encoded1.weight, TropicalWeight::one());
         assert_eq!(encoded2.weight, TropicalWeight::one());
         assert_eq!(encoded3.weight, TropicalWeight::one());
-        
+
         // Decode should recover original arcs
         let decoded1 = mapper.decode(&encoded1).unwrap();
         let decoded2 = mapper.decode(&encoded2).unwrap();
         let decoded3 = mapper.decode(&encoded3).unwrap();
-        
+
         assert_eq!(decoded1.ilabel, arc1.ilabel);
         assert_eq!(decoded1.olabel, arc1.olabel);
         assert_eq!(decoded1.weight, arc1.weight);
         assert_eq!(decoded1.nextstate, arc1.nextstate);
-        
+
         assert_eq!(decoded2.ilabel, arc2.ilabel);
         assert_eq!(decoded2.olabel, arc2.olabel);
         assert_eq!(decoded2.weight, arc2.weight);
         assert_eq!(decoded2.nextstate, arc2.nextstate);
-        
+
         assert_eq!(decoded3.ilabel, arc3.ilabel);
         assert_eq!(decoded3.olabel, arc3.olabel);
         assert_eq!(decoded3.weight, arc3.weight);
         assert_eq!(decoded3.nextstate, arc3.nextstate);
     }
-    
+
     #[test]
     fn test_encode_decode_labels_and_weights() {
         let mut mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsAndWeights);
-        
+
         let arc1 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
         let arc2 = Arc::new(1, 2, TropicalWeight::new(3.0), 5);
         let arc3 = Arc::new(1, 2, TropicalWeight::new(6.0), 7);
         let arc4 = Arc::new(8, 9, TropicalWeight::new(3.0), 10);
-        
+
         let encoded1 = mapper.encode(&arc1);
         let encoded2 = mapper.encode(&arc2);
         let encoded3 = mapper.encode(&arc3);
         let encoded4 = mapper.encode(&arc4);
-        
+
         // Same labels and weights should get same encoding
         assert_eq!(encoded1.ilabel, encoded2.ilabel);
         assert_eq!(encoded1.olabel, encoded2.olabel);
-        
+
         // Different weights should get different encoding
         assert_ne!(encoded1.olabel, encoded3.olabel);
-        
+
         // Different labels should get different encoding
         assert_ne!(encoded1.ilabel, encoded4.ilabel);
-        
+
         // Encoded weight should be one
         assert_eq!(encoded1.weight, TropicalWeight::one());
         assert_eq!(encoded2.weight, TropicalWeight::one());
         assert_eq!(encoded3.weight, TropicalWeight::one());
         assert_eq!(encoded4.weight, TropicalWeight::one());
-        
+
         // Decode should recover original arcs
         let decoded1 = mapper.decode(&encoded1).unwrap();
         let decoded2 = mapper.decode(&encoded2).unwrap();
         let decoded3 = mapper.decode(&encoded3).unwrap();
         let decoded4 = mapper.decode(&encoded4).unwrap();
-        
+
         assert_eq!(decoded1.ilabel, arc1.ilabel);
         assert_eq!(decoded1.olabel, arc1.olabel);
         assert_eq!(decoded1.weight, arc1.weight);
         assert_eq!(decoded1.nextstate, arc1.nextstate);
-        
+
         assert_eq!(decoded2.ilabel, arc2.ilabel);
         assert_eq!(decoded2.olabel, arc2.olabel);
         assert_eq!(decoded2.weight, arc2.weight);
         assert_eq!(decoded2.nextstate, arc2.nextstate);
-        
+
         assert_eq!(decoded3.ilabel, arc3.ilabel);
         assert_eq!(decoded3.olabel, arc3.olabel);
         assert_eq!(decoded3.weight, arc3.weight);
         assert_eq!(decoded3.nextstate, arc3.nextstate);
-        
+
         assert_eq!(decoded4.ilabel, arc4.ilabel);
         assert_eq!(decoded4.olabel, arc4.olabel);
         assert_eq!(decoded4.weight, arc4.weight);
@@ -643,15 +658,15 @@ mod tests {
     #[test]
     fn test_encode_decode_error_cases() {
         let mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsOnly);
-        
+
         // Try to decode arc with invalid label
         let invalid_arc = Arc::new(999, 0, TropicalWeight::new(1.0), 1);
         let result = mapper.decode(&invalid_arc);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Label not found in reverse mapping");
-        
+
         let weight_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeWeightsOnly);
-        
+
         // Try to decode arc with invalid weight ID
         let invalid_weight_arc = Arc::new(1, 999, TropicalWeight::one(), 1);
         let result = weight_mapper.decode(&invalid_weight_arc);
@@ -663,33 +678,45 @@ mod tests {
     fn test_encode_alias_types() {
         // Test that alias types work the same as full names
         let labels_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::Labels);
-        let encode_labels_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsOnly);
-        
+        let encode_labels_mapper =
+            EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsOnly);
+
         assert_eq!(labels_mapper.encode_type(), EncodeType::Labels);
-        assert_eq!(encode_labels_mapper.encode_type(), EncodeType::EncodeLabelsOnly);
-        
+        assert_eq!(
+            encode_labels_mapper.encode_type(),
+            EncodeType::EncodeLabelsOnly
+        );
+
         let weights_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::Weights);
-        let encode_weights_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeWeightsOnly);
-        
+        let encode_weights_mapper =
+            EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeWeightsOnly);
+
         assert_eq!(weights_mapper.encode_type(), EncodeType::Weights);
-        assert_eq!(encode_weights_mapper.encode_type(), EncodeType::EncodeWeightsOnly);
-        
+        assert_eq!(
+            encode_weights_mapper.encode_type(),
+            EncodeType::EncodeWeightsOnly
+        );
+
         let both_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::LabelsAndWeights);
-        let encode_both_mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsAndWeights);
-        
+        let encode_both_mapper =
+            EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsAndWeights);
+
         assert_eq!(both_mapper.encode_type(), EncodeType::LabelsAndWeights);
-        assert_eq!(encode_both_mapper.encode_type(), EncodeType::EncodeLabelsAndWeights);
+        assert_eq!(
+            encode_both_mapper.encode_type(),
+            EncodeType::EncodeLabelsAndWeights
+        );
     }
 
     #[test]
     fn test_roundtrip_encoding_large_labels() {
         let mut mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsOnly);
-        
+
         // Test with large label values
         let arc = Arc::new(u32::MAX - 1, u32::MAX, TropicalWeight::new(42.0), 100);
         let encoded = mapper.encode(&arc);
         let decoded = mapper.decode(&encoded).unwrap();
-        
+
         assert_eq!(decoded.ilabel, arc.ilabel);
         assert_eq!(decoded.olabel, arc.olabel);
         assert_eq!(decoded.weight, arc.weight);
@@ -699,25 +726,25 @@ mod tests {
     #[test]
     fn test_multiple_encoding_sessions() {
         let mut mapper = EncodeMapper::<TropicalWeight>::new(EncodeType::EncodeLabelsAndWeights);
-        
+
         // First session
         let arc1 = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
         let encoded1 = mapper.encode(&arc1);
         let decoded1 = mapper.decode(&encoded1).unwrap();
         assert_eq!(decoded1.ilabel, arc1.ilabel);
-        
+
         // Second session with different arc
         let arc2 = Arc::new(5, 6, TropicalWeight::new(7.0), 8);
         let encoded2 = mapper.encode(&arc2);
         let decoded2 = mapper.decode(&encoded2).unwrap();
         assert_eq!(decoded2.ilabel, arc2.ilabel);
-        
+
         // Third session reusing labels from first
         let arc3 = Arc::new(1, 2, TropicalWeight::new(9.0), 10);
         let encoded3 = mapper.encode(&arc3);
         let decoded3 = mapper.decode(&encoded3).unwrap();
         assert_eq!(decoded3.ilabel, arc3.ilabel);
-        
+
         // Labels should be reused but weights should be different
         assert_eq!(encoded1.ilabel, encoded3.ilabel); // Same labels
         assert_ne!(encoded1.olabel, encoded3.olabel); // Different weights

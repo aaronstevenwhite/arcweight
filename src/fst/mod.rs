@@ -71,8 +71,8 @@ mod vector_fst;
 
 pub use cache_fst::CacheFst;
 pub use compact_fst::{
-    BitPackCompactor, CompactFst, Compactor, DefaultCompactor, DeltaCompactor, 
-    QuantizationMode, QuantizedCompactor, VarIntCompactor,
+    BitPackCompactor, CompactFst, Compactor, DefaultCompactor, DeltaCompactor, QuantizationMode,
+    QuantizedCompactor, VarIntCompactor,
 };
 pub use const_fst::ConstFst;
 pub use lazy_fst::{LazyFstImpl, LazyState};

@@ -72,7 +72,7 @@ use core::marker::PhantomData;
 /// impl Compactor<TropicalWeight> for SmallAlphabetCompactor {
 ///     type Element = u64; // Pack arc data into single u64
 ///     
-///     fn compact(arc: &Arc<TropicalWeight>) -> u64 {
+///     fn compact(&self, arc: &Arc<TropicalWeight>) -> u64 {
 ///         // Pack: 16 bits ilabel + 16 bits olabel + 16 bits nextstate + 16 bits weight
 ///         let weight_bits = *arc.weight.value() as u64; // Simplified
 ///         (arc.ilabel as u64) << 48 |
@@ -81,7 +81,7 @@ use core::marker::PhantomData;
 ///         weight_bits
 ///     }
 ///     
-///     fn expand(element: &u64) -> Arc<TropicalWeight> {
+///     fn expand(&self, element: &u64) -> Arc<TropicalWeight> {
 ///         let ilabel = (element >> 48) as u32;
 ///         let olabel = ((element >> 32) & 0xFFFF) as u32;
 ///         let nextstate = ((element >> 16) & 0xFFFF) as u32;
@@ -89,11 +89,11 @@ use core::marker::PhantomData;
 ///         Arc::new(ilabel, olabel, TropicalWeight::new(weight_val), nextstate)
 ///     }
 ///     
-///     fn compact_weight(weight: &TropicalWeight) -> u64 {
+///     fn compact_weight(&self, weight: &TropicalWeight) -> u64 {
 ///         *weight.value() as u64
 ///     }
 ///     
-///     fn expand_weight(element: &u64) -> TropicalWeight {
+///     fn expand_weight(&self, element: &u64) -> TropicalWeight {
 ///         TropicalWeight::new(*element as f32)
 ///     }
 /// }
@@ -274,7 +274,7 @@ use core::marker::PhantomData;
 /// impl Compactor<TropicalWeight> for PhonemeCompactor {
 ///     type Element = CompactPhoneme;
 ///     
-///     fn compact(arc: &Arc<TropicalWeight>) -> CompactPhoneme {
+///     fn compact(&self, arc: &Arc<TropicalWeight>) -> CompactPhoneme {
 ///         // Custom compression for phoneme data
 ///         // Could map common phoneme combinations to single values
 ///         CompactPhoneme {
@@ -284,13 +284,13 @@ use core::marker::PhantomData;
 ///         }
 ///     }
 ///     
-///     fn expand(element: &CompactPhoneme) -> Arc<TropicalWeight> {
+///     fn expand(&self, element: &CompactPhoneme) -> Arc<TropicalWeight> {
 ///         let (ilabel, olabel) = expand_phoneme_code(element.phoneme_code);
 ///         let weight = dequantize_weight(element.weight_class);
 ///         Arc::new(ilabel, olabel, weight, element.next_state)
 ///     }
 ///     
-///     fn compact_weight(weight: &TropicalWeight) -> CompactPhoneme {
+///     fn compact_weight(&self, weight: &TropicalWeight) -> CompactPhoneme {
 ///         // Weight-only compression
 ///         CompactPhoneme {
 ///             phoneme_code: 0,
@@ -299,7 +299,7 @@ use core::marker::PhantomData;
 ///         }
 ///     }
 ///     
-///     fn expand_weight(element: &CompactPhoneme) -> TropicalWeight {
+///     fn expand_weight(&self, element: &CompactPhoneme) -> TropicalWeight {
 ///         dequantize_weight(element.weight_class)
 ///     }
 /// }
@@ -400,7 +400,9 @@ pub struct CompactFst<W: Semiring, C: Compactor<W>> {
     final_weights: Vec<Option<W>>,
     start: Option<StateId>,
     properties: FstProperties,
-    _phantom: PhantomData<(W, C)>,
+    /// Store the compactor instance to access its configuration
+    compactor: C,
+    _phantom: PhantomData<W>,
 }
 
 /// Compact representation of FST state metadata
@@ -458,7 +460,7 @@ struct CompactState {
 /// impl Compactor<BooleanWeight> for BitPackCompactor {
 ///     type Element = u32;
 ///     
-///     fn compact(arc: &Arc<BooleanWeight>) -> u32 {
+///     fn compact(&self, arc: &Arc<BooleanWeight>) -> u32 {
 ///         // Pack into 32 bits: 8+8+8+8 = ilabel, olabel, nextstate, weight
 ///         let weight_bit = if *arc.weight.value() { 1u32 } else { 0u32 };
 ///         ((arc.ilabel & 0xFF) << 24) |
@@ -467,7 +469,7 @@ struct CompactState {
 ///         weight_bit
 ///     }
 ///     
-///     fn expand(element: &u32) -> Arc<BooleanWeight> {
+///     fn expand(&self, element: &u32) -> Arc<BooleanWeight> {
 ///         let ilabel = (element >> 24) & 0xFF;
 ///         let olabel = (element >> 16) & 0xFF;
 ///         let nextstate = (element >> 8) & 0xFF;
@@ -475,11 +477,11 @@ struct CompactState {
 ///         Arc::new(ilabel, olabel, weight, nextstate)
 ///     }
 ///     
-///     fn compact_weight(weight: &BooleanWeight) -> u32 {
+///     fn compact_weight(&self, weight: &BooleanWeight) -> u32 {
 ///         if *weight.value() { 1 } else { 0 }
 ///     }
 ///     
-///     fn expand_weight(element: &u32) -> BooleanWeight {
+///     fn expand_weight(&self, element: &u32) -> BooleanWeight {
 ///         BooleanWeight::new(*element != 0)
 ///     }
 /// }
@@ -506,10 +508,11 @@ pub trait Compactor<W: Semiring>: Debug + Send + Sync + 'static {
     /// # use arcweight::prelude::*;
     /// # use arcweight::fst::{Compactor, DefaultCompactor};
     /// let arc = Arc::new(1, 2, TropicalWeight::new(3.5), 4);
-    /// let compressed = DefaultCompactor::<TropicalWeight>::compact(&arc);
+    /// let compactor = DefaultCompactor::<TropicalWeight>::default();
+    /// let compressed = compactor.compact(&arc);
     /// // `compressed` now contains all arc information in compact form
     /// ```
-    fn compact(arc: &Arc<W>) -> Self::Element;
+    fn compact(&self, arc: &Arc<W>) -> Self::Element;
 
     /// Expand a compressed element back into a full arc
     ///
@@ -523,26 +526,27 @@ pub trait Compactor<W: Semiring>: Debug + Send + Sync + 'static {
     /// # use arcweight::prelude::*;
     /// # use arcweight::fst::{Compactor, DefaultCompactor};
     /// let original = Arc::new(1, 2, TropicalWeight::new(3.5), 4);
-    /// let compressed = DefaultCompactor::<TropicalWeight>::compact(&original);
-    /// let expanded = DefaultCompactor::<TropicalWeight>::expand(&compressed);
+    /// let compactor = DefaultCompactor::<TropicalWeight>::default();
+    /// let compressed = compactor.compact(&original);
+    /// let expanded = compactor.expand(&compressed);
     /// assert_eq!(original.ilabel, expanded.ilabel);
     /// assert_eq!(original.olabel, expanded.olabel);
     /// assert_eq!(original.nextstate, expanded.nextstate);
     /// ```
-    fn expand(element: &Self::Element) -> Arc<W>;
+    fn expand(&self, element: &Self::Element) -> Arc<W>;
 
     /// Compress a semiring weight into the compact element format
     ///
     /// Compresses standalone weights (such as final state weights) into
     /// the same element format used for arcs. This enables unified storage
     /// of both arcs and weights in the compressed data array.
-    fn compact_weight(weight: &W) -> Self::Element;
+    fn compact_weight(&self, weight: &W) -> Self::Element;
 
     /// Expand a compressed element back into a semiring weight
     ///
     /// Reconstructs a weight from its compressed representation. This is
     /// the inverse operation of `compact_weight()`.
-    fn expand_weight(element: &Self::Element) -> W;
+    fn expand_weight(&self, element: &Self::Element) -> W;
 }
 
 /// Default compactor implementation using enumerated storage
@@ -589,10 +593,18 @@ pub struct DefaultCompactor<W: Semiring> {
     _phantom: PhantomData<W>,
 }
 
+impl<W: Semiring> Default for DefaultCompactor<W> {
+    fn default() -> Self {
+        Self {
+            _phantom: PhantomData,
+        }
+    }
+}
+
 impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
     type Element = CompactElement<W>;
 
-    fn compact(arc: &Arc<W>) -> Self::Element {
+    fn compact(&self, arc: &Arc<W>) -> Self::Element {
         CompactElement::Arc {
             ilabel: arc.ilabel,
             olabel: arc.olabel,
@@ -605,7 +617,7 @@ impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
     ///
     /// Panics if the element is not an arc type, which indicates
     /// incorrect usage of the compactor.
-    fn expand(element: &Self::Element) -> Arc<W> {
+    fn expand(&self, element: &Self::Element) -> Arc<W> {
         match element {
             CompactElement::Arc {
                 ilabel,
@@ -617,7 +629,7 @@ impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
         }
     }
 
-    fn compact_weight(weight: &W) -> Self::Element {
+    fn compact_weight(&self, weight: &W) -> Self::Element {
         CompactElement::Weight(weight.clone())
     }
 
@@ -625,7 +637,7 @@ impl<W: Semiring> Compactor<W> for DefaultCompactor<W> {
     ///
     /// Panics if the element is not a weight type, which indicates
     /// incorrect usage of the compactor.
-    fn expand_weight(element: &Self::Element) -> W {
+    fn expand_weight(&self, element: &Self::Element) -> W {
         match element {
             CompactElement::Weight(w) => w.clone(),
             _ => panic!("Expected weight element"),
@@ -685,7 +697,7 @@ pub enum CompactElement<W: Semiring> {
 ///
 /// # Usage Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use arcweight::prelude::*;
 /// use arcweight::fst::{CompactFst, BitPackCompactor};
 ///
@@ -714,9 +726,12 @@ impl<W: Semiring> BitPackCompactor<W> {
     /// Panics if total bits exceed 64 or any field exceeds 32 bits
     pub fn new(ilabel_bits: u8, olabel_bits: u8, state_bits: u8) -> Self {
         let total_bits = ilabel_bits as u32 + olabel_bits as u32 + state_bits as u32;
-        assert!(total_bits <= 48, "Label and state bits must fit in 48 bits, leaving 16 for weight");
+        assert!(
+            total_bits <= 48,
+            "Label and state bits must fit in 48 bits, leaving 16 for weight"
+        );
         assert!(ilabel_bits <= 32 && olabel_bits <= 32 && state_bits <= 32);
-        
+
         Self {
             ilabel_bits,
             olabel_bits,
@@ -724,6 +739,13 @@ impl<W: Semiring> BitPackCompactor<W> {
             weight_bits: 64 - total_bits as u8,
             _phantom: PhantomData,
         }
+    }
+}
+
+impl<W: Semiring> Default for BitPackCompactor<W> {
+    fn default() -> Self {
+        // Default to 16 bits for each field
+        Self::new(16, 16, 16)
     }
 }
 
@@ -737,7 +759,7 @@ impl WeightConverter<f32> for f32 {
     fn to_f64(value: &f32) -> f64 {
         *value as f64
     }
-    
+
     fn from_f64(value: f64) -> f32 {
         value as f32
     }
@@ -747,31 +769,30 @@ impl WeightConverter<f64> for f64 {
     fn to_f64(value: &f64) -> f64 {
         *value
     }
-    
+
     fn from_f64(value: f64) -> f64 {
         value
     }
 }
 
-impl<W: Semiring> Compactor<W> for BitPackCompactor<W> 
+impl<W: Semiring> Compactor<W> for BitPackCompactor<W>
 where
     W::Value: WeightConverter<W::Value> + Copy,
 {
     type Element = u64;
 
-    fn compact(arc: &Arc<W>) -> Self::Element {
-        // This is a stateless implementation - we need the compactor instance
-        // for bit layout configuration. For now, use default bit layout.
-        let ilabel_bits = 16u8;
-        let olabel_bits = 16u8;
-        let state_bits = 16u8;
-        let weight_bits = 16u8;
-        
+    fn compact(&self, arc: &Arc<W>) -> Self::Element {
+        // Use the compactor instance configuration
+        let ilabel_bits = self.ilabel_bits;
+        let olabel_bits = self.olabel_bits;
+        let state_bits = self.state_bits;
+        let weight_bits = self.weight_bits;
+
         // Extract and validate fields fit in allocated bits
         let ilabel = arc.ilabel & ((1u32 << ilabel_bits) - 1);
         let olabel = arc.olabel & ((1u32 << olabel_bits) - 1);
         let nextstate = arc.nextstate & ((1u32 << state_bits) - 1);
-        
+
         // Quantize weight to fit in weight_bits
         let weight_val = W::Value::to_f64(arc.weight.value());
         let quantized_weight = if weight_val.is_infinite() {
@@ -782,33 +803,33 @@ where
             let clamped = weight_val.max(0.0).min(max_weight as f64);
             clamped as u64
         };
-        
+
         // Pack fields into u64
-        ((ilabel as u64) << (olabel_bits + state_bits + weight_bits)) |
-        ((olabel as u64) << (state_bits + weight_bits)) |
-        ((nextstate as u64) << weight_bits) |
-        quantized_weight
+        ((ilabel as u64) << (olabel_bits + state_bits + weight_bits))
+            | ((olabel as u64) << (state_bits + weight_bits))
+            | ((nextstate as u64) << weight_bits)
+            | quantized_weight
     }
 
-    fn expand(element: &Self::Element) -> Arc<W> {
-        // Use default bit layout for stateless expansion
-        let ilabel_bits = 16u8;
-        let olabel_bits = 16u8;
-        let state_bits = 16u8;
-        let weight_bits = 16u8;
-        
+    fn expand(&self, element: &Self::Element) -> Arc<W> {
+        // Use the compactor instance configuration
+        let ilabel_bits = self.ilabel_bits;
+        let olabel_bits = self.olabel_bits;
+        let state_bits = self.state_bits;
+        let weight_bits = self.weight_bits;
+
         // Create bit masks
         let weight_mask = (1u64 << weight_bits) - 1;
         let state_mask = (1u64 << state_bits) - 1;
         let olabel_mask = (1u64 << olabel_bits) - 1;
         let ilabel_mask = (1u64 << ilabel_bits) - 1;
-        
+
         // Extract fields
         let quantized_weight = element & weight_mask;
         let nextstate = ((element >> weight_bits) & state_mask) as u32;
         let olabel = ((element >> (weight_bits + state_bits)) & olabel_mask) as u32;
         let ilabel = ((element >> (weight_bits + state_bits + olabel_bits)) & ilabel_mask) as u32;
-        
+
         // Dequantize weight
         let weight = if quantized_weight == ((1u64 << weight_bits) - 1) {
             W::zero() // Infinity maps to semiring zero
@@ -816,14 +837,14 @@ where
             let weight_val = W::Value::from_f64(quantized_weight as f64);
             W::new(weight_val)
         };
-        
+
         Arc::new(ilabel, olabel, weight, nextstate)
     }
 
-    fn compact_weight(weight: &W) -> Self::Element {
+    fn compact_weight(&self, weight: &W) -> Self::Element {
         // Pack weight-only into lower bits
         let weight_val = W::Value::to_f64(weight.value());
-        
+
         if weight_val.is_infinite() {
             u64::MAX
         } else {
@@ -833,7 +854,7 @@ where
         }
     }
 
-    fn expand_weight(element: &Self::Element) -> W {
+    fn expand_weight(&self, element: &Self::Element) -> W {
         if *element == u64::MAX {
             W::zero() // Infinity
         } else {
@@ -859,7 +880,7 @@ where
 ///
 /// # Usage Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use arcweight::prelude::*;
 /// use arcweight::fst::{CompactFst, QuantizedCompactor, QuantizationMode};
 ///
@@ -883,18 +904,18 @@ pub struct QuantizedCompactor<W: Semiring> {
 #[derive(Debug, Clone)]
 pub enum QuantizationMode {
     /// Linear quantization between min and max values
-    Linear { 
+    Linear {
         /// Minimum value in the quantization range
-        min: f64, 
+        min: f64,
         /// Maximum value in the quantization range
-        max: f64 
+        max: f64,
     },
     /// Logarithmic quantization for better dynamic range
-    Logarithmic { 
+    Logarithmic {
         /// Minimum value in the quantization range (must be positive)
-        min: f64, 
+        min: f64,
         /// Maximum value in the quantization range
-        max: f64 
+        max: f64,
     },
 }
 
@@ -905,7 +926,10 @@ impl<W: Semiring> QuantizedCompactor<W> {
     /// - `mode`: Quantization mode (linear or logarithmic)
     /// - `levels`: Number of quantization levels (e.g., 256 for 8-bit)
     pub fn new(mode: QuantizationMode, levels: u32) -> Self {
-        assert!(levels > 1 && levels <= 65536, "Levels must be between 2 and 65536");
+        assert!(
+            levels > 1 && levels <= 65536,
+            "Levels must be between 2 and 65536"
+        );
         Self {
             mode,
             levels,
@@ -914,20 +938,30 @@ impl<W: Semiring> QuantizedCompactor<W> {
     }
 }
 
-impl<W: Semiring> Compactor<W> for QuantizedCompactor<W> 
+impl<W: Semiring> Default for QuantizedCompactor<W> {
+    fn default() -> Self {
+        // Default to linear quantization with reasonable range
+        Self::new(
+            QuantizationMode::Linear {
+                min: 0.0,
+                max: 100.0,
+            },
+            256,
+        )
+    }
+}
+
+impl<W: Semiring> Compactor<W> for QuantizedCompactor<W>
 where
     W::Value: WeightConverter<W::Value> + Copy,
 {
     type Element = QuantizedArc;
 
-    fn compact(arc: &Arc<W>) -> Self::Element {
-        // For stateless implementation, use default quantization
-        let mode = QuantizationMode::Linear { min: 0.0, max: 100.0 };
-        let levels = 65536u32; // 16-bit quantization
-        
+    fn compact(&self, arc: &Arc<W>) -> Self::Element {
+        // Use the compactor instance configuration
         let weight_val = W::Value::to_f64(arc.weight.value());
-        let quantized_weight = Self::quantize_weight_value(weight_val, &mode, levels);
-        
+        let quantized_weight = Self::quantize_weight_value(weight_val, &self.mode, self.levels);
+
         QuantizedArc {
             ilabel: arc.ilabel,
             olabel: arc.olabel,
@@ -936,24 +970,19 @@ where
         }
     }
 
-    fn expand(element: &Self::Element) -> Arc<W> {
-        // Use default quantization parameters for expansion
-        let mode = QuantizationMode::Linear { min: 0.0, max: 100.0 };
-        let levels = 65536u32;
-        
-        let weight_val = Self::dequantize_weight_value(element.quantized_weight, &mode, levels);
+    fn expand(&self, element: &Self::Element) -> Arc<W> {
+        // Use the compactor instance configuration
+        let weight_val =
+            Self::dequantize_weight_value(element.quantized_weight, &self.mode, self.levels);
         let weight = W::new(W::Value::from_f64(weight_val));
-        
+
         Arc::new(element.ilabel, element.olabel, weight, element.nextstate)
     }
 
-    fn compact_weight(weight: &W) -> Self::Element {
-        let mode = QuantizationMode::Linear { min: 0.0, max: 100.0 };
-        let levels = 65536u32;
-        
+    fn compact_weight(&self, weight: &W) -> Self::Element {
         let weight_val = W::Value::to_f64(weight.value());
-        let quantized_weight = Self::quantize_weight_value(weight_val, &mode, levels);
-        
+        let quantized_weight = Self::quantize_weight_value(weight_val, &self.mode, self.levels);
+
         QuantizedArc {
             ilabel: 0,
             olabel: 0,
@@ -962,16 +991,14 @@ where
         }
     }
 
-    fn expand_weight(element: &Self::Element) -> W {
-        let mode = QuantizationMode::Linear { min: 0.0, max: 100.0 };
-        let levels = 65536u32;
-        
-        let weight_val = Self::dequantize_weight_value(element.quantized_weight, &mode, levels);
+    fn expand_weight(&self, element: &Self::Element) -> W {
+        let weight_val =
+            Self::dequantize_weight_value(element.quantized_weight, &self.mode, self.levels);
         W::new(W::Value::from_f64(weight_val))
     }
 }
 
-impl<W: Semiring> QuantizedCompactor<W> 
+impl<W: Semiring> QuantizedCompactor<W>
 where
     W::Value: WeightConverter<W::Value> + Copy,
 {
@@ -980,7 +1007,7 @@ where
         if weight.is_infinite() {
             return (levels - 1) as u16; // Reserve max value for infinity
         }
-        
+
         match mode {
             QuantizationMode::Linear { min, max } => {
                 if weight <= *min {
@@ -1007,13 +1034,13 @@ where
             }
         }
     }
-    
+
     /// Dequantize a quantized value back to a weight
     fn dequantize_weight_value(quantized: u16, mode: &QuantizationMode, levels: u32) -> f64 {
         if quantized as u32 == levels - 1 {
             return f64::INFINITY; // Special value for infinity
         }
-        
+
         match mode {
             QuantizationMode::Linear { min, max } => {
                 if quantized == 0 {
@@ -1078,7 +1105,7 @@ impl<W: Semiring> Default for DeltaCompactor<W> {
 impl<W: Semiring> Compactor<W> for DeltaCompactor<W> {
     type Element = DeltaElement<W>;
 
-    fn compact(arc: &Arc<W>) -> Self::Element {
+    fn compact(&self, arc: &Arc<W>) -> Self::Element {
         // For stateless compression, we default to absolute encoding
         // In a stateful implementation, this would track the previous arc
         DeltaElement::Absolute {
@@ -1089,12 +1116,20 @@ impl<W: Semiring> Compactor<W> for DeltaCompactor<W> {
         }
     }
 
-    fn expand(element: &Self::Element) -> Arc<W> {
+    fn expand(&self, element: &Self::Element) -> Arc<W> {
         match element {
-            DeltaElement::Absolute { ilabel, olabel, weight, nextstate } => {
-                Arc::new(*ilabel, *olabel, weight.clone(), *nextstate)
-            }
-            DeltaElement::Delta { ilabel_delta, olabel_delta, weight, nextstate_delta } => {
+            DeltaElement::Absolute {
+                ilabel,
+                olabel,
+                weight,
+                nextstate,
+            } => Arc::new(*ilabel, *olabel, weight.clone(), *nextstate),
+            DeltaElement::Delta {
+                ilabel_delta,
+                olabel_delta,
+                weight,
+                nextstate_delta,
+            } => {
                 // For delta elements, the deltas represent the actual values in this simplified version
                 // In a full implementation, these would be applied to a base arc
                 let ilabel = if *ilabel_delta >= 0 {
@@ -1112,13 +1147,13 @@ impl<W: Semiring> Compactor<W> for DeltaCompactor<W> {
                 } else {
                     0
                 };
-                
+
                 Arc::new(ilabel, olabel, weight.clone(), nextstate)
             }
         }
     }
 
-    fn compact_weight(weight: &W) -> Self::Element {
+    fn compact_weight(&self, weight: &W) -> Self::Element {
         DeltaElement::Absolute {
             ilabel: 0,
             olabel: 0,
@@ -1127,7 +1162,7 @@ impl<W: Semiring> Compactor<W> for DeltaCompactor<W> {
         }
     }
 
-    fn expand_weight(element: &Self::Element) -> W {
+    fn expand_weight(&self, element: &Self::Element) -> W {
         match element {
             DeltaElement::Absolute { weight, .. } => weight.clone(),
             DeltaElement::Delta { weight, .. } => weight.clone(),
@@ -1142,12 +1177,15 @@ impl<W: Semiring> DeltaCompactor<W> {
         let ilabel_delta = current_arc.ilabel as i64 - previous_arc.ilabel as i64;
         let olabel_delta = current_arc.olabel as i64 - previous_arc.olabel as i64;
         let nextstate_delta = current_arc.nextstate as i64 - previous_arc.nextstate as i64;
-        
+
         // Use delta encoding if all deltas fit in i16 range
-        if ilabel_delta >= i16::MIN as i64 && ilabel_delta <= i16::MAX as i64 &&
-           olabel_delta >= i16::MIN as i64 && olabel_delta <= i16::MAX as i64 &&
-           nextstate_delta >= i16::MIN as i64 && nextstate_delta <= i16::MAX as i64 {
-            
+        if ilabel_delta >= i16::MIN as i64
+            && ilabel_delta <= i16::MAX as i64
+            && olabel_delta >= i16::MIN as i64
+            && olabel_delta <= i16::MAX as i64
+            && nextstate_delta >= i16::MIN as i64
+            && nextstate_delta <= i16::MAX as i64
+        {
             DeltaElement::Delta {
                 ilabel_delta: ilabel_delta as i16,
                 olabel_delta: olabel_delta as i16,
@@ -1164,18 +1202,27 @@ impl<W: Semiring> DeltaCompactor<W> {
             }
         }
     }
-    
+
     /// Apply delta to a base arc
     pub fn apply_delta(base_arc: &Arc<W>, delta: &DeltaElement<W>) -> Arc<W> {
         match delta {
-            DeltaElement::Absolute { ilabel, olabel, weight, nextstate } => {
-                Arc::new(*ilabel, *olabel, weight.clone(), *nextstate)
-            }
-            DeltaElement::Delta { ilabel_delta, olabel_delta, weight, nextstate_delta } => {
+            DeltaElement::Absolute {
+                ilabel,
+                olabel,
+                weight,
+                nextstate,
+            } => Arc::new(*ilabel, *olabel, weight.clone(), *nextstate),
+            DeltaElement::Delta {
+                ilabel_delta,
+                olabel_delta,
+                weight,
+                nextstate_delta,
+            } => {
                 let new_ilabel = (base_arc.ilabel as i64 + *ilabel_delta as i64).max(0) as u32;
                 let new_olabel = (base_arc.olabel as i64 + *olabel_delta as i64).max(0) as u32;
-                let new_nextstate = (base_arc.nextstate as i64 + *nextstate_delta as i64).max(0) as u32;
-                
+                let new_nextstate =
+                    (base_arc.nextstate as i64 + *nextstate_delta as i64).max(0) as u32;
+
                 Arc::new(new_ilabel, new_olabel, weight.clone(), new_nextstate)
             }
         }
@@ -1234,7 +1281,7 @@ impl<W: Semiring> Default for VarIntCompactor<W> {
 impl<W: Semiring> Compactor<W> for VarIntCompactor<W> {
     type Element = VarIntElement<W>;
 
-    fn compact(arc: &Arc<W>) -> Self::Element {
+    fn compact(&self, arc: &Arc<W>) -> Self::Element {
         VarIntElement {
             encoded_ilabel: encode_varint(arc.ilabel),
             encoded_olabel: encode_varint(arc.olabel),
@@ -1243,7 +1290,7 @@ impl<W: Semiring> Compactor<W> for VarIntCompactor<W> {
         }
     }
 
-    fn expand(element: &Self::Element) -> Arc<W> {
+    fn expand(&self, element: &Self::Element) -> Arc<W> {
         Arc::new(
             decode_varint(&element.encoded_ilabel),
             decode_varint(&element.encoded_olabel),
@@ -1252,7 +1299,7 @@ impl<W: Semiring> Compactor<W> for VarIntCompactor<W> {
         )
     }
 
-    fn compact_weight(weight: &W) -> Self::Element {
+    fn compact_weight(&self, weight: &W) -> Self::Element {
         VarIntElement {
             encoded_ilabel: vec![0],
             encoded_olabel: vec![0],
@@ -1261,7 +1308,7 @@ impl<W: Semiring> Compactor<W> for VarIntCompactor<W> {
         }
     }
 
-    fn expand_weight(element: &Self::Element) -> W {
+    fn expand_weight(&self, element: &Self::Element) -> W {
         element.weight.clone()
     }
 }
@@ -1278,20 +1325,20 @@ pub struct VarIntElement<W: Semiring> {
 fn encode_varint(value: u32) -> Vec<u8> {
     let mut result = Vec::new();
     let mut val = value;
-    
+
     while val >= 0x80 {
         result.push((val & 0x7F) as u8 | 0x80);
         val >>= 7;
     }
     result.push(val as u8);
-    
+
     result
 }
 
 fn decode_varint(bytes: &[u8]) -> u32 {
     let mut result = 0u32;
     let mut shift = 0;
-    
+
     for &byte in bytes {
         result |= ((byte & 0x7F) as u32) << shift;
         if byte & 0x80 == 0 {
@@ -1299,11 +1346,11 @@ fn decode_varint(bytes: &[u8]) -> u32 {
         }
         shift += 7;
     }
-    
+
     result
 }
 
-impl<W: Semiring, C: Compactor<W>> Default for CompactFst<W, C> {
+impl<W: Semiring, C: Compactor<W> + Default> Default for CompactFst<W, C> {
     fn default() -> Self {
         Self::new()
     }
@@ -1334,13 +1381,17 @@ impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
     ///
     /// This operation is O(1) and allocates minimal memory for the initial
     /// empty state and data vectors.
-    pub fn new() -> Self {
+    pub fn new() -> Self
+    where
+        C: Default,
+    {
         Self {
             states: Vec::new(),
             data: Vec::new(),
             final_weights: Vec::new(),
             start: None,
             properties: FstProperties::default(),
+            compactor: C::default(),
             _phantom: PhantomData,
         }
     }
@@ -1368,8 +1419,16 @@ impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
     ///     )
     /// );
     /// ```
-    pub fn with_compactor(_compactor: C) -> Self {
-        Self::new()
+    pub fn with_compactor(compactor: C) -> Self {
+        Self {
+            states: Vec::new(),
+            data: Vec::new(),
+            final_weights: Vec::new(),
+            start: None,
+            properties: FstProperties::default(),
+            compactor,
+            _phantom: PhantomData,
+        }
     }
 
     /// Convert a VectorFst to a CompactFst with compression
@@ -1404,17 +1463,20 @@ impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
     /// - **Time Complexity:** O(V + E) where V = states, E = arcs
     /// - **Space Complexity:** O(V + E) for compressed storage
     /// - **Compression Ratio:** Depends on compactor strategy and data characteristics
-    pub fn from_fst<F: Fst<W>>(fst: &F) -> Self {
+    pub fn from_fst<F: Fst<W>>(fst: &F) -> Self
+    where
+        C: Default,
+    {
         let mut compact_fst = Self::new();
-        
+
         // Add all states
         for _ in 0..fst.num_states() {
             compact_fst.add_state();
         }
-        
+
         // Set start state
         compact_fst.start = fst.start();
-        
+
         // Copy final weights
         for state_idx in 0..fst.num_states() {
             let state = state_idx as StateId;
@@ -1422,27 +1484,27 @@ impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
                 compact_fst.set_final_weight(state, Some(weight.clone()));
             }
         }
-        
+
         // Compress and store arcs
         let mut data_offset = 0u32;
         for state_idx in 0..fst.num_states() {
             let state = state_idx as StateId;
             let arcs: Vec<_> = fst.arcs(state).collect();
             let num_arcs = arcs.len() as u32;
-            
+
             // Update state metadata
             compact_fst.states[state_idx].arcs_start = data_offset;
             compact_fst.states[state_idx].num_arcs = num_arcs;
-            
+
             // Compress and append arcs
             for arc in arcs {
-                let compressed_arc = C::compact(&arc);
+                let compressed_arc = compact_fst.compactor.compact(&arc);
                 compact_fst.data.push(compressed_arc);
             }
-            
+
             data_offset += num_arcs;
         }
-        
+
         compact_fst
     }
 
@@ -1510,6 +1572,8 @@ impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
 pub struct CompactArcIterator<'a, W: Semiring, C: Compactor<W>> {
     /// Reference to the compressed data array
     data: &'a [C::Element],
+    /// Reference to the compactor for decompression
+    compactor: &'a C,
     /// Current position in the data array
     pos: usize,
     /// End position (exclusive) for this state's arc range
@@ -1529,7 +1593,7 @@ impl<W: Semiring, C: Compactor<W>> Iterator for CompactArcIterator<'_, W, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.end {
-            let arc = C::expand(&self.data[self.pos]);
+            let arc = self.compactor.expand(&self.data[self.pos]);
             self.pos += 1;
             Some(arc)
         } else {
@@ -1576,6 +1640,7 @@ impl<W: Semiring, C: Compactor<W>> Fst<W> for CompactFst<W, C> {
             let end = start + s.num_arcs as usize;
             CompactArcIterator {
                 data: &self.data,
+                compactor: &self.compactor,
                 pos: start,
                 end,
                 _phantom: PhantomData,
@@ -1583,6 +1648,7 @@ impl<W: Semiring, C: Compactor<W>> Fst<W> for CompactFst<W, C> {
         } else {
             CompactArcIterator {
                 data: &self.data,
+                compactor: &self.compactor,
                 pos: 0,
                 end: 0,
                 _phantom: PhantomData,
@@ -1599,7 +1665,7 @@ mod tests {
     #[test]
     fn test_compact_fst_new() {
         let fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         assert_eq!(fst.num_states(), 0);
         assert!(fst.start().is_none());
         assert_eq!(fst.states.len(), 0);
@@ -1610,11 +1676,11 @@ mod tests {
     #[test]
     fn test_compact_fst_add_state() {
         let mut fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         let s0 = fst.add_state();
         let s1 = fst.add_state();
         let s2 = fst.add_state();
-        
+
         assert_eq!(s0, 0);
         assert_eq!(s1, 1);
         assert_eq!(s2, 2);
@@ -1626,20 +1692,20 @@ mod tests {
     #[test]
     fn test_compact_fst_start_state() {
         let mut fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         // Initially no start state
         assert!(fst.start().is_none());
-        
+
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         // Start state is not automatically set
         assert!(fst.start().is_none());
-        
+
         // Start state would be set via set_start in full implementation
         fst.start = Some(s0);
         assert_eq!(fst.start(), Some(s0));
-        
+
         fst.start = Some(s1);
         assert_eq!(fst.start(), Some(s1));
     }
@@ -1647,28 +1713,28 @@ mod tests {
     #[test]
     fn test_compact_fst_final_weights() {
         let mut fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         let s0 = fst.add_state();
         let s1 = fst.add_state();
         let s2 = fst.add_state();
-        
+
         // Initially no final weights
         assert!(fst.final_weight(s0).is_none());
         assert!(fst.final_weight(s1).is_none());
         assert!(fst.final_weight(s2).is_none());
-        
+
         // Set final weights
         fst.set_final_weight(s0, Some(TropicalWeight::new(1.5)));
         fst.set_final_weight(s2, Some(TropicalWeight::one()));
-        
+
         assert_eq!(fst.final_weight(s0), Some(&TropicalWeight::new(1.5)));
         assert!(fst.final_weight(s1).is_none());
         assert_eq!(fst.final_weight(s2), Some(&TropicalWeight::one()));
-        
+
         // Update final weight
         fst.set_final_weight(s0, Some(TropicalWeight::new(2.5)));
         assert_eq!(fst.final_weight(s0), Some(&TropicalWeight::new(2.5)));
-        
+
         // Remove final weight
         fst.set_final_weight(s0, None);
         assert!(fst.final_weight(s0).is_none());
@@ -1677,17 +1743,20 @@ mod tests {
     #[test]
     fn test_compact_fst_final_weight_bounds() {
         let mut fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         let _s0 = fst.add_state();
-        
+
         // Test accessing non-existent state
         assert!(fst.final_weight(10).is_none());
-        
+
         // Test setting final weight for high state ID (should expand vector)
         fst.set_final_weight(5, Some(TropicalWeight::new(std::f32::consts::PI)));
         assert_eq!(fst.final_weights.len(), 6); // 0-5 inclusive
-        assert_eq!(fst.final_weight(5), Some(&TropicalWeight::new(std::f32::consts::PI)));
-        
+        assert_eq!(
+            fst.final_weight(5),
+            Some(&TropicalWeight::new(std::f32::consts::PI))
+        );
+
         // Check intermediate states are None
         for i in 1..5 {
             assert!(fst.final_weight(i).is_none());
@@ -1697,23 +1766,23 @@ mod tests {
     #[test]
     fn test_compact_fst_num_arcs() {
         let fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         // Empty FST
         assert_eq!(fst.num_arcs(0), 0);
         assert_eq!(fst.num_arcs(100), 0);
-        
+
         let mut fst = fst;
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         // States with no arcs
         assert_eq!(fst.num_arcs(s0), 0);
         assert_eq!(fst.num_arcs(s1), 0);
-        
+
         // Modify num_arcs for testing (in full implementation this would be set during arc addition)
         fst.states[s0 as usize].num_arcs = 3;
         fst.states[s1 as usize].num_arcs = 1;
-        
+
         assert_eq!(fst.num_arcs(s0), 3);
         assert_eq!(fst.num_arcs(s1), 1);
     }
@@ -1721,7 +1790,7 @@ mod tests {
     #[test]
     fn test_compact_fst_properties() {
         let fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         let props = fst.properties();
         // Default properties - check individual fields since FstProperties doesn't implement PartialEq
         let default_props = FstProperties::default();
@@ -1733,10 +1802,10 @@ mod tests {
     fn test_compact_fst_arcs_empty() {
         let mut fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
         let s0 = fst.add_state();
-        
+
         let arcs: Vec<_> = fst.arcs(s0).collect();
         assert_eq!(arcs.len(), 0);
-        
+
         // Test non-existent state
         let arcs: Vec<_> = fst.arcs(100).collect();
         assert_eq!(arcs.len(), 0);
@@ -1745,13 +1814,13 @@ mod tests {
     #[test]
     fn test_compact_fst_with_boolean_weights() {
         let mut fst = CompactFst::<BooleanWeight, DefaultCompactor<BooleanWeight>>::new();
-        
+
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         fst.set_final_weight(s0, Some(BooleanWeight::one()));
         fst.set_final_weight(s1, Some(BooleanWeight::zero()));
-        
+
         assert_eq!(fst.final_weight(s0), Some(&BooleanWeight::one()));
         assert_eq!(fst.final_weight(s1), Some(&BooleanWeight::zero()));
         assert_eq!(fst.num_states(), 2);
@@ -1760,24 +1829,28 @@ mod tests {
     #[test]
     fn test_compact_fst_with_log_weights() {
         let mut fst = CompactFst::<LogWeight, DefaultCompactor<LogWeight>>::new();
-        
+
         let s0 = fst.add_state();
         let s1 = fst.add_state();
-        
+
         fst.set_final_weight(s0, Some(LogWeight::new(std::f64::consts::E)));
         fst.set_final_weight(s1, Some(LogWeight::one()));
-        
-        assert_eq!(fst.final_weight(s0), Some(&LogWeight::new(std::f64::consts::E)));
+
+        assert_eq!(
+            fst.final_weight(s0),
+            Some(&LogWeight::new(std::f64::consts::E))
+        );
         assert_eq!(fst.final_weight(s1), Some(&LogWeight::one()));
     }
 
     #[test]
     fn test_default_compactor_arc_compression() {
         let arc = Arc::new(10, 20, TropicalWeight::new(1.5), 30);
-        
-        let compressed = DefaultCompactor::<TropicalWeight>::compact(&arc);
-        let expanded = DefaultCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&arc);
+        let expanded = compactor.expand(&compressed);
+
         assert_eq!(arc.ilabel, expanded.ilabel);
         assert_eq!(arc.olabel, expanded.olabel);
         assert_eq!(arc.weight, expanded.weight);
@@ -1787,10 +1860,11 @@ mod tests {
     #[test]
     fn test_default_compactor_weight_compression() {
         let weight = TropicalWeight::new(std::f32::consts::PI);
-        
-        let compressed = DefaultCompactor::<TropicalWeight>::compact_weight(&weight);
-        let expanded = DefaultCompactor::<TropicalWeight>::expand_weight(&compressed);
-        
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact_weight(&weight);
+        let expanded = compactor.expand_weight(&compressed);
+
         assert_eq!(weight, expanded);
     }
 
@@ -1798,16 +1872,17 @@ mod tests {
     fn test_default_compactor_zero_one_weights() {
         let zero = TropicalWeight::zero();
         let one = TropicalWeight::one();
-        
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+
         // Test zero weight compression
-        let compressed_zero = DefaultCompactor::<TropicalWeight>::compact_weight(&zero);
-        let expanded_zero = DefaultCompactor::<TropicalWeight>::expand_weight(&compressed_zero);
+        let compressed_zero = compactor.compact_weight(&zero);
+        let expanded_zero = compactor.expand_weight(&compressed_zero);
         assert_eq!(zero, expanded_zero);
         assert!(crate::semiring::Semiring::is_zero(&expanded_zero));
-        
+
         // Test one weight compression
-        let compressed_one = DefaultCompactor::<TropicalWeight>::compact_weight(&one);
-        let expanded_one = DefaultCompactor::<TropicalWeight>::expand_weight(&compressed_one);
+        let compressed_one = compactor.compact_weight(&one);
+        let expanded_one = compactor.expand_weight(&compressed_one);
         assert_eq!(one, expanded_one);
         assert!(crate::semiring::Semiring::is_one(&expanded_one));
     }
@@ -1815,10 +1890,11 @@ mod tests {
     #[test]
     fn test_default_compactor_epsilon_arc() {
         let epsilon_arc = Arc::epsilon(TropicalWeight::new(0.5), 42);
-        
-        let compressed = DefaultCompactor::<TropicalWeight>::compact(&epsilon_arc);
-        let expanded = DefaultCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&epsilon_arc);
+        let expanded = compactor.expand(&compressed);
+
         assert_eq!(epsilon_arc.ilabel, 0);
         assert_eq!(epsilon_arc.olabel, 0);
         assert_eq!(expanded.ilabel, 0);
@@ -1829,11 +1905,17 @@ mod tests {
 
     #[test]
     fn test_default_compactor_large_labels() {
-        let large_arc = Arc::new(u32::MAX - 1, u32::MAX, TropicalWeight::new(1000.0), u32::MAX - 2);
-        
-        let compressed = DefaultCompactor::<TropicalWeight>::compact(&large_arc);
-        let expanded = DefaultCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let large_arc = Arc::new(
+            u32::MAX - 1,
+            u32::MAX,
+            TropicalWeight::new(1000.0),
+            u32::MAX - 2,
+        );
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&large_arc);
+        let expanded = compactor.expand(&compressed);
+
         assert_eq!(large_arc.ilabel, expanded.ilabel);
         assert_eq!(large_arc.olabel, expanded.olabel);
         assert_eq!(large_arc.weight, expanded.weight);
@@ -1848,8 +1930,14 @@ mod tests {
             weight: TropicalWeight::new(2.5),
             nextstate: 300,
         };
-        
-        if let CompactElement::Arc { ilabel, olabel, weight, nextstate } = element {
+
+        if let CompactElement::Arc {
+            ilabel,
+            olabel,
+            weight,
+            nextstate,
+        } = element
+        {
             assert_eq!(ilabel, 100);
             assert_eq!(olabel, 200);
             assert_eq!(weight, TropicalWeight::new(2.5));
@@ -1862,7 +1950,7 @@ mod tests {
     #[test]
     fn test_compact_element_weight_variant() {
         let element = CompactElement::Weight(TropicalWeight::new(42.0));
-        
+
         if let CompactElement::Weight(weight) = element {
             assert_eq!(weight, TropicalWeight::new(42.0));
         } else {
@@ -1874,7 +1962,8 @@ mod tests {
     #[should_panic(expected = "Expected arc element")]
     fn test_default_compactor_expand_panic_on_weight() {
         let weight_element = CompactElement::Weight(TropicalWeight::new(1.0));
-        DefaultCompactor::<TropicalWeight>::expand(&weight_element);
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+        compactor.expand(&weight_element);
     }
 
     #[test]
@@ -1886,7 +1975,8 @@ mod tests {
             weight: TropicalWeight::new(1.0),
             nextstate: 3,
         };
-        DefaultCompactor::<TropicalWeight>::expand_weight(&arc_element);
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+        compactor.expand_weight(&arc_element);
     }
 
     #[test]
@@ -1896,17 +1986,17 @@ mod tests {
             arcs_start: 100,
             num_arcs: 5,
         };
-        
+
         assert_eq!(state.final_weight_idx, Some(42));
         assert_eq!(state.arcs_start, 100);
         assert_eq!(state.num_arcs, 5);
-        
+
         let state_no_final = CompactState {
             final_weight_idx: None,
             arcs_start: 0,
             num_arcs: 0,
         };
-        
+
         assert_eq!(state_no_final.final_weight_idx, None);
         assert_eq!(state_no_final.arcs_start, 0);
         assert_eq!(state_no_final.num_arcs, 0);
@@ -1915,16 +2005,19 @@ mod tests {
     #[test]
     fn test_compact_arc_iterator_empty() {
         let data: Vec<CompactElement<TropicalWeight>> = vec![];
-        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> = CompactArcIterator {
-            data: &data,
-            pos: 0,
-            end: 0,
-            _phantom: PhantomData,
-        };
-        
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> =
+            CompactArcIterator {
+                data: &data,
+                compactor: &compactor,
+                pos: 0,
+                end: 0,
+                _phantom: PhantomData,
+            };
+
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None); // Should stay None
-        
+
         // Test reset
         iter.reset();
         assert_eq!(iter.next(), None);
@@ -1934,33 +2027,33 @@ mod tests {
     fn test_compact_arc_iterator_with_data() {
         let arc1 = Arc::new(1, 2, TropicalWeight::new(1.0), 10);
         let arc2 = Arc::new(3, 4, TropicalWeight::new(2.0), 20);
-        
-        let data = vec![
-            DefaultCompactor::<TropicalWeight>::compact(&arc1),
-            DefaultCompactor::<TropicalWeight>::compact(&arc2),
-        ];
-        
-        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> = CompactArcIterator {
-            data: &data,
-            pos: 0,
-            end: 2,
-            _phantom: PhantomData,
-        };
-        
+
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+        let data = vec![compactor.compact(&arc1), compactor.compact(&arc2)];
+
+        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> =
+            CompactArcIterator {
+                data: &data,
+                compactor: &compactor,
+                pos: 0,
+                end: 2,
+                _phantom: PhantomData,
+            };
+
         // First arc
         let first = iter.next().unwrap();
         assert_eq!(first.ilabel, arc1.ilabel);
         assert_eq!(first.olabel, arc1.olabel);
         assert_eq!(first.weight, arc1.weight);
         assert_eq!(first.nextstate, arc1.nextstate);
-        
+
         // Second arc
         let second = iter.next().unwrap();
         assert_eq!(second.ilabel, arc2.ilabel);
         assert_eq!(second.olabel, arc2.olabel);
         assert_eq!(second.weight, arc2.weight);
         assert_eq!(second.nextstate, arc2.nextstate);
-        
+
         // No more arcs
         assert_eq!(iter.next(), None);
     }
@@ -1968,19 +2061,22 @@ mod tests {
     #[test]
     fn test_compact_arc_iterator_reset() {
         let arc = Arc::new(1, 2, TropicalWeight::new(1.0), 10);
-        let data = vec![DefaultCompactor::<TropicalWeight>::compact(&arc)];
-        
-        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> = CompactArcIterator {
-            data: &data,
-            pos: 0,
-            end: 1,
-            _phantom: PhantomData,
-        };
-        
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+        let data = vec![compactor.compact(&arc)];
+
+        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> =
+            CompactArcIterator {
+                data: &data,
+                compactor: &compactor,
+                pos: 0,
+                end: 1,
+                _phantom: PhantomData,
+            };
+
         // Consume the iterator
         assert!(iter.next().is_some());
         assert!(iter.next().is_none());
-        
+
         // Reset and try again
         iter.reset();
         assert!(iter.next().is_some());
@@ -1995,29 +2091,30 @@ mod tests {
             Arc::new(3, 3, TropicalWeight::new(3.0), 3),
             Arc::new(4, 4, TropicalWeight::new(4.0), 4),
         ];
-        
-        let data: Vec<_> = arcs.iter()
-            .map(DefaultCompactor::<TropicalWeight>::compact)
-            .collect();
-        
+
+        let compactor = DefaultCompactor::<TropicalWeight>::default();
+        let data: Vec<_> = arcs.iter().map(|arc| compactor.compact(arc)).collect();
+
         // Iterator for arcs 1-2 (middle range)
-        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> = CompactArcIterator {
-            data: &data,
-            pos: 1,
-            end: 3,
-            _phantom: PhantomData,
-        };
-        
+        let mut iter: CompactArcIterator<'_, TropicalWeight, DefaultCompactor<TropicalWeight>> =
+            CompactArcIterator {
+                data: &data,
+                compactor: &compactor,
+                pos: 1,
+                end: 3,
+                _phantom: PhantomData,
+            };
+
         // Should get arc 2 (index 1)
         let first = iter.next().unwrap();
         assert_eq!(first.ilabel, 2);
         assert_eq!(first.weight, TropicalWeight::new(2.0));
-        
+
         // Should get arc 3 (index 2)
         let second = iter.next().unwrap();
         assert_eq!(second.ilabel, 3);
         assert_eq!(second.weight, TropicalWeight::new(3.0));
-        
+
         // Should be done
         assert!(iter.next().is_none());
     }
@@ -2026,7 +2123,7 @@ mod tests {
     fn test_compact_fst_default_trait() {
         let fst1 = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::default();
         let fst2 = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         assert_eq!(fst1.num_states(), fst2.num_states());
         assert_eq!(fst1.start(), fst2.start());
         assert_eq!(fst1.states.len(), fst2.states.len());
@@ -2038,21 +2135,21 @@ mod tests {
         // This test demonstrates the concept of memory efficiency
         // In practice, CompactFst should use less memory than VectorFst
         // for large FSTs due to compression
-        
+
         let mut compact_fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
         let mut vector_fst = VectorFst::<TropicalWeight>::new();
-        
+
         // Add same states to both
         for _ in 0..10 {
             compact_fst.add_state();
             vector_fst.add_state();
         }
-        
+
         compact_fst.set_final_weight(9, Some(TropicalWeight::new(1.0)));
         vector_fst.set_final(9, TropicalWeight::new(1.0));
-        
+
         assert_eq!(compact_fst.num_states(), vector_fst.num_states());
-        
+
         // Both should have the same final weight
         assert_eq!(
             compact_fst.final_weight(9).copied(),
@@ -2063,19 +2160,19 @@ mod tests {
     #[test]
     fn test_compact_fst_type_compatibility() {
         // Test that CompactFst works with different semiring types
-        
+
         // TropicalWeight
         let _tropical_fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
-        // LogWeight  
+
+        // LogWeight
         let _log_fst = CompactFst::<LogWeight, DefaultCompactor<LogWeight>>::new();
-        
+
         // BooleanWeight
         let _bool_fst = CompactFst::<BooleanWeight, DefaultCompactor<BooleanWeight>>::new();
-        
+
         // ProbabilityWeight
         let _prob_fst = CompactFst::<ProbabilityWeight, DefaultCompactor<ProbabilityWeight>>::new();
-        
+
         // All should compile and create successfully
         // Test passes if no panic occurs
     }
@@ -2083,21 +2180,21 @@ mod tests {
     #[test]
     fn test_bit_pack_compactor_creation() {
         // Test bit-packing compactor with various configurations
-        
+
         // Small alphabet (7-bit ASCII)
         let ascii_compactor = BitPackCompactor::<TropicalWeight>::new(7, 7, 10);
         assert_eq!(ascii_compactor.ilabel_bits, 7);
         assert_eq!(ascii_compactor.olabel_bits, 7);
         assert_eq!(ascii_compactor.state_bits, 10);
         assert_eq!(ascii_compactor.weight_bits, 40); // 64 - 7 - 7 - 10
-        
+
         // Phoneme FST (8-bit labels, 12-bit states)
         let phoneme_compactor = BitPackCompactor::<TropicalWeight>::new(8, 8, 12);
         assert_eq!(phoneme_compactor.ilabel_bits, 8);
         assert_eq!(phoneme_compactor.olabel_bits, 8);
         assert_eq!(phoneme_compactor.state_bits, 12);
         assert_eq!(phoneme_compactor.weight_bits, 36); // 64 - 8 - 8 - 12
-        
+
         // Maximum valid configuration (16-bit each, total 48 bits)
         let max_compactor = BitPackCompactor::<TropicalWeight>::new(16, 16, 16);
         assert_eq!(max_compactor.weight_bits, 16); // 64 - 48
@@ -2114,22 +2211,31 @@ mod tests {
     fn test_quantized_compactor_creation() {
         // Linear quantization
         let linear_compactor = QuantizedCompactor::<TropicalWeight>::new(
-            QuantizationMode::Linear { min: 0.0, max: 100.0 },
-            256
+            QuantizationMode::Linear {
+                min: 0.0,
+                max: 100.0,
+            },
+            256,
         );
         assert_eq!(linear_compactor.levels, 256);
-        
+
         // Logarithmic quantization
         let log_compactor = QuantizedCompactor::<TropicalWeight>::new(
-            QuantizationMode::Logarithmic { min: 0.001, max: 1000.0 },
-            1024
+            QuantizationMode::Logarithmic {
+                min: 0.001,
+                max: 1000.0,
+            },
+            1024,
         );
         assert_eq!(log_compactor.levels, 1024);
-        
+
         // Maximum levels
         let max_compactor = QuantizedCompactor::<TropicalWeight>::new(
-            QuantizationMode::Linear { min: -1.0, max: 1.0 },
-            65536
+            QuantizationMode::Linear {
+                min: -1.0,
+                max: 1.0,
+            },
+            65536,
         );
         assert_eq!(max_compactor.levels, 65536);
     }
@@ -2140,18 +2246,24 @@ mod tests {
         // Too few levels
         QuantizedCompactor::<TropicalWeight>::new(
             QuantizationMode::Linear { min: 0.0, max: 1.0 },
-            1
+            1,
         );
     }
 
     #[test]
     fn test_delta_compactor_elements() {
         let arc = Arc::new(100, 200, TropicalWeight::new(1.5), 300);
-        
+        let compactor = DeltaCompactor::<TropicalWeight>::default();
+
         // Test absolute encoding
-        let absolute = DeltaCompactor::<TropicalWeight>::compact(&arc);
+        let absolute = compactor.compact(&arc);
         match &absolute {
-            DeltaElement::Absolute { ilabel, olabel, weight, nextstate } => {
+            DeltaElement::Absolute {
+                ilabel,
+                olabel,
+                weight,
+                nextstate,
+            } => {
                 assert_eq!(*ilabel, 100);
                 assert_eq!(*olabel, 200);
                 assert_eq!(*weight, TropicalWeight::new(1.5));
@@ -2159,14 +2271,14 @@ mod tests {
             }
             _ => panic!("Expected Absolute variant"),
         }
-        
+
         // Test expansion
-        let expanded = DeltaCompactor::<TropicalWeight>::expand(&absolute);
+        let expanded = compactor.expand(&absolute);
         assert_eq!(expanded.ilabel, arc.ilabel);
         assert_eq!(expanded.olabel, arc.olabel);
         assert_eq!(expanded.weight, arc.weight);
         assert_eq!(expanded.nextstate, arc.nextstate);
-        
+
         // Test delta variant (manual creation for testing)
         let delta = DeltaElement::Delta {
             ilabel_delta: 10,
@@ -2174,8 +2286,8 @@ mod tests {
             weight: TropicalWeight::new(0.5),
             nextstate_delta: 1,
         };
-        
-        let delta_expanded = DeltaCompactor::<TropicalWeight>::expand(&delta);
+
+        let delta_expanded = compactor.expand(&delta);
         assert_eq!(delta_expanded.ilabel, 10);
         assert_eq!(delta_expanded.olabel, 0); // Negative deltas are clamped to 0 in simplified implementation
         assert_eq!(delta_expanded.weight, TropicalWeight::new(0.5));
@@ -2187,14 +2299,14 @@ mod tests {
         // Test small values (1 byte)
         assert_eq!(encode_varint(0), vec![0x00]);
         assert_eq!(encode_varint(127), vec![0x7F]);
-        
+
         // Test medium values (2 bytes)
         assert_eq!(encode_varint(128), vec![0x80, 0x01]);
         assert_eq!(encode_varint(300), vec![0xAC, 0x02]);
-        
+
         // Test larger values
         assert_eq!(encode_varint(16384), vec![0x80, 0x80, 0x01]);
-        
+
         // Test round-trip encoding/decoding
         for value in [0, 1, 127, 128, 255, 256, 1000, 10000, 100000, 1000000] {
             let encoded = encode_varint(value);
@@ -2205,17 +2317,18 @@ mod tests {
 
     #[test]
     fn test_varint_compactor() {
-        let arc = Arc::new(42, 128, TropicalWeight::new(3.14), 1000);
-        
+        let arc = Arc::new(42, 128, TropicalWeight::new(std::f32::consts::PI), 1000);
+        let compactor = VarIntCompactor::<TropicalWeight>::default();
+
         // Test compression
-        let compressed = VarIntCompactor::<TropicalWeight>::compact(&arc);
+        let compressed = compactor.compact(&arc);
         assert_eq!(compressed.encoded_ilabel, encode_varint(42));
         assert_eq!(compressed.encoded_olabel, encode_varint(128));
-        assert_eq!(compressed.weight, TropicalWeight::new(3.14));
+        assert_eq!(compressed.weight, TropicalWeight::new(std::f32::consts::PI));
         assert_eq!(compressed.encoded_nextstate, encode_varint(1000));
-        
+
         // Test expansion
-        let expanded = VarIntCompactor::<TropicalWeight>::expand(&compressed);
+        let expanded = compactor.expand(&compressed);
         assert_eq!(expanded.ilabel, arc.ilabel);
         assert_eq!(expanded.olabel, arc.olabel);
         assert_eq!(expanded.weight, arc.weight);
@@ -2225,11 +2338,17 @@ mod tests {
     #[test]
     fn test_varint_compactor_large_values() {
         // Test with maximum u32 values
-        let large_arc = Arc::new(u32::MAX, u32::MAX - 1, TropicalWeight::new(999.9), u32::MAX - 2);
-        
-        let compressed = VarIntCompactor::<TropicalWeight>::compact(&large_arc);
-        let expanded = VarIntCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let large_arc = Arc::new(
+            u32::MAX,
+            u32::MAX - 1,
+            TropicalWeight::new(999.9),
+            u32::MAX - 2,
+        );
+        let compactor = VarIntCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&large_arc);
+        let expanded = compactor.expand(&compressed);
+
         assert_eq!(expanded.ilabel, large_arc.ilabel);
         assert_eq!(expanded.olabel, large_arc.olabel);
         assert_eq!(expanded.weight, large_arc.weight);
@@ -2239,25 +2358,31 @@ mod tests {
     #[test]
     fn test_multiple_compactor_types() {
         // Verify that different compactor types can be used with CompactFst
-        
+
         // Default compactor
         let _default_fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        
+
         // Delta compactor
         let _delta_fst = CompactFst::<TropicalWeight, DeltaCompactor<TropicalWeight>>::new();
-        
+
         // VarInt compactor
         let _varint_fst = CompactFst::<TropicalWeight, VarIntCompactor<TropicalWeight>>::new();
-        
+
         // All should compile and create successfully
     }
 
     #[test]
     fn test_quantization_mode_variants() {
         // Test that both quantization modes can be created
-        let linear_mode = QuantizationMode::Linear { min: -10.0, max: 10.0 };
-        let log_mode = QuantizationMode::Logarithmic { min: 0.001, max: 1000.0 };
-        
+        let linear_mode = QuantizationMode::Linear {
+            min: -10.0,
+            max: 10.0,
+        };
+        let log_mode = QuantizationMode::Logarithmic {
+            min: 0.001,
+            max: 1000.0,
+        };
+
         match linear_mode {
             QuantizationMode::Linear { min, max } => {
                 assert_eq!(min, -10.0);
@@ -2265,7 +2390,7 @@ mod tests {
             }
             _ => panic!("Expected Linear variant"),
         }
-        
+
         match log_mode {
             QuantizationMode::Logarithmic { min, max } => {
                 assert_eq!(min, 0.001);
@@ -2279,28 +2404,33 @@ mod tests {
     fn test_bitpack_compactor_round_trip() {
         // Test round-trip compression with BitPackCompactor for TropicalWeight
         let original_arc = Arc::new(100, 200, TropicalWeight::new(5.5), 300);
-        
-        let compressed = BitPackCompactor::<TropicalWeight>::compact(&original_arc);
-        let expanded = BitPackCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let compactor = BitPackCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&original_arc);
+        let expanded = compactor.expand(&compressed);
+
         // Labels and nextstate should be preserved (masked to 16 bits)
         assert_eq!(expanded.ilabel, 100);
         assert_eq!(expanded.olabel, 200);
         assert_eq!(expanded.nextstate, 300);
-        
+
         // Weight will be quantized but should be close
         let weight_diff = (expanded.weight.value() - 5.5).abs();
-        assert!(weight_diff <= 1.0, "Weight should be reasonably close after quantization");
+        assert!(
+            weight_diff <= 1.0,
+            "Weight should be reasonably close after quantization"
+        );
     }
 
     #[test]
     fn test_bitpack_compactor_large_values() {
         // Test with values that exceed 16-bit limits
         let large_arc = Arc::new(0x1FFFF, 0x2FFFF, TropicalWeight::new(99999.0), 0x3FFFF);
-        
-        let compressed = BitPackCompactor::<TropicalWeight>::compact(&large_arc);
-        let expanded = BitPackCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let compactor = BitPackCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&large_arc);
+        let expanded = compactor.expand(&compressed);
+
         // Values should be masked to 16 bits
         assert_eq!(expanded.ilabel, 0x1FFFF & 0xFFFF); // Lower 16 bits
         assert_eq!(expanded.olabel, 0x2FFFF & 0xFFFF);
@@ -2310,62 +2440,96 @@ mod tests {
     #[test]
     fn test_bitpack_compactor_infinity_weight() {
         let inf_arc = Arc::new(1, 2, TropicalWeight::zero(), 3); // zero() is infinity in tropical
-        
-        let compressed = BitPackCompactor::<TropicalWeight>::compact(&inf_arc);
-        let expanded = BitPackCompactor::<TropicalWeight>::expand(&compressed);
-        
+        let compactor = BitPackCompactor::<TropicalWeight>::default();
+
+        let compressed = compactor.compact(&inf_arc);
+        let expanded = compactor.expand(&compressed);
+
         // Infinity should map back to zero (infinity in tropical semiring)
         assert!(num_traits::Zero::is_zero(&expanded.weight));
     }
 
     #[test]
     fn test_quantized_compactor_linear_mode() {
-        let mode = QuantizationMode::Linear { min: 0.0, max: 10.0 };
+        let mode = QuantizationMode::Linear {
+            min: 0.0,
+            max: 10.0,
+        };
         let levels = 256u32;
-        
+
         // Test various weight values
         let test_weights = [0.0, 2.5, 5.0, 7.5, 10.0, 15.0]; // Last one exceeds range
-        
+
         for &weight_val in &test_weights {
-            let quantized = QuantizedCompactor::<TropicalWeight>::quantize_weight_value(weight_val, &mode, levels);
-            let dequantized = QuantizedCompactor::<TropicalWeight>::dequantize_weight_value(quantized, &mode, levels);
-            
+            let quantized = QuantizedCompactor::<TropicalWeight>::quantize_weight_value(
+                weight_val, &mode, levels,
+            );
+            let dequantized = QuantizedCompactor::<TropicalWeight>::dequantize_weight_value(
+                quantized, &mode, levels,
+            );
+
             // Values within range should be close after round-trip
-            if weight_val >= 0.0 && weight_val <= 10.0 {
+            if (0.0..=10.0).contains(&weight_val) {
                 let error = (dequantized - weight_val).abs();
-                assert!(error <= 0.1, "Round-trip error too large: {} -> {} -> {}", weight_val, quantized, dequantized);
+                assert!(
+                    error <= 0.1,
+                    "Round-trip error too large: {} -> {} -> {}",
+                    weight_val,
+                    quantized,
+                    dequantized
+                );
             }
         }
     }
 
     #[test]
     fn test_quantized_compactor_logarithmic_mode() {
-        let mode = QuantizationMode::Logarithmic { min: 0.1, max: 100.0 };
+        let mode = QuantizationMode::Logarithmic {
+            min: 0.1,
+            max: 100.0,
+        };
         let levels = 1024u32;
-        
+
         let test_weights = [0.1, 1.0, 10.0, 100.0];
-        
+
         for &weight_val in &test_weights {
-            let quantized = QuantizedCompactor::<TropicalWeight>::quantize_weight_value(weight_val, &mode, levels);
-            let dequantized = QuantizedCompactor::<TropicalWeight>::dequantize_weight_value(quantized, &mode, levels);
-            
+            let quantized = QuantizedCompactor::<TropicalWeight>::quantize_weight_value(
+                weight_val, &mode, levels,
+            );
+            let dequantized = QuantizedCompactor::<TropicalWeight>::dequantize_weight_value(
+                quantized, &mode, levels,
+            );
+
             // Logarithmic mode should preserve relative precision
             let relative_error = ((dequantized - weight_val) / weight_val).abs();
-            assert!(relative_error <= 0.05, "Relative error too large: {} -> {} ({}% error)", 
-                   weight_val, dequantized, relative_error * 100.0);
+            assert!(
+                relative_error <= 0.05,
+                "Relative error too large: {} -> {} ({}% error)",
+                weight_val,
+                dequantized,
+                relative_error * 100.0
+            );
         }
     }
 
     #[test]
     fn test_quantized_compactor_infinity_handling() {
-        let mode = QuantizationMode::Linear { min: 0.0, max: 100.0 };
+        let mode = QuantizationMode::Linear {
+            min: 0.0,
+            max: 100.0,
+        };
         let levels = 256u32;
-        
+
         // Test infinity quantization
-        let quantized = QuantizedCompactor::<TropicalWeight>::quantize_weight_value(f64::INFINITY, &mode, levels);
+        let quantized = QuantizedCompactor::<TropicalWeight>::quantize_weight_value(
+            f64::INFINITY,
+            &mode,
+            levels,
+        );
         assert_eq!(quantized, (levels - 1) as u16);
-        
-        let dequantized = QuantizedCompactor::<TropicalWeight>::dequantize_weight_value(quantized, &mode, levels);
+
+        let dequantized =
+            QuantizedCompactor::<TropicalWeight>::dequantize_weight_value(quantized, &mode, levels);
         assert!(dequantized.is_infinite());
     }
 
@@ -2373,19 +2537,24 @@ mod tests {
     fn test_delta_compactor_small_deltas() {
         let base_arc = Arc::new(100, 200, TropicalWeight::new(1.0), 300);
         let next_arc = Arc::new(101, 199, TropicalWeight::new(1.5), 302);
-        
+
         let delta = DeltaCompactor::<TropicalWeight>::compute_delta(&next_arc, &base_arc);
-        
+
         // Should use delta encoding for small differences
         match delta {
-            DeltaElement::Delta { ilabel_delta, olabel_delta, nextstate_delta, .. } => {
-                assert_eq!(ilabel_delta, 1);  // 101 - 100
+            DeltaElement::Delta {
+                ilabel_delta,
+                olabel_delta,
+                nextstate_delta,
+                ..
+            } => {
+                assert_eq!(ilabel_delta, 1); // 101 - 100
                 assert_eq!(olabel_delta, -1); // 199 - 200
                 assert_eq!(nextstate_delta, 2); // 302 - 300
             }
             _ => panic!("Expected Delta variant for small differences"),
         }
-        
+
         // Test applying delta
         let applied = DeltaCompactor::<TropicalWeight>::apply_delta(&base_arc, &delta);
         assert_eq!(applied.ilabel, next_arc.ilabel);
@@ -2397,12 +2566,17 @@ mod tests {
     fn test_delta_compactor_large_deltas() {
         let base_arc = Arc::new(100, 200, TropicalWeight::new(1.0), 300);
         let far_arc = Arc::new(70000, 80000, TropicalWeight::new(2.0), 90000);
-        
+
         let delta = DeltaCompactor::<TropicalWeight>::compute_delta(&far_arc, &base_arc);
-        
+
         // Should fall back to absolute encoding for large differences
         match delta {
-            DeltaElement::Absolute { ilabel, olabel, nextstate, .. } => {
+            DeltaElement::Absolute {
+                ilabel,
+                olabel,
+                nextstate,
+                ..
+            } => {
                 assert_eq!(ilabel, 70000);
                 assert_eq!(olabel, 80000);
                 assert_eq!(nextstate, 90000);
@@ -2418,31 +2592,32 @@ mod tests {
         let s0 = vector_fst.add_state();
         let s1 = vector_fst.add_state();
         let s2 = vector_fst.add_state();
-        
+
         vector_fst.set_start(s0);
         vector_fst.set_final(s2, TropicalWeight::new(2.0));
-        
+
         vector_fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
         vector_fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(1.0), s2));
         vector_fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::new(1.5), s2));
-        
+
         // Convert to CompactFst
-        let compact_fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::from_fst(&vector_fst);
-        
+        let compact_fst =
+            CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::from_fst(&vector_fst);
+
         // Verify structure preservation
         assert_eq!(compact_fst.num_states(), vector_fst.num_states());
         assert_eq!(compact_fst.start(), vector_fst.start());
-        
+
         // Verify final weights
         assert_eq!(compact_fst.final_weight(s2), vector_fst.final_weight(s2));
         assert!(compact_fst.final_weight(s0).is_none());
         assert!(compact_fst.final_weight(s1).is_none());
-        
+
         // Verify arc counts
         assert_eq!(compact_fst.num_arcs(s0), vector_fst.num_arcs(s0));
         assert_eq!(compact_fst.num_arcs(s1), vector_fst.num_arcs(s1));
         assert_eq!(compact_fst.num_arcs(s2), vector_fst.num_arcs(s2));
-        
+
         // Verify arcs are preserved (order might differ due to compression)
         let compact_arcs_s0: Vec<_> = compact_fst.arcs(s0).collect();
         let vector_arcs_s0: Vec<_> = vector_fst.arcs(s0).collect();
@@ -2453,14 +2628,16 @@ mod tests {
     fn test_compact_fst_with_compactor() {
         // Test creating CompactFst with different compactors
         let _default_fst = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::new();
-        let _bit_packed_fst = CompactFst::with_compactor(BitPackCompactor::<TropicalWeight>::new(8, 8, 16));
-        let _quantized_fst = CompactFst::with_compactor(
-            QuantizedCompactor::<TropicalWeight>::new(
-                QuantizationMode::Linear { min: 0.0, max: 100.0 },
-                256
-            )
-        );
-        
+        let _bit_packed_fst =
+            CompactFst::with_compactor(BitPackCompactor::<TropicalWeight>::new(8, 8, 16));
+        let _quantized_fst = CompactFst::with_compactor(QuantizedCompactor::<TropicalWeight>::new(
+            QuantizationMode::Linear {
+                min: 0.0,
+                max: 100.0,
+            },
+            256,
+        ));
+
         // All should create successfully
     }
 
@@ -2468,29 +2645,34 @@ mod tests {
     fn test_compression_ratio_concept() {
         // This test demonstrates the concept of compression
         // In practice, compression effectiveness varies by data characteristics
-        
+
         let mut large_fst = VectorFst::<TropicalWeight>::new();
-        
+
         // Create FST with many states and arcs
         for _i in 0..100 {
             large_fst.add_state();
         }
         large_fst.set_start(0);
         large_fst.set_final(99, TropicalWeight::one());
-        
+
         // Add many arcs with small labels (good for bit-packing)
         for i in 0..99 {
-            large_fst.add_arc(i, Arc::new(i % 10, i % 10, TropicalWeight::new((i % 20) as f32), i + 1));
+            large_fst.add_arc(
+                i,
+                Arc::new(i % 10, i % 10, TropicalWeight::new((i % 20) as f32), i + 1),
+            );
         }
-        
+
         // Convert with different compactors
-        let default_compact = CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::from_fst(&large_fst);
-        let bitpack_compact = CompactFst::<TropicalWeight, BitPackCompactor<TropicalWeight>>::from_fst(&large_fst);
-        
+        let default_compact =
+            CompactFst::<TropicalWeight, DefaultCompactor<TropicalWeight>>::from_fst(&large_fst);
+        let bitpack_compact =
+            CompactFst::<TropicalWeight, BitPackCompactor<TropicalWeight>>::from_fst(&large_fst);
+
         // Both should have same logical structure
         assert_eq!(default_compact.num_states(), bitpack_compact.num_states());
         assert_eq!(default_compact.start(), bitpack_compact.start());
-        
+
         // Memory usage would differ in practice (CompactElement vs u64)
         assert_eq!(default_compact.data.len(), bitpack_compact.data.len());
     }
@@ -2499,17 +2681,19 @@ mod tests {
     fn test_varint_encoding_edge_cases() {
         // Test edge cases for varint encoding
         let edge_cases = [0, 1, 127, 128, 255, 256, 16383, 16384, u32::MAX];
-        
+
         for &value in &edge_cases {
             let encoded = encode_varint(value);
             let decoded = decode_varint(&encoded);
             assert_eq!(decoded, value, "Varint round-trip failed for {}", value);
-            
+
             // Check expected encoding lengths
             match value {
                 0..=127 => assert_eq!(encoded.len(), 1, "Single byte expected for {}", value),
                 128..=16383 => assert_eq!(encoded.len(), 2, "Two bytes expected for {}", value),
-                16384..=2097151 => assert_eq!(encoded.len(), 3, "Three bytes expected for {}", value),
+                16384..=2097151 => {
+                    assert_eq!(encoded.len(), 3, "Three bytes expected for {}", value)
+                }
                 _ => assert!(encoded.len() <= 5, "Max 5 bytes for any u32"),
             }
         }
@@ -2518,21 +2702,25 @@ mod tests {
     #[test]
     fn test_semiring_compatibility() {
         // Test that compression works with different semiring types
-        
+
         // TropicalWeight (f32)
-        let tropical_arc = Arc::new(1, 2, TropicalWeight::new(3.14), 4);
-        let _tropical_compressed = BitPackCompactor::<TropicalWeight>::compact(&tropical_arc);
-        
+        let tropical_arc = Arc::new(1, 2, TropicalWeight::new(std::f32::consts::PI), 4);
+        let compactor = BitPackCompactor::<TropicalWeight>::default();
+        let _tropical_compressed = compactor.compact(&tropical_arc);
+
         // LogWeight (f64) - would need trait bound adjustments
         // This demonstrates the need for proper semiring compatibility
-        
+
         // Test weight-only compression
         let weight = TropicalWeight::new(42.0);
-        let compressed_weight = BitPackCompactor::<TropicalWeight>::compact_weight(&weight);
-        let expanded_weight = BitPackCompactor::<TropicalWeight>::expand_weight(&compressed_weight);
-        
+        let compressed_weight = compactor.compact_weight(&weight);
+        let expanded_weight = compactor.expand_weight(&compressed_weight);
+
         // Should be close after quantization
         let weight_diff = (expanded_weight.value() - 42.0).abs();
-        assert!(weight_diff <= 1.0, "Weight round-trip should be reasonably accurate");
+        assert!(
+            weight_diff <= 1.0,
+            "Weight round-trip should be reasonably accurate"
+        );
     }
 }

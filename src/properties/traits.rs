@@ -551,7 +551,7 @@ pub fn compute_properties<W: Semiring, F: Fst<W>>(fst: &F) -> FstProperties {
     // Check determinism properties and other arc-based properties
     let (is_input_deterministic, is_output_deterministic) = compute_determinism(fst);
     let is_functional = compute_functional(fst);
-    
+
     // Check other properties by examining arcs
     for state in fst.states() {
         for arc in fst.arcs(state) {
@@ -620,12 +620,12 @@ fn compute_coaccessible<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
     }
 
     // Build reverse graph for backward reachability
-    let mut reverse_graph: std::collections::HashMap<StateId, Vec<StateId>> = 
+    let mut reverse_graph: std::collections::HashMap<StateId, Vec<StateId>> =
         std::collections::HashMap::new();
-    
+
     for state in fst.states() {
         for arc in fst.arcs(state) {
-            reverse_graph.entry(arc.nextstate).or_insert_with(Vec::new).push(state);
+            reverse_graph.entry(arc.nextstate).or_default().push(state);
         }
     }
 
@@ -691,7 +691,7 @@ fn compute_determinism<W: Semiring, F: Fst<W>>(fst: &F) -> (bool, bool) {
 fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
     // Simple approximation: functional if input deterministic and no epsilon cycles
     let (is_input_deterministic, _) = compute_determinism(fst);
-    
+
     if !is_input_deterministic {
         return false;
     }
@@ -728,9 +728,10 @@ fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
     // Check for epsilon cycles from any reachable state
     if let Some(start_state) = fst.start() {
         // First, find all reachable states
-        let mut reachable_states: std::collections::HashSet<StateId> = std::collections::HashSet::new();
+        let mut reachable_states: std::collections::HashSet<StateId> =
+            std::collections::HashSet::new();
         let mut stack = vec![start_state];
-        
+
         while let Some(state) = stack.pop() {
             if reachable_states.insert(state) {
                 for arc in fst.arcs(state) {
@@ -740,16 +741,18 @@ fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
                 }
             }
         }
-        
+
         // Check for epsilon cycles starting from any reachable state
         for &state in &reachable_states {
-            let mut local_visited: std::collections::HashSet<StateId> = std::collections::HashSet::new();
-            let mut local_rec_stack: std::collections::HashSet<StateId> = std::collections::HashSet::new();
+            let mut local_visited: std::collections::HashSet<StateId> =
+                std::collections::HashSet::new();
+            let mut local_rec_stack: std::collections::HashSet<StateId> =
+                std::collections::HashSet::new();
             if has_epsilon_cycle(fst, state, &mut local_visited, &mut local_rec_stack) {
                 return false;
             }
         }
-        
+
         true // No epsilon cycles found
     } else {
         true // Empty FST is vacuously functional
@@ -908,7 +911,7 @@ mod tests {
         // Should not be functional either
         assert!(!props.contains(PropertyFlags::FUNCTIONAL));
     }
-    
+
     #[test]
     fn test_input_deterministic_fst() {
         let mut fst = VectorFst::<TropicalWeight>::new();
@@ -931,7 +934,7 @@ mod tests {
         // Should be functional
         assert!(props.contains(PropertyFlags::FUNCTIONAL));
     }
-    
+
     #[test]
     fn test_output_deterministic_fst() {
         let mut fst = VectorFst::<TropicalWeight>::new();
@@ -952,7 +955,7 @@ mod tests {
         assert!(props.contains(PropertyFlags::INPUT_DETERMINISTIC));
         assert!(!props.contains(PropertyFlags::OUTPUT_DETERMINISTIC));
     }
-    
+
     #[test]
     fn test_coaccessible_property() {
         // Test FST where not all states can reach final states
@@ -976,7 +979,7 @@ mod tests {
         assert!(!props.contains(PropertyFlags::COACCESSIBLE));
         assert!(!props.contains(PropertyFlags::CONNECTED));
     }
-    
+
     #[test]
     fn test_fully_connected_fst() {
         let mut fst = VectorFst::<TropicalWeight>::new();
@@ -997,7 +1000,7 @@ mod tests {
         assert!(props.contains(PropertyFlags::COACCESSIBLE));
         assert!(props.contains(PropertyFlags::CONNECTED));
     }
-    
+
     #[test]
     fn test_functional_with_epsilon_cycles() {
         // Create an FST that has epsilon cycles that actually affect functionality
@@ -1025,7 +1028,7 @@ mod tests {
         assert!(props.contains(PropertyFlags::EPSILONS));
         assert!(props.contains(PropertyFlags::CYCLIC));
     }
-    
+
     #[test]
     fn test_empty_fst_special_cases() {
         let fst = VectorFst::<TropicalWeight>::new();
@@ -1039,7 +1042,7 @@ mod tests {
         assert!(props.contains(PropertyFlags::COACCESSIBLE));
         assert!(props.contains(PropertyFlags::CONNECTED));
     }
-    
+
     #[test]
     fn test_no_final_states() {
         let mut fst = VectorFst::<TropicalWeight>::new();

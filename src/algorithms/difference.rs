@@ -496,10 +496,10 @@ mod tests {
         let s1 = fst.add_state();
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        
+
         // Valid acceptor: input = output labels
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         assert!(validate_acceptor(&fst).is_ok());
     }
 
@@ -510,10 +510,10 @@ mod tests {
         let s1 = fst.add_state();
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
-        
+
         // Invalid: different input/output labels (transducer)
         fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::one(), s1));
-        
+
         assert!(validate_acceptor(&fst).is_err());
     }
 
@@ -521,17 +521,17 @@ mod tests {
     fn test_collect_alphabet_basic() {
         let mut fst1 = VectorFst::<TropicalWeight>::new();
         let mut fst2 = VectorFst::<TropicalWeight>::new();
-        
+
         let s0 = fst1.add_state();
         let s1 = fst1.add_state();
         fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
         fst1.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s0));
-        
+
         let s0 = fst2.add_state();
         let s1 = fst2.add_state();
         fst2.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
         fst2.add_arc(s1, Arc::new(3, 3, TropicalWeight::one(), s0));
-        
+
         let alphabet = collect_alphabet(&fst1, &fst2).unwrap();
         assert_eq!(alphabet.len(), 3);
         assert!(alphabet.contains(&1));
@@ -543,16 +543,16 @@ mod tests {
     fn test_collect_alphabet_with_epsilon() {
         let mut fst1 = VectorFst::<TropicalWeight>::new();
         let mut fst2 = VectorFst::<TropicalWeight>::new();
-        
+
         let s0 = fst1.add_state();
         let s1 = fst1.add_state();
         fst1.add_arc(s0, Arc::new(0, 0, TropicalWeight::one(), s1)); // Epsilon
         fst1.add_arc(s1, Arc::new(1, 1, TropicalWeight::one(), s0));
-        
+
         let s0 = fst2.add_state();
         let s1 = fst2.add_state();
         fst2.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
-        
+
         let alphabet = collect_alphabet(&fst1, &fst2).unwrap();
         assert_eq!(alphabet.len(), 2);
         assert!(alphabet.contains(&1));
@@ -564,15 +564,15 @@ mod tests {
     fn test_collect_alphabet_empty() {
         let mut fst1 = VectorFst::<TropicalWeight>::new();
         let mut fst2 = VectorFst::<TropicalWeight>::new();
-        
+
         // Only epsilon arcs
         let s0 = fst1.add_state();
         let s1 = fst1.add_state();
         fst1.add_arc(s0, Arc::new(0, 0, TropicalWeight::one(), s1));
-        
+
         let _s0 = fst2.add_state();
         // No arcs in fst2
-        
+
         let result = collect_alphabet(&fst1, &fst2);
         assert!(result.is_err()); // Should fail with empty alphabet
     }
@@ -585,17 +585,17 @@ mod tests {
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         let mut alphabet = HashSet::new();
         alphabet.insert(1);
         alphabet.insert(2);
-        
+
         let complete: VectorFst<TropicalWeight> = make_complete(&fst, &alphabet).unwrap();
-        
+
         // Should have original states plus sink state
         assert_eq!(complete.num_states(), 3);
         assert!(complete.start().is_some());
-        
+
         // Should have transitions for all alphabet symbols from all states
         assert!(complete.num_arcs_total() > fst.num_arcs_total());
     }
@@ -608,12 +608,12 @@ mod tests {
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         let mut alphabet = HashSet::new();
         alphabet.insert(1);
-        
+
         let complement: VectorFst<TropicalWeight> = build_complement(&fst, &alphabet).unwrap();
-        
+
         // Complement should have more states (original + sink)
         assert!(complement.num_states() >= fst.num_states());
         assert!(complement.start().is_some());
@@ -628,7 +628,7 @@ mod tests {
         fst1.set_start(s0);
         fst1.set_final(s1, TropicalWeight::one());
         fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         // FST2 accepts "b"
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
@@ -636,7 +636,7 @@ mod tests {
         fst2.set_start(s0);
         fst2.set_final(s1, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
-        
+
         // Difference should accept "a" (fst1 - fst2)
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());
@@ -652,10 +652,10 @@ mod tests {
         fst.set_start(s0);
         fst.set_final(s1, TropicalWeight::one());
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         // Difference with itself should be empty
         let diff: VectorFst<TropicalWeight> = difference(&fst, &fst).unwrap();
-        
+
         // Result should have no final states or should be empty
         let final_count = diff.states().filter(|&s| diff.is_final(s)).count();
         assert_eq!(final_count, 0);
@@ -668,7 +668,7 @@ mod tests {
         let s0 = fst2.add_state();
         fst2.set_start(s0);
         fst2.set_final(s0, TropicalWeight::one());
-        
+
         // Difference with empty FST should fail (empty alphabet)
         let result = difference::<TropicalWeight, _, _, VectorFst<TropicalWeight>>(&fst1, &fst2);
         assert!(result.is_err());
@@ -683,14 +683,14 @@ mod tests {
         fst1.set_start(s0);
         fst1.set_final(s1, TropicalWeight::one());
         fst1.add_arc(s0, Arc::new(1, 2, TropicalWeight::one(), s1)); // Different input/output
-        
+
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
         let s1 = fst2.add_state();
         fst2.set_start(s0);
         fst2.set_final(s1, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         // Should fail because fst1 is not an acceptor
         let result = difference::<TropicalWeight, _, _, VectorFst<TropicalWeight>>(&fst1, &fst2);
         assert!(result.is_err());
@@ -708,7 +708,7 @@ mod tests {
         fst1.set_final(s2, TropicalWeight::one()); // accepts "ab"
         fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1)); // a
         fst1.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2)); // b
-        
+
         // FST2 accepts "ab"
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
@@ -718,7 +718,7 @@ mod tests {
         fst2.set_final(s2, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1)); // a
         fst2.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s2)); // b
-        
+
         // Difference should accept "a" but not "ab"
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());
@@ -734,7 +734,7 @@ mod tests {
         fst1.set_start(s0);
         fst1.set_final(s1, TropicalWeight::one());
         fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1));
-        
+
         // FST2 accepts "b"
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
@@ -742,12 +742,12 @@ mod tests {
         fst2.set_start(s0);
         fst2.set_final(s1, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1));
-        
+
         // Since languages are disjoint, difference should equal fst1
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());
         assert!(diff.num_states() > 0);
-        
+
         // Should have at least one final state
         let final_count = diff.states().filter(|&s| diff.is_final(s)).count();
         assert!(final_count > 0);
@@ -765,7 +765,7 @@ mod tests {
         fst1.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s0)); // b (stay)
         fst1.add_arc(s1, Arc::new(1, 1, TropicalWeight::one(), s1)); // a (final)
         fst1.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), s0)); // b (back to start)
-        
+
         // FST2: accepts single "a"
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
@@ -773,7 +773,7 @@ mod tests {
         fst2.set_start(s0);
         fst2.set_final(s1, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s1)); // a
-        
+
         // Difference should accept strings ending with "a" except single "a"
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());
@@ -789,18 +789,18 @@ mod tests {
         fst1.set_start(s0);
         fst1.set_final(s1, TropicalWeight::new(2.0));
         fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.5), s1));
-        
+
         // FST2: empty language (no final states)
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
         fst2.set_start(s0);
         fst2.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0));
         // No final states - accepts nothing
-        
+
         // Difference should preserve fst1 exactly
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());
-        
+
         // Check that some weights are preserved (structure may differ)
         let has_final = diff.states().any(|s| diff.is_final(s));
         assert!(has_final);
@@ -814,14 +814,14 @@ mod tests {
         fst1.set_start(s0);
         fst1.set_final(s0, TropicalWeight::one());
         fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::one(), s0)); // Self-loop on "a"
-        
+
         // FST2: different single state
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
         fst2.set_start(s0);
         fst2.set_final(s0, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s0)); // Self-loop on "b"
-        
+
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());
     }
@@ -837,7 +837,7 @@ mod tests {
         fst1.set_final(s2, TropicalWeight::one());
         fst1.add_arc(s0, Arc::new(0, 0, TropicalWeight::one(), s1)); // epsilon
         fst1.add_arc(s1, Arc::new(1, 1, TropicalWeight::one(), s2)); // a
-        
+
         // FST2: simple acceptor
         let mut fst2 = VectorFst::<TropicalWeight>::new();
         let s0 = fst2.add_state();
@@ -845,7 +845,7 @@ mod tests {
         fst2.set_start(s0);
         fst2.set_final(s1, TropicalWeight::one());
         fst2.add_arc(s0, Arc::new(2, 2, TropicalWeight::one(), s1)); // b
-        
+
         // Should handle epsilon transitions properly
         let diff: VectorFst<TropicalWeight> = difference(&fst1, &fst2).unwrap();
         assert!(diff.start().is_some());

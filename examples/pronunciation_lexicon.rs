@@ -420,12 +420,13 @@ fn main() -> Result<()> {
     // Create sample lexicon
     let lexicon_entries = create_sample_lexicon();
 
-    println!("Building lexicon with {} words...", lexicon_entries.len());
+    let len = lexicon_entries.len();
+    println!("Building lexicon with {len} words...");
     for entry in &lexicon_entries {
+        let word = &entry.word;
+        let len = entry.pronunciations.len();
         println!(
-            "  {} -> {} pronunciation(s)",
-            entry.word,
-            entry.pronunciations.len()
+            "  {word} -> {len} pronunciation(s)"
         );
     }
 
@@ -439,11 +440,13 @@ fn main() -> Result<()> {
     let test_words = vec!["hello", "world", "cat", "the", "read", "live", "unknown"];
 
     for word in test_words {
-        println!("\n  Looking up '{}':", word);
+        println!("\n  Looking up '{word}':");
         if let Some(pronunciations) = lookup_word_in_lexicon(&lexicon_entries, word) {
             for (i, pron) in pronunciations.iter().enumerate() {
                 let phoneme_str: Vec<&str> = pron.iter().map(|p| p.to_string()).collect();
-                println!("    Pronunciation {}: {}", i + 1, phoneme_str.join(" "));
+                let num = i + 1;
+                let phonemes = phoneme_str.join(" ");
+                println!("    Pronunciation {num}: {phonemes}");
             }
         } else {
             println!("    Not found in lexicon");
@@ -454,16 +457,18 @@ fn main() -> Result<()> {
     println!("\n2. Grapheme-to-Phoneme (G2P) Rules:");
     println!("-----------------------------------");
     let g2p_fst = build_g2p_rules();
-    println!("G2P FST built with {} states", g2p_fst.num_states());
+    let num_states = g2p_fst.num_states();
+    println!("G2P FST built with {num_states} states");
 
     // Test G2P on unknown words
     let unknown_words = vec!["test", "book", "run", "jump"];
     for word in unknown_words {
-        println!("\nApplying G2P rules to '{}':", word);
+        println!("\nApplying G2P rules to '{word}':");
         let phonemes = extract_g2p_phonemes(&g2p_fst, word);
         if !phonemes.is_empty() {
             let phoneme_str: Vec<&str> = phonemes.iter().map(|p| p.to_string()).collect();
-            println!("  G2P result: {}", phoneme_str.join(" "));
+            let phonemes = phoneme_str.join(" ");
+            println!("  G2P result: {phonemes}");
         } else {
             println!("  No G2P result");
         }
@@ -480,10 +485,11 @@ fn main() -> Result<()> {
     ];
 
     for sentence in test_sentences {
-        println!("\nText: \"{}\"", sentence);
+        println!("\nText: \"{sentence}\"");
         let phonemes = text_to_phonemes(&lexicon_entries, &g2p_fst, sentence);
         let phoneme_str: Vec<&str> = phonemes.iter().map(|p| p.to_string()).collect();
-        println!("Phonemes: {}", phoneme_str.join(" "));
+        let phonemes = phoneme_str.join(" ");
+        println!("Phonemes: {phonemes}");
     }
 
     // Show applications in speech processing
@@ -509,18 +515,16 @@ fn main() -> Result<()> {
 
     for entry in &lexicon_entries {
         if entry.pronunciations.len() > 1 {
+            let word = &entry.word;
+            let len = entry.pronunciations.len();
             println!(
-                "  '{}' has {} pronunciations:",
-                entry.word,
-                entry.pronunciations.len()
+                "  '{word}' has {len} pronunciations:"
             );
             for (i, pron) in entry.pronunciations.iter().enumerate() {
                 let phoneme_str: Vec<&str> = pron.iter().map(|p| p.to_string()).collect();
-                println!(
-                    "    {}: {} ({})",
-                    i + 1,
-                    phoneme_str.join(" "),
-                    match entry.word.as_str() {
+                let num = i + 1;
+                let phonemes = phoneme_str.join(" ");
+                let desc = match entry.word.as_str() {
                         "hello" =>
                             if i == 0 {
                                 "standard"
@@ -546,7 +550,9 @@ fn main() -> Result<()> {
                                 "stressed /ðiː/"
                             },
                         _ => "variant",
-                    }
+                    };
+                println!(
+                    "    {num}: {phonemes} ({desc})"
                 );
             }
             println!();

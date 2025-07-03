@@ -469,17 +469,21 @@ fn main() -> Result<()> {
     let _number_fst = build_number_normalization_fst();
 
     println!("Normalization patterns loaded:");
-    println!("  {} number word mappings", normalizer.word_to_digit.len());
+    let word_to_digit_len = normalizer.word_to_digit.len();
+    println!("  {word_to_digit_len} number word mappings");
+    let ordinal_to_number_len = normalizer.ordinal_to_number.len();
     println!(
-        "  {} ordinal number mappings",
-        normalizer.ordinal_to_number.len()
+        "  {ordinal_to_number_len} ordinal number mappings"
     );
-    println!("  {} date format patterns", normalizer.date_patterns.len());
-    println!("  {} time format patterns", normalizer.time_patterns.len());
-    println!("  {} currency patterns", normalizer.currency_patterns.len());
+    let date_patterns_len = normalizer.date_patterns.len();
+    println!("  {date_patterns_len} date format patterns");
+    let time_patterns_len = normalizer.time_patterns.len();
+    println!("  {time_patterns_len} time format patterns");
+    let currency_patterns_len = normalizer.currency_patterns.len();
+    println!("  {currency_patterns_len} currency patterns");
+    let measurement_patterns_len = normalizer.measurement_patterns.len();
     println!(
-        "  {} measurement patterns",
-        normalizer.measurement_patterns.len()
+        "  {measurement_patterns_len} measurement patterns"
     );
 
     // Test number normalization
@@ -496,7 +500,7 @@ fn main() -> Result<()> {
 
     for test in number_tests {
         let normalized = normalizer.apply_normalizations(test);
-        println!("  '{}' → '{}'", test, normalized);
+        println!("  '{test}' → '{normalized}'");
     }
 
     // Test ordinal normalization
@@ -512,7 +516,7 @@ fn main() -> Result<()> {
 
     for test in ordinal_tests {
         let normalized = normalizer.apply_normalizations(test);
-        println!("  '{}' → '{}'", test, normalized);
+        println!("  '{test}' → '{normalized}'");
     }
 
     // Test date normalization
@@ -529,7 +533,7 @@ fn main() -> Result<()> {
 
     for test in date_tests {
         let normalized = normalizer.apply_normalizations(test);
-        println!("  '{}' → '{}'", test, normalized);
+        println!("  '{test}' → '{normalized}'");
     }
 
     // Test time normalization
@@ -546,7 +550,7 @@ fn main() -> Result<()> {
 
     for test in time_tests {
         let normalized = normalizer.apply_normalizations(test);
-        println!("  '{}' → '{}'", test, normalized);
+        println!("  '{test}' → '{normalized}'");
     }
 
     // Test currency normalization
@@ -563,7 +567,7 @@ fn main() -> Result<()> {
 
     for test in currency_tests {
         let normalized = normalizer.apply_normalizations(test);
-        println!("  '{}' → '{}'", test, normalized);
+        println!("  '{test}' → '{normalized}'");
     }
 
     // Test measurement normalization
@@ -580,7 +584,7 @@ fn main() -> Result<()> {
 
     for test in measurement_tests {
         let normalized = normalizer.apply_normalizations(test);
-        println!("  '{}' → '{}'", test, normalized);
+        println!("  '{test}' → '{normalized}'");
     }
 
     // Test phone number normalization
@@ -604,7 +608,7 @@ fn main() -> Result<()> {
                 test.replace(&result.original, &result.normalized)
             );
         } else {
-            println!("  '{}' → {} (no normalization)", test, test);
+            println!("  '{test}' → {test} (no normalization)");
         }
     }
 
@@ -622,9 +626,9 @@ fn main() -> Result<()> {
     for text in complex_texts {
         let normalized = normalizer.apply_normalizations(text);
         println!("\nOriginal:");
-        println!("  {}", text);
+        println!("  {text}");
         println!("Normalized:");
-        println!("  {}", normalized);
+        println!("  {normalized}");
 
         // Show detected entities
         let entities = normalizer.normalize_text(text);
@@ -646,8 +650,8 @@ fn main() -> Result<()> {
 
     let fst_test = "I need one apple, two oranges, and three bananas.";
     let fst_result = process_with_fst_pipeline(fst_test, &_number_fst);
-    println!("  Input:  {}", fst_test);
-    println!("  Output: {}", fst_result);
+    println!("  Input:  {fst_test}");
+    println!("  Output: {fst_result}");
 
     // Applications and benefits
     println!("\n10. Applications and Benefits:");

@@ -405,17 +405,18 @@ fn apply_phonological_rules(input: &str, rules: Vec<VectorFst<TropicalWeight>>) 
     let mut current_fst = build_word_fst(input);
 
     println!("Applying phonological rules in sequence:");
-    println!("Input: '{}'", input);
+    println!("Input: '{input}'");
 
     for (i, rule) in rules.iter().enumerate() {
-        println!("\nStep {}: Applying rule {}", i + 1, i + 1);
+        let step = i + 1;
+        println!("\nStep {step}: Applying rule {step}");
 
         // Compose current result with next rule
         current_fst = compose_default(&current_fst, rule)?;
 
         // Extract intermediate result
         if let Some(intermediate) = extract_output_string(&current_fst) {
-            println!("  Result: '{}'", intermediate);
+            println!("  Result: '{intermediate}'");
         } else {
             println!("  Result: (no output)");
         }
@@ -449,7 +450,7 @@ fn main() -> Result<()> {
         let input_fst = build_word_fst(test);
         let composed: VectorFst<TropicalWeight> = compose_default(&input_fst, &harmony_fst)?;
         if let Some(output) = extract_output_string(&composed) {
-            println!("  '{}' → '{}'", test, output);
+            println!("  '{test}' → '{output}'");
         }
     }
 
@@ -465,7 +466,7 @@ fn main() -> Result<()> {
         let input_fst = build_word_fst(test);
         let composed: VectorFst<TropicalWeight> = compose_default(&input_fst, &cluster_fst)?;
         if let Some(output) = extract_output_string(&composed) {
-            println!("  '{}' → '{}'", test, output);
+            println!("  '{test}' → '{output}'");
         }
     }
 
@@ -481,7 +482,7 @@ fn main() -> Result<()> {
         let input_fst = build_word_fst(test);
         let composed: VectorFst<TropicalWeight> = compose_default(&input_fst, &epenthesis_fst)?;
         if let Some(output) = extract_output_string(&composed) {
-            println!("  '{}' → '{}'", test, output);
+            println!("  '{test}' → '{output}'");
         }
     }
 
@@ -497,7 +498,7 @@ fn main() -> Result<()> {
         let input_fst = build_word_fst(test);
         let composed: VectorFst<TropicalWeight> = compose_default(&input_fst, &devoicing_fst)?;
         if let Some(output) = extract_output_string(&composed) {
-            println!("  '{}' → '{}'", test, output);
+            println!("  '{test}' → '{output}'");
         }
     }
 
@@ -507,19 +508,19 @@ fn main() -> Result<()> {
     println!("Demonstrating how rule order affects output");
 
     let test_word = "aktE";
-    println!("Input: '{}'", test_word);
+    println!("Input: '{test_word}'");
 
     // Order 1: Harmony before cluster simplification
     println!("\nOrder 1: Vowel Harmony → Cluster Simplification");
     let rules1 = vec![harmony_fst.clone(), cluster_fst.clone()];
     let result1 = apply_phonological_rules(test_word, rules1)?;
-    println!("Final result: '{}'", result1);
+    println!("Final result: '{result1}'");
 
     // Order 2: Cluster simplification before harmony
     println!("\nOrder 2: Cluster Simplification → Vowel Harmony");
     let rules2 = vec![cluster_fst.clone(), harmony_fst.clone()];
     let result2 = apply_phonological_rules(test_word, rules2)?;
-    println!("Final result: '{}'", result2);
+    println!("Final result: '{result2}'");
 
     // Example 6: Complex rule interaction
     println!("\n6. Complex Multi-Rule System");
@@ -527,7 +528,7 @@ fn main() -> Result<()> {
     println!("Applying multiple rules in sequence");
 
     let complex_word = "sportE";
-    println!("Input: '{}'", complex_word);
+    println!("Input: '{complex_word}'");
 
     let all_rules = vec![
         epenthesis_fst, // Break consonant clusters first
@@ -536,7 +537,7 @@ fn main() -> Result<()> {
     ];
 
     let final_result = apply_phonological_rules(complex_word, all_rules)?;
-    println!("Final result: '{}'", final_result);
+    println!("Final result: '{final_result}'");
 
     // Theoretical discussion
     println!("\n7. Theoretical Background and Implications");

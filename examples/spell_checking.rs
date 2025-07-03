@@ -305,7 +305,8 @@ fn main() -> Result<()> {
         "exemplify",
     ];
 
-    println!("Dictionary contains {} words\n", dictionary.len());
+    let dictionary_len = dictionary.len();
+    println!("Dictionary contains {dictionary_len} words\n");
 
     // Build the dictionary FST
     let dict_fst = build_dictionary_fst(&dictionary);
@@ -324,8 +325,7 @@ fn main() -> Result<()> {
 
     for (misspelled, max_distance) in test_words {
         println!(
-            "Finding spelling corrections for '{}' (max edit distance: {}):",
-            misspelled, max_distance
+            "Finding spelling corrections for '{misspelled}' (max edit distance: {max_distance}):"
         );
         println!("{}", "-".repeat(50));
 
@@ -333,12 +333,11 @@ fn main() -> Result<()> {
 
         if corrections.is_empty() {
             println!(
-                "  No spelling corrections found within edit distance {}",
-                max_distance
+                "  No spelling corrections found within edit distance {max_distance}"
             );
         } else {
             for (word, distance) in corrections.iter().take(5) {
-                println!("  {} (distance: {})", word, distance);
+                println!("  {word} (distance: {distance})");
             }
         }
         println!();
@@ -351,7 +350,7 @@ fn main() -> Result<()> {
     let corrections = find_spelling_corrections(&dict_fst, "help", 1)?;
     for (word, distance) in corrections {
         if distance <= 1.0 {
-            println!("  {} (distance: {})", word, distance);
+            println!("  {word} (distance: {distance})");
         }
     }
 
@@ -360,10 +359,10 @@ fn main() -> Result<()> {
     println!("{}", "=".repeat(50));
 
     for k in 1..=3 {
-        println!("\nEdit distance <= {}:", k);
+        println!("\nEdit distance <= {k}:");
         let corrections = find_spelling_corrections(&dict_fst, "wrld", k)?;
         for (word, distance) in corrections.iter().take(5) {
-            println!("  {} (distance: {})", word, distance);
+            println!("  {word} (distance: {distance})");
         }
     }
 

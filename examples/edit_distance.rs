@@ -181,9 +181,9 @@ fn main() -> Result<()> {
     for (source, target) in &test_pairs {
         let distance = compute_edit_distance(source, target, 1.0, 1.0, 1.0)?;
         if distance.is_finite() {
-            println!("  '{}' -> '{}': {}", source, target, distance);
+            println!("  '{source}' -> '{target}': {distance}");
         } else {
-            println!("  '{}' -> '{}': No transformation found", source, target);
+            println!("  '{source}' -> '{target}': No transformation found");
         }
     }
 
@@ -193,9 +193,9 @@ fn main() -> Result<()> {
     for (source, target) in &test_pairs {
         let distance = compute_edit_distance(source, target, 0.5, 2.0, 1.0)?;
         if distance.is_finite() {
-            println!("  '{}' -> '{}': {}", source, target, distance);
+            println!("  '{source}' -> '{target}': {distance}");
         } else {
-            println!("  '{}' -> '{}': No transformation found", source, target);
+            println!("  '{source}' -> '{target}': No transformation found");
         }
     }
 
@@ -205,9 +205,9 @@ fn main() -> Result<()> {
     for (source, target) in &test_pairs {
         let distance = compute_edit_distance(source, target, 1.0, 1.0, 3.0)?;
         if distance.is_finite() {
-            println!("  '{}' -> '{}': {}", source, target, distance);
+            println!("  '{source}' -> '{target}': {distance}");
         } else {
-            println!("  '{}' -> '{}': No transformation found", source, target);
+            println!("  '{source}' -> '{target}': No transformation found");
         }
     }
 
@@ -231,13 +231,11 @@ fn main() -> Result<()> {
         let distance = compute_edit_distance("kitten", "sitting", ins, del, sub)?;
         if distance.is_finite() {
             println!(
-                "  {}: {} (ins={}, del={}, sub={})",
-                name, distance, ins, del, sub
+                "  {name}: {distance} (ins={ins}, del={del}, sub={sub})"
             );
         } else {
             println!(
-                "  {}: No transformation found (ins={}, del={}, sub={})",
-                name, ins, del, sub
+                "  {name}: No transformation found (ins={ins}, del={del}, sub={sub})"
             );
         }
     }
@@ -255,8 +253,7 @@ fn main() -> Result<()> {
     for (source, target, description) in examples {
         let distance = compute_edit_distance(source, target, 1.0, 1.0, 1.0)?;
         println!(
-            "  '{}' -> '{}': {} (distance: {})",
-            source, target, description, distance
+            "  '{source}' -> '{target}': {description} (distance: {distance})"
         );
     }
 

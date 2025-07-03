@@ -1071,18 +1071,12 @@ fn main() -> Result<()> {
     let transliteration_system = TransliterationSystem::new();
 
     println!("Transliteration system initialized with:");
-    println!(
-        "  {} Cyrillic schemes",
-        transliteration_system.cyrillic_to_latin.len()
-    );
-    println!(
-        "  {} Arabic schemes",
-        transliteration_system.arabic_to_latin.len()
-    );
-    println!(
-        "  {} Greek schemes",
-        transliteration_system.greek_to_latin.len()
-    );
+    let cyrillic_count = transliteration_system.cyrillic_to_latin.len();
+    println!("  {cyrillic_count} Cyrillic schemes");
+    let arabic_count = transliteration_system.arabic_to_latin.len();
+    println!("  {arabic_count} Arabic schemes");
+    let greek_count = transliteration_system.greek_to_latin.len();
+    println!("  {greek_count} Greek schemes");
 
     // Test Cyrillic transliteration
     println!("\n1. Cyrillic to Latin Transliteration:");
@@ -1102,7 +1096,7 @@ fn main() -> Result<()> {
     ];
 
     for text in cyrillic_tests {
-        println!("\nRussian: '{}'", text);
+        println!("\nRussian: '{text}'");
 
         // BGN/PCGN transliteration
         let bgn_result = transliteration_system.transliterate_simple(
@@ -1110,7 +1104,7 @@ fn main() -> Result<()> {
             Script::Cyrillic,
             TransliterationScheme::BgnPcgn,
         );
-        println!("  BGN/PCGN: '{}'", bgn_result);
+        println!("  BGN/PCGN: '{bgn_result}'");
 
         // Popular transliteration
         let popular_result = transliteration_system.transliterate_simple(
@@ -1118,7 +1112,7 @@ fn main() -> Result<()> {
             Script::Cyrillic,
             TransliterationScheme::Popular,
         );
-        println!("  Popular:  '{}'", popular_result);
+        println!("  Popular:  '{popular_result}'");
     }
 
     // Test Arabic transliteration
@@ -1137,13 +1131,13 @@ fn main() -> Result<()> {
     ];
 
     for text in arabic_tests {
-        println!("\nArabic: '{}'", text);
+        println!("\nArabic: '{text}'");
         let result = transliteration_system.transliterate_simple(
             text,
             Script::Arabic,
             TransliterationScheme::BgnPcgn,
         );
-        println!("  Latin: '{}'", result);
+        println!("  Latin: '{result}'");
     }
 
     // Test Greek transliteration
@@ -1162,13 +1156,13 @@ fn main() -> Result<()> {
     ];
 
     for text in greek_tests {
-        println!("\nGreek: '{}'", text);
+        println!("\nGreek: '{text}'");
         let result = transliteration_system.transliterate_simple(
             text,
             Script::Greek,
             TransliterationScheme::BgnPcgn,
         );
-        println!("  Latin: '{}'", result);
+        println!("  Latin: '{result}'");
     }
 
     // Demonstrate FST-based transliteration
@@ -1180,18 +1174,14 @@ fn main() -> Result<()> {
         .get(&TransliterationScheme::Popular)
     {
         let _transliteration_fst = build_transliteration_fst(cyrillic_rules);
-        println!(
-            "Built transliteration FST with {} states",
-            _transliteration_fst.num_states()
-        );
+        let state_count = _transliteration_fst.num_states();
+        println!("Built transliteration FST with {state_count} states");
 
         // Create reverse mappings for bidirectional transliteration
         let reverse_rules = create_reverse_mappings(cyrillic_rules);
         let _reverse_fst = build_transliteration_fst(&reverse_rules);
-        println!(
-            "Built reverse transliteration FST with {} states",
-            _reverse_fst.num_states()
-        );
+        let reverse_state_count = _reverse_fst.num_states();
+        println!("Built reverse transliteration FST with {reverse_state_count} states");
     }
 
     // Show transliteration scheme differences
@@ -1208,7 +1198,7 @@ fn main() -> Result<()> {
     ];
 
     for (char, description) in comparison_tests {
-        println!("{} ({}):", char, description);
+        println!("{char} ({description}):");
         let bgn = transliteration_system.transliterate_simple(
             char,
             Script::Cyrillic,
@@ -1219,7 +1209,7 @@ fn main() -> Result<()> {
             Script::Cyrillic,
             TransliterationScheme::Popular,
         );
-        println!("  BGN/PCGN: '{}' | Popular: '{}'", bgn, popular);
+        println!("  BGN/PCGN: '{bgn}' | Popular: '{popular}'");
     }
 
     // Applications and use cases

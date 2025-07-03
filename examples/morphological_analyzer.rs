@@ -470,7 +470,7 @@ impl FiniteStateLexicon {
 
         for (stem, stem_cats) in &self.noun_stems {
             for (suffix, suffix_cats) in &self.noun_suffixes {
-                let expected_form = format!("{}{}", stem, suffix);
+                let expected_form = format!("{stem}{suffix}");
                 if expected_form == surface_form {
                     let mut categories = stem_cats.clone();
                     categories.extend(suffix_cats.clone());
@@ -483,7 +483,7 @@ impl FiniteStateLexicon {
 
                     analyses.push(MorphAnalysis {
                         _surface_form: surface_form.to_string(),
-                        lexical_form: format!("{}+{}", stem, suffix),
+                        lexical_form: format!("{stem}+{suffix}"),
                         morphemes,
                         categories,
                         gloss: self.generate_gloss(stem, suffix_cats),
@@ -500,7 +500,7 @@ impl FiniteStateLexicon {
 
         for (stem, stem_cats) in &self.verb_stems {
             for (suffix, suffix_cats) in &self.verb_suffixes {
-                let expected_form = format!("{}{}", stem, suffix);
+                let expected_form = format!("{stem}{suffix}");
                 if expected_form == surface_form
                     || self.check_with_phonology(stem, suffix, surface_form)
                 {
@@ -515,7 +515,7 @@ impl FiniteStateLexicon {
 
                     analyses.push(MorphAnalysis {
                         _surface_form: surface_form.to_string(),
-                        lexical_form: format!("{}+{}", stem, suffix),
+                        lexical_form: format!("{stem}+{suffix}"),
                         morphemes,
                         categories,
                         gloss: self.generate_gloss(stem, suffix_cats),
@@ -540,7 +540,7 @@ impl FiniteStateLexicon {
 
         for (stem, stem_cats) in all_stems {
             for (suffix, suffix_cats) in &self.derivational_suffixes {
-                let expected_form = format!("{}{}", stem, suffix);
+                let expected_form = format!("{stem}{suffix}");
                 if expected_form == surface_form
                     || self.check_with_phonology(stem, suffix, surface_form)
                 {
@@ -549,7 +549,7 @@ impl FiniteStateLexicon {
 
                     analyses.push(MorphAnalysis {
                         _surface_form: surface_form.to_string(),
-                        lexical_form: format!("{}+{}", stem, suffix),
+                        lexical_form: format!("{stem}+{suffix}"),
                         morphemes: vec![stem.clone(), suffix.clone()],
                         categories,
                         gloss: self.generate_gloss(stem, suffix_cats),
@@ -567,8 +567,8 @@ impl FiniteStateLexicon {
 
         // Check for y → i rule (happy + ness → happiness)
         if stem.ends_with('y') && !suffix.is_empty() {
-            let modified_stem = format!("{}{}", &stem[..stem.len() - 1], "i");
-            let expected = format!("{}{}", modified_stem, suffix);
+            let modified_stem = format!("{}i", &stem[..stem.len() - 1]);
+            let expected = format!("{modified_stem}{suffix}");
             if expected == surface_form {
                 return true;
             }
@@ -577,7 +577,7 @@ impl FiniteStateLexicon {
         // Check for e-deletion (write + er → writer)
         if stem.ends_with('e') && !suffix.is_empty() {
             let modified_stem = &stem[..stem.len() - 1];
-            let expected = format!("{}{}", modified_stem, suffix);
+            let expected = format!("{modified_stem}{suffix}");
             if expected == surface_form {
                 return true;
             }
@@ -615,7 +615,7 @@ impl FiniteStateLexicon {
             let suffix = &lexical_form[plus_pos + 1..];
 
             // Direct concatenation
-            results.push(format!("{}{}", stem, suffix));
+            results.push(format!("{stem}{suffix}"));
 
             // Apply phonological rules
             results.extend(self.apply_phonological_rules(stem, suffix));
@@ -629,14 +629,14 @@ impl FiniteStateLexicon {
 
         // Apply y → i rule
         if stem.ends_with('y') && !suffix.is_empty() {
-            let modified_stem = format!("{}{}", &stem[..stem.len() - 1], "i");
-            results.push(format!("{}{}", modified_stem, suffix));
+            let modified_stem = format!("{}i", &stem[..stem.len() - 1]);
+            results.push(format!("{modified_stem}{suffix}"));
         }
 
         // Apply e-deletion
         if stem.ends_with('e') && !suffix.is_empty() {
             let modified_stem = &stem[..stem.len() - 1];
-            results.push(format!("{}{}", modified_stem, suffix));
+            results.push(format!("{modified_stem}{suffix}"));
         }
 
         results
@@ -728,7 +728,7 @@ fn main() -> Result<()> {
     ];
 
     for word in finnish_examples {
-        println!("\nAnalyzing '{}':", word);
+        println!("\nAnalyzing '{word}':");
         let analyses = lexicon.analyze(word);
         if analyses.is_empty() {
             println!("  No analysis found (not in simplified lexicon)");
@@ -766,7 +766,7 @@ fn main() -> Result<()> {
     ];
 
     for word in english_examples {
-        println!("\nAnalyzing '{}':", word);
+        println!("\nAnalyzing '{word}':");
         let analyses = lexicon.analyze(word);
         if analyses.is_empty() {
             println!("  No analysis found");
@@ -800,10 +800,10 @@ fn main() -> Result<()> {
     ];
 
     for lexical_form in lexical_forms {
-        println!("\nGenerating '{}':", lexical_form);
+        println!("\nGenerating '{lexical_form}':");
         let surface_forms = lexicon.generate(lexical_form);
         for (i, surface) in surface_forms.iter().enumerate() {
-            println!("  Form {}: {}", i + 1, surface);
+            println!("  Form {}: {surface}", i + 1);
         }
     }
 
@@ -820,7 +820,7 @@ fn main() -> Result<()> {
     ];
 
     for (input, output, rule) in alternation_examples {
-        println!("  {} → {} ({})", input, output, rule);
+        println!("  {input} → {output} ({rule})");
     }
 
     // Example 5: Theoretical framework

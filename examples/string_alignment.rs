@@ -72,7 +72,7 @@ impl Alignment {
             }
         }
 
-        format!("{}\n{}\n{}", source_line, alignment_line, target_line)
+        format!("{source_line}\n{alignment_line}\n{target_line}")
     }
 
     /// Create a detailed description of the alignment
@@ -85,26 +85,24 @@ impl Alignment {
             match op {
                 AlignmentOp::Match(s, _) => {
                     description.push(format!(
-                        "Match '{}' at positions {}/{}",
-                        s, source_pos, target_pos
+                        "Match '{s}' at positions {source_pos}/{target_pos}"
                     ));
                     source_pos += 1;
                     target_pos += 1;
                 }
                 AlignmentOp::Substitute(s, t) => {
                     description.push(format!(
-                        "Substitute '{}' -> '{}' at positions {}/{}",
-                        s, t, source_pos, target_pos
+                        "Substitute '{s}' -> '{t}' at positions {source_pos}/{target_pos}"
                     ));
                     source_pos += 1;
                     target_pos += 1;
                 }
                 AlignmentOp::Insert(c) => {
-                    description.push(format!("Insert '{}' at target position {}", c, target_pos));
+                    description.push(format!("Insert '{c}' at target position {target_pos}"));
                     target_pos += 1;
                 }
                 AlignmentOp::Delete(c) => {
-                    description.push(format!("Delete '{}' at source position {}", c, source_pos));
+                    description.push(format!("Delete '{c}' at source position {source_pos}"));
                     source_pos += 1;
                 }
             }
@@ -334,15 +332,17 @@ fn demonstrate_string_alignment() -> Result<()> {
     let test_pairs = vec![("kitten", "sitting"), ("hello", "hallo"), ("cat", "dog")];
 
     for (source, target) in &test_pairs {
-        println!("\nComputing alignment for '{}' -> '{}':", source, target);
+        println!("\nComputing alignment for '{source}' -> '{target}':");
         match compute_alignment_fst(source, target) {
             Ok(alignment) => {
-                println!("FST-computed cost: {}", alignment.cost);
+                let cost = alignment.cost;
+                println!("FST-computed cost: {cost}");
                 println!("Visualization:");
-                println!("{}", alignment.visualize());
+                let viz = alignment.visualize();
+                println!("{viz}");
             }
             Err(e) => {
-                println!("Error computing FST alignment: {}", e);
+                println!("Error computing FST alignment: {e}");
                 println!("Falling back to manual example...");
             }
         }
@@ -399,10 +399,12 @@ fn demonstrate_string_alignment() -> Result<()> {
             target: target.to_string(),
         };
 
-        println!("\nAligning '{}' -> '{}':", source, target);
-        println!("Cost: {}", alignment.cost);
+        println!("\nAligning '{source}' -> '{target}':");
+        let cost = alignment.cost;
+        println!("Cost: {cost}");
         println!("Visualization:");
-        println!("{}", alignment.visualize());
+        let viz = alignment.visualize();
+        println!("{viz}");
     }
 
     // Show how the same transformation can have multiple optimal paths
@@ -422,7 +424,8 @@ fn demonstrate_string_alignment() -> Result<()> {
     };
 
     println!("\nOption 1 - Direct substitution:");
-    println!("{}", alignment1.visualize());
+    let viz = alignment1.visualize();
+    println!("{viz}");
 
     // Alternative with deletion and insertion (if they had equal cost)
     println!("\nOption 2 - Delete and insert (if costs were equal):");
@@ -437,7 +440,8 @@ fn demonstrate_string_alignment() -> Result<()> {
         source: "abc".to_string(),
         target: "aec".to_string(),
     };
-    println!("{}", alignment2.visualize());
+    let viz = alignment2.visualize();
+    println!("{viz}");
 
     // Biological sequence example
     println!("\n4. Biological Sequence Alignment:");
@@ -462,8 +466,10 @@ fn demonstrate_string_alignment() -> Result<()> {
     println!("DNA sequence alignment:");
     println!("Sequence 1: acgtacgt");
     println!("Sequence 2: acttacgt");
-    println!("\nOptimal alignment (cost: {}):", dna_alignment.cost);
-    println!("{}", dna_alignment.visualize());
+    let cost = dna_alignment.cost;
+    println!("\nOptimal alignment (cost: {cost}):");
+    let viz = dna_alignment.visualize();
+    println!("{viz}");
 
     // Count operation types
     let mut matches = 0;
@@ -479,9 +485,9 @@ fn demonstrate_string_alignment() -> Result<()> {
     }
 
     println!("\nAlignment statistics:");
-    println!("  Matches: {}", matches);
-    println!("  Substitutions: {}", substitutions);
-    println!("  Insertions/Deletions: {}", indels);
+    println!("  Matches: {matches}");
+    println!("  Substitutions: {substitutions}");
+    println!("  Insertions/Deletions: {indels}");
     println!(
         "  Similarity: {:.1}%",
         (matches as f32 / dna_alignment.operations.len() as f32) * 100.0
@@ -505,7 +511,8 @@ fn demonstrate_string_alignment() -> Result<()> {
         target: "hallo".to_string(),
     };
 
-    println!("{}", hello_alignment.describe());
+    let desc = hello_alignment.describe();
+    println!("{desc}");
 
     Ok(())
 }

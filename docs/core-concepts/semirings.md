@@ -44,12 +44,12 @@ Many applications require additional structural properties that enable efficient
 Idempotency ensures that combining identical alternatives produces no change, which is crucial for optimization problems where we seek the best among alternatives rather than accumulating them.
 
 **Definition 2.3**: A semiring \\(\mathcal{K}\\) satisfies the **path property** (is **selective**) if:
-\\[\forall a, b \in S: a \oplus b \in \{a, b\}\\]
+$$\forall a, b \in S: a \oplus b \in \{a, b\}$$
 
 The path property ensures that the addition operation selects one of its operands rather than combining them, which is essential for shortest-path and optimization algorithms.
 
 **Definition 2.4**: A semiring \\(\mathcal{K}\\) is \\(k\\)**-closed** if for any element \\(a \in S\\), the infinite series:
-\\[a^* = \mathbf{1} \oplus a \oplus a^2 \oplus a^3 \oplus \cdots = \bigoplus_{i=0}^{\infty} a^i\\]
+$$a^* = \mathbf{1} \oplus a \oplus a^2 \oplus a^3 \oplus \cdots = \bigoplus_{i=0}^{\infty} a^i$$
 converges to a well-defined element in \\(S\\).
 
 The \\(k\\)-closed property ensures convergence of iterative algorithms and enables the computation of Kleene closure operations.
@@ -68,7 +68,7 @@ Natural ordering enables shortest-path algorithms and provides a framework for u
 The tropical semiring represents perhaps the most important semiring for practical applications, providing the mathematical foundation for shortest-path algorithms, edit distance computation, and optimization problems.
 
 **Definition 2.6**: The **tropical semiring** (also known as the min-plus semiring) is defined as:
-\\[\mathcal{T} = \langle \mathbb{R}_{+} \cup \{+\infty\}, \min, +, +\infty, 0 \rangle\\]
+$$\mathcal{T} = \langle \mathbb{R}_{+} \cup \{+\infty\}, \min, +, +\infty, 0 \rangle$$
 
 where:
 - **Set**: \\(S = \mathbb{R}_{+} \cup \{+\infty\}\\) (non-negative reals plus infinity)

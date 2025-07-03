@@ -472,9 +472,7 @@ fn main() -> Result<()> {
     let word_to_digit_len = normalizer.word_to_digit.len();
     println!("  {word_to_digit_len} number word mappings");
     let ordinal_to_number_len = normalizer.ordinal_to_number.len();
-    println!(
-        "  {ordinal_to_number_len} ordinal number mappings"
-    );
+    println!("  {ordinal_to_number_len} ordinal number mappings");
     let date_patterns_len = normalizer.date_patterns.len();
     println!("  {date_patterns_len} date format patterns");
     let time_patterns_len = normalizer.time_patterns.len();
@@ -482,9 +480,7 @@ fn main() -> Result<()> {
     let currency_patterns_len = normalizer.currency_patterns.len();
     println!("  {currency_patterns_len} currency patterns");
     let measurement_patterns_len = normalizer.measurement_patterns.len();
-    println!(
-        "  {measurement_patterns_len} measurement patterns"
-    );
+    println!("  {measurement_patterns_len} measurement patterns");
 
     // Test number normalization
     println!("\n1. Number Normalization:");

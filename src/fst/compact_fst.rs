@@ -927,7 +927,7 @@ impl<W: Semiring> QuantizedCompactor<W> {
     /// - `levels`: Number of quantization levels (e.g., 256 for 8-bit)
     pub fn new(mode: QuantizationMode, levels: u32) -> Self {
         assert!(
-            levels > 1 && levels <= 65536,
+            levels > 1 && levels <= 65_536,
             "Levels must be between 2 and 65536"
         );
         Self {
@@ -1219,11 +1219,11 @@ impl<W: Semiring> DeltaCompactor<W> {
                 nextstate_delta,
             } => {
                 let new_ilabel = (base_arc.ilabel as i64 + *ilabel_delta as i64).max(0) as u32;
-                let new_olabel = (base_arc.olabel as i64 + *olabel_delta as i64).max(0) as u32;
+                let output_label = (base_arc.olabel as i64 + *olabel_delta as i64).max(0) as u32;
                 let new_nextstate =
                     (base_arc.nextstate as i64 + *nextstate_delta as i64).max(0) as u32;
 
-                Arc::new(new_ilabel, new_olabel, weight.clone(), new_nextstate)
+                Arc::new(new_ilabel, output_label, weight.clone(), new_nextstate)
             }
         }
     }
@@ -2235,9 +2235,9 @@ mod tests {
                 min: -1.0,
                 max: 1.0,
             },
-            65536,
+            65_536,
         );
-        assert_eq!(max_compactor.levels, 65536);
+        assert_eq!(max_compactor.levels, 65_536);
     }
 
     #[test]
@@ -2305,10 +2305,10 @@ mod tests {
         assert_eq!(encode_varint(300), vec![0xAC, 0x02]);
 
         // Test larger values
-        assert_eq!(encode_varint(16384), vec![0x80, 0x80, 0x01]);
+        assert_eq!(encode_varint(16_384), vec![0x80, 0x80, 0x01]);
 
         // Test round-trip encoding/decoding
-        for value in [0, 1, 127, 128, 255, 256, 1000, 10000, 100000, 1000000] {
+        for value in [0, 1, 127, 128, 255, 256, 1000, 10_000, 100_000, 1_000_000] {
             let encoded = encode_varint(value);
             let decoded = decode_varint(&encoded);
             assert_eq!(decoded, value, "Round-trip failed for {}", value);
@@ -2425,7 +2425,7 @@ mod tests {
     #[test]
     fn test_bitpack_compactor_large_values() {
         // Test with values that exceed 16-bit limits
-        let large_arc = Arc::new(0x1FFFF, 0x2FFFF, TropicalWeight::new(99999.0), 0x3FFFF);
+        let large_arc = Arc::new(0x1_FFFF, 0x2_FFFF, TropicalWeight::new(99_999.0), 0x3_FFFF);
         let compactor = BitPackCompactor::<TropicalWeight>::default();
 
         let compressed = compactor.compact(&large_arc);
@@ -2565,7 +2565,7 @@ mod tests {
     #[test]
     fn test_delta_compactor_large_deltas() {
         let base_arc = Arc::new(100, 200, TropicalWeight::new(1.0), 300);
-        let far_arc = Arc::new(70000, 80000, TropicalWeight::new(2.0), 90000);
+        let far_arc = Arc::new(70_000, 80_000, TropicalWeight::new(2.0), 90_000);
 
         let delta = DeltaCompactor::<TropicalWeight>::compute_delta(&far_arc, &base_arc);
 
@@ -2577,9 +2577,9 @@ mod tests {
                 nextstate,
                 ..
             } => {
-                assert_eq!(ilabel, 70000);
-                assert_eq!(olabel, 80000);
-                assert_eq!(nextstate, 90000);
+                assert_eq!(ilabel, 70_000);
+                assert_eq!(olabel, 80_000);
+                assert_eq!(nextstate, 90_000);
             }
             _ => panic!("Expected Absolute variant for large differences"),
         }
@@ -2680,7 +2680,7 @@ mod tests {
     #[test]
     fn test_varint_encoding_edge_cases() {
         // Test edge cases for varint encoding
-        let edge_cases = [0, 1, 127, 128, 255, 256, 16383, 16384, u32::MAX];
+        let edge_cases = [0, 1, 127, 128, 255, 256, 16_383, 16_384, u32::MAX];
 
         for &value in &edge_cases {
             let encoded = encode_varint(value);
@@ -2690,8 +2690,8 @@ mod tests {
             // Check expected encoding lengths
             match value {
                 0..=127 => assert_eq!(encoded.len(), 1, "Single byte expected for {}", value),
-                128..=16383 => assert_eq!(encoded.len(), 2, "Two bytes expected for {}", value),
-                16384..=2097151 => {
+                128..=16_383 => assert_eq!(encoded.len(), 2, "Two bytes expected for {}", value),
+                16_384..=2_097_151 => {
                     assert_eq!(encoded.len(), 3, "Three bytes expected for {}", value)
                 }
                 _ => assert!(encoded.len() <= 5, "Max 5 bytes for any u32"),

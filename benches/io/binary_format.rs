@@ -3,11 +3,14 @@
 //! These benchmarks measure the performance of binary serialization and deserialization
 //! operations to complement existing text format benchmarks.
 
+#[cfg(feature = "serde")]
 use arcweight::prelude::*;
 use criterion::{criterion_group, criterion_main, Criterion};
+#[cfg(feature = "serde")]
 use std::hint::black_box;
 
 /// Create a linear FST with the specified number of states
+#[cfg(feature = "serde")]
 fn create_linear_fst(size: usize) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
 
@@ -39,6 +42,7 @@ fn create_linear_fst(size: usize) -> VectorFst<TropicalWeight> {
 }
 
 /// Create a branching FST where each state has multiple outgoing arcs
+#[cfg(feature = "serde")]
 fn create_branching_fst(states: usize, branches: usize) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
 
@@ -72,6 +76,7 @@ fn create_branching_fst(states: usize, branches: usize) -> VectorFst<TropicalWei
     fst
 }
 
+#[cfg(feature = "serde")]
 fn bench_binary_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("binary_serialization");
 
@@ -100,6 +105,7 @@ fn bench_binary_serialization(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "serde")]
 fn bench_binary_deserialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("binary_deserialization");
 
@@ -128,6 +134,7 @@ fn bench_binary_deserialization(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "serde")]
 fn bench_binary_roundtrip(c: &mut Criterion) {
     let mut group = c.benchmark_group("binary_roundtrip");
 
@@ -146,6 +153,7 @@ fn bench_binary_roundtrip(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "serde")]
 fn bench_format_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("format_comparison");
 
@@ -163,6 +171,7 @@ fn bench_format_comparison(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "serde")]
 fn bench_memory_efficiency(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_efficiency");
 
@@ -187,6 +196,7 @@ fn bench_memory_efficiency(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "serde")]
 criterion_group!(
     benches,
     bench_binary_serialization,
@@ -195,4 +205,11 @@ criterion_group!(
     bench_format_comparison,
     bench_memory_efficiency
 );
+
+#[cfg(not(feature = "serde"))]
+fn bench_dummy(_c: &mut Criterion) {}
+
+#[cfg(not(feature = "serde"))]
+criterion_group!(benches, bench_dummy);
+
 criterion_main!(benches);

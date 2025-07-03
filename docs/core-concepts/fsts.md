@@ -110,10 +110,10 @@ fn build_us_to_uk_fst() -> Result<VectorFst<TropicalWeight>, Box<dyn std::error:
 - \\(\mathcal{K}\\) is a semiring providing the weight algebra
 
 The weight of a path \\(\pi = t_1 t_2 \ldots t_n\\) through the transducer is computed as:
-\\[w\[\\pi\] = \rho(q_0) \otimes w\[t_1\] \otimes w\[t_2\] \otimes \cdots \otimes w\[t_n\] \otimes \lambda(q_f)\\]
+$$w[\pi] = \rho(q_0) \otimes w[t_1] \otimes w[t_2] \otimes \cdots \otimes w[t_n] \otimes \lambda(q_f)$$
 
 The weight of a string pair \\((u, v)\\) is the semiring sum over all accepting paths that transduce \\(u\\) to \\(v\\):
-\\[T(u, v) = \bigoplus_{\pi \in \Pi(u,v)} w\[\\pi\]\\]
+$$T(u, v) = \bigoplus_{\pi \in \Pi(u,v)} w[\pi]$$
 
 This mathematical framework enables WFSTs to model different computational problems through semiring choice:
 - **Tropical semiring**: Optimization problems (shortest path, minimum edit distance)
@@ -163,7 +163,7 @@ fn epsilon_demonstration() -> Result<(), Box<dyn std::error::Error>> {
 ### Determinism and Functionality
 
 **Determinism**: An FST is **deterministic** if for every state \\(q\\) and input symbol \\(a\\), there exists at most one outgoing transition labeled with \\(a\\):
-\\[\forall q \in Q, \forall a \in \Sigma: |\{\langle q, a, b, w, q' \rangle \in \delta\}| \leq 1\\]
+$$\forall q \in Q, \forall a \in \Sigma: |\{\langle q, a, b, w, q' \rangle \in \delta\}| \leq 1$$
 
 **Functionality**: An FST is **functional** if it defines a partial function rather than a general relation. For every input string \\(u\\), there exists at most one output string \\(v\\) such that \\((u, v) \in R_T\\).
 

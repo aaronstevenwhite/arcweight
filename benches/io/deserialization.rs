@@ -1,8 +1,12 @@
+#[cfg(feature = "serde")]
 use arcweight::prelude::*;
 use criterion::{criterion_group, criterion_main, Criterion};
+#[cfg(feature = "serde")]
 use std::hint::black_box;
+#[cfg(feature = "serde")]
 use std::io::Cursor;
 
+#[cfg(feature = "serde")]
 fn create_test_fst(n: usize) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let mut states = Vec::new();
@@ -29,6 +33,7 @@ fn create_test_fst(n: usize) -> VectorFst<TropicalWeight> {
     fst
 }
 
+#[cfg(feature = "serde")]
 pub fn bench_deserialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("deserialization");
 
@@ -75,5 +80,13 @@ pub fn bench_deserialization(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "serde")]
 criterion_group!(benches, bench_deserialization);
+
+#[cfg(not(feature = "serde"))]
+fn bench_dummy(_c: &mut Criterion) {}
+
+#[cfg(not(feature = "serde"))]
+criterion_group!(benches, bench_dummy);
+
 criterion_main!(benches);

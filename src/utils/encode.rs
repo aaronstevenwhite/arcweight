@@ -333,19 +333,19 @@ impl<W: Semiring + Eq + std::hash::Hash> EncodeMapper<W> {
 
     fn encode_labels(&mut self, ilabel: Label, olabel: Label) -> Label {
         let key = (ilabel, olabel);
-        if let Some(&label) = self.label_map.get(&key) {
-            label
+        if let Some(&encoded_label) = self.label_map.get(&key) {
+            encoded_label
         } else {
-            let label = self.next_label;
-            self.label_map.insert(key, label);
-            self.reverse_label_map.insert(label, key);
+            let encoded_label = self.next_label;
+            self.label_map.insert(key, encoded_label);
+            self.reverse_label_map.insert(encoded_label, key);
 
             // Track labels in symbol tables
             self.input_symbols.add_symbol(&format!("i{ilabel}"));
             self.output_symbols.add_symbol(&format!("o{olabel}"));
 
             self.next_label += 1;
-            label
+            encoded_label
         }
     }
 

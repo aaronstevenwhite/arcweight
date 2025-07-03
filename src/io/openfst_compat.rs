@@ -122,7 +122,7 @@ use crate::{Error, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Seek, Write};
 
-const OPENFST_MAGIC: i32 = 2125659606;
+const OPENFST_MAGIC: i32 = 2_125_659_606;
 
 /// FST type in OpenFST format
 #[derive(Debug, Clone, Copy)]

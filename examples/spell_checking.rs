@@ -332,9 +332,7 @@ fn main() -> Result<()> {
         let corrections = find_spelling_corrections(&dict_fst, misspelled, max_distance)?;
 
         if corrections.is_empty() {
-            println!(
-                "  No spelling corrections found within edit distance {max_distance}"
-            );
+            println!("  No spelling corrections found within edit distance {max_distance}");
         } else {
             for (word, distance) in corrections.iter().take(5) {
                 println!("  {word} (distance: {distance})");

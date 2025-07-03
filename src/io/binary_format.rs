@@ -106,7 +106,7 @@ mod inner {
     use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
     use std::io::{Read, Write};
 
-    const MAGIC: u32 = 0x46535442; // "FSTB"
+    const MAGIC: u32 = 0x4653_5442; // "FSTB"
     const VERSION: u32 = 1;
 
     /// Write FST in binary format

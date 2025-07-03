@@ -230,13 +230,9 @@ fn main() -> Result<()> {
     for (name, ins, del, sub) in configs {
         let distance = compute_edit_distance("kitten", "sitting", ins, del, sub)?;
         if distance.is_finite() {
-            println!(
-                "  {name}: {distance} (ins={ins}, del={del}, sub={sub})"
-            );
+            println!("  {name}: {distance} (ins={ins}, del={del}, sub={sub})");
         } else {
-            println!(
-                "  {name}: No transformation found (ins={ins}, del={del}, sub={sub})"
-            );
+            println!("  {name}: No transformation found (ins={ins}, del={del}, sub={sub})");
         }
     }
 
@@ -252,9 +248,7 @@ fn main() -> Result<()> {
 
     for (source, target, description) in examples {
         let distance = compute_edit_distance(source, target, 1.0, 1.0, 1.0)?;
-        println!(
-            "  '{source}' -> '{target}': {description} (distance: {distance})"
-        );
+        println!("  '{source}' -> '{target}': {description} (distance: {distance})");
     }
 
     Ok(())

@@ -20,7 +20,9 @@ mod memory {
 }
 
 mod io {
+    #[cfg(feature = "serde")]
     pub mod deserialization;
+    #[cfg(feature = "serde")]
     pub mod serialization;
 }
 
@@ -65,8 +67,11 @@ fn run_all_benchmarks(c: &mut Criterion) {
     memory::memory_usage::bench_fst_clear(c);
 
     // I/O operations
-    io::serialization::bench_serialization(c);
-    io::deserialization::bench_deserialization(c);
+    #[cfg(feature = "serde")]
+    {
+        io::serialization::bench_serialization(c);
+        io::deserialization::bench_deserialization(c);
+    }
 
     // Optimization operations
     optimization::weight_pushing::bench_weight_pushing(c);

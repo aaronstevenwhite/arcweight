@@ -425,9 +425,7 @@ fn main() -> Result<()> {
     for entry in &lexicon_entries {
         let word = &entry.word;
         let len = entry.pronunciations.len();
-        println!(
-            "  {word} -> {len} pronunciation(s)"
-        );
+        println!("  {word} -> {len} pronunciation(s)");
     }
 
     // Build the lexicon FST (for demonstration, though we'll use direct lookup)
@@ -517,43 +515,43 @@ fn main() -> Result<()> {
         if entry.pronunciations.len() > 1 {
             let word = &entry.word;
             let len = entry.pronunciations.len();
-            println!(
-                "  '{word}' has {len} pronunciations:"
-            );
+            println!("  '{word}' has {len} pronunciations:");
             for (i, pron) in entry.pronunciations.iter().enumerate() {
                 let phoneme_str: Vec<&str> = pron.iter().map(|p| p.to_string()).collect();
                 let num = i + 1;
                 let phonemes = phoneme_str.join(" ");
                 let desc = match entry.word.as_str() {
-                        "hello" =>
-                            if i == 0 {
-                                "standard"
-                            } else {
-                                "variant"
-                            },
-                        "read" =>
-                            if i == 0 {
-                                "present tense"
-                            } else {
-                                "past tense"
-                            },
-                        "live" =>
-                            if i == 0 {
-                                "verb /lɪv/"
-                            } else {
-                                "adjective /laɪv/"
-                            },
-                        "the" =>
-                            if i == 0 {
-                                "unstressed /ðə/"
-                            } else {
-                                "stressed /ðiː/"
-                            },
-                        _ => "variant",
-                    };
-                println!(
-                    "    {num}: {phonemes} ({desc})"
-                );
+                    "hello" => {
+                        if i == 0 {
+                            "standard"
+                        } else {
+                            "variant"
+                        }
+                    }
+                    "read" => {
+                        if i == 0 {
+                            "present tense"
+                        } else {
+                            "past tense"
+                        }
+                    }
+                    "live" => {
+                        if i == 0 {
+                            "verb /lɪv/"
+                        } else {
+                            "adjective /laɪv/"
+                        }
+                    }
+                    "the" => {
+                        if i == 0 {
+                            "unstressed /ðə/"
+                        } else {
+                            "stressed /ðiː/"
+                        }
+                    }
+                    _ => "variant",
+                };
+                println!("    {num}: {phonemes} ({desc})");
             }
             println!();
         }

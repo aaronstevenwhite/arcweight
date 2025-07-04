@@ -110,10 +110,10 @@ fn build_us_to_uk_fst() -> Result<VectorFst<TropicalWeight>, Box<dyn std::error:
 - \\(\mathcal{K}\\) is a semiring providing the weight algebra
 
 The weight of a path \\(\pi = t_1 t_2 \ldots t_n\\) through the transducer is computed as:
-$$w[\pi] = \rho(q_0) \otimes w[t_1] \otimes w[t_2] \otimes \cdots \otimes w[t_n] \otimes \lambda(q_f)$$
+$$w\lbrack\pi\rbrack = \rho(q_0) \otimes w\lbrack t_1\rbrack \otimes w\lbrack t_2\rbrack \otimes \cdots \otimes w\lbrack t_n\rbrack \otimes \lambda(q_f)$$
 
 The weight of a string pair \\((u, v)\\) is the semiring sum over all accepting paths that transduce \\(u\\) to \\(v\\):
-$$T(u, v) = \bigoplus_{\pi \in \Pi(u,v)} w[\pi]$$
+$$T(u, v) = \bigoplus_{\pi \in \Pi(u,v)} w\lbrack\pi\rbrack$$
 
 This mathematical framework enables WFSTs to model different computational problems through semiring choice:
 - **Tropical semiring**: Optimization problems (shortest path, minimum edit distance)

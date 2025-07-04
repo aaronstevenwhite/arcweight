@@ -120,10 +120,10 @@ fn tropical_semiring_example() {
 The probability semiring provides the mathematical foundation for probabilistic modeling in applications where events are independent and path probabilities should be combined through standard probability theory.
 
 **Definition 2.7**: The **probability semiring** is defined as:
-\\[\mathcal{P} = \langle [0, 1], +, \times, 0, 1 \rangle\\]
+$$\mathcal{P} = \langle \lbrack 0, 1\rbrack, +, \times, 0, 1 \rangle$$
 
 where:
-- **Set**: \\(S = [0, 1] \subset \mathbb{R}\\) (probabilities between 0 and 1)
+- **Set**: \\(S = \lbrack 0, 1\rbrack \subset \mathbb{R}\\) (probabilities between 0 and 1)
 - **Addition**: \\(a \oplus b = a + b\\) (mutually exclusive events)
 - **Multiplication**: \\(a \otimes b = a \times b\\) (independent events)
 - **Additive identity**: \\(\mathbf{0} = 0\\) (impossible event)
@@ -158,7 +158,7 @@ fn probability_semiring_example() {
 The log semiring addresses the numerical stability issues inherent in the probability semiring by working in the logarithmic domain, avoiding underflow while maintaining equivalent probabilistic semantics.
 
 **Definition 2.8**: The **log semiring** is defined as:
-\\[\mathcal{L} = \langle \mathbb{R}_{+} \cup \{+\infty\}, \ominus_{\log}, +, +\infty, 0 \rangle\\]
+$$\mathcal{L} = \langle \mathbb{R}_{+} \cup \{+\infty\}, \ominus_{\log}, +, +\infty, 0 \rangle$$
 
 where:
 - **Set**: \\(S = \mathbb{R}_{+} \cup \{+\infty\}\\) (non-negative reals plus infinity)

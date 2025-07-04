@@ -344,11 +344,11 @@ mod tests {
 
     #[test]
     fn test_tropical_approx_eq() {
-        let w1 = TropicalWeight::new(5.000001);
+        let w1 = TropicalWeight::new(5.000_001);
         let w2 = TropicalWeight::new(5.0);
 
         assert!(w1.approx_eq(&w2, 0.001));
-        assert!(!w1.approx_eq(&w2, 0.0000001));
+        assert!(!w1.approx_eq(&w2, 0.000_000_1));
     }
 
     #[test]

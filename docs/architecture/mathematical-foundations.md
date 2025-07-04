@@ -7,7 +7,7 @@ ArcWeight's architecture directly reflects mathematical concepts from formal lan
 ## Finite State Transducers
 
 **Finite State Transducers** are mathematically defined as 6-tuples:
-\\[T = \langle Q, \Sigma, \Delta, \delta, q_0, F \rangle\\]
+$$T = \langle Q, \Sigma, \Delta, \delta, q_0, F \rangle$$
 
 This maps directly to ArcWeight's implementation:
 
@@ -24,7 +24,7 @@ This maps directly to ArcWeight's implementation:
 
 **Semiring Theory** provides the algebraic foundation for weights:
 
-\\[ \mathcal{K} = \langle K, \oplus, \otimes, \bar{0}, \bar{1} \rangle \\]
+$$\mathcal{K} = \langle K, \oplus, \otimes, \bar{0}, \bar{1} \rangle$$
 
 **API Reference**: [`semiring`](https://docs.rs/arcweight/latest/arcweight/semiring/)
 

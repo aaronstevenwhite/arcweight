@@ -452,11 +452,11 @@ mod tests {
 
     #[test]
     fn test_log_approx_eq() {
-        let w1 = LogWeight::new(2.000001);
+        let w1 = LogWeight::new(2.000_001);
         let w2 = LogWeight::new(2.0);
 
         assert!(w1.approx_eq(&w2, 0.001));
-        assert!(!w1.approx_eq(&w2, 0.0000001));
+        assert!(!w1.approx_eq(&w2, 0.000_000_1));
     }
 
     #[test]

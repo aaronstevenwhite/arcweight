@@ -4,7 +4,7 @@ This example demonstrates modeling phonological rule systems using FSTs to captu
 
 ## Overview
 
-Every language has unconsciously applied sound rules. When English speakers say "cats" [kæts] but "dogs" [dɔgz], they're following phonological rules determining when plural -s is voiced. FSTs provide a mathematically precise yet linguistically intuitive way to model these patterns.
+Every language has unconsciously applied sound rules. When English speakers say "cats" \\[kæts\\] but "dogs" \\[dɔgz\\], they're following phonological rules determining when plural -s is voiced. FSTs provide a mathematically precise yet linguistically intuitive way to model these patterns.
 
 Phonological rules transform abstract mental representations ("underlying forms") into actual pronunciations ("surface forms"). The challenge lies in rule interactions: ordering affects outcomes, opacity hides intermediate steps, context sensitivity limits application environments, and variation differs across dialects.
 

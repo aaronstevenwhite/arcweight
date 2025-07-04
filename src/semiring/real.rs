@@ -794,7 +794,7 @@ mod tests {
     #[test]
     fn test_approximate_equality() {
         let a = RealWeight::new(1.0);
-        let b = RealWeight::new(1.0000001);
+        let b = RealWeight::new(1.000_000_1);
         let c = RealWeight::new(1.1);
 
         assert!(a.approx_eq(&b, 1e-6));

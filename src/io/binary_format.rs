@@ -574,7 +574,7 @@ mod tests {
         let s2 = fst.add_state();
 
         fst.set_start(s0);
-        fst.set_final(s1, TropicalWeight::new(1000000.0)); // Large but finite weight
+        fst.set_final(s1, TropicalWeight::new(1_000_000.0)); // Large but finite weight
         fst.set_final(s2, TropicalWeight::one()); // Zero
 
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(-1000.0), s1));
@@ -589,7 +589,7 @@ mod tests {
 
         assert_eq!(
             read_fst.final_weight(s1),
-            Some(&TropicalWeight::new(1000000.0))
+            Some(&TropicalWeight::new(1_000_000.0))
         );
         assert_eq!(read_fst.final_weight(s2), Some(&TropicalWeight::one()));
 

@@ -454,9 +454,9 @@ mod tests {
         let zero = StringWeight::zero();
         let one = StringWeight::one();
 
-        assert_eq!(format!("{}", w), "\"test\"");
-        assert_eq!(format!("{}", zero), "[255]");
-        assert_eq!(format!("{}", one), "\"\"");
+        assert_eq!(format!("{w}"), "\"test\"");
+        assert_eq!(format!("{zero}"), "[255]");
+        assert_eq!(format!("{one}"), "\"\"");
     }
 
     #[test]

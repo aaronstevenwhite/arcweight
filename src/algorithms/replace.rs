@@ -420,7 +420,7 @@ mod tests {
     #[test]
     fn test_replace_fst_debug() {
         let replace_fst = ReplaceFst::<TropicalWeight>::simple(123);
-        let debug_str = format!("{:?}", replace_fst);
+        let debug_str = format!("{replace_fst:?}");
 
         // Should contain the root label and type information
         assert!(debug_str.contains("ReplaceFst"));

@@ -289,7 +289,7 @@ mod tests {
             match (original_final, read_final) {
                 (Some(w1), Some(w2)) => assert_eq!(w1, w2),
                 (None, None) => {}
-                _ => panic!("Final weight mismatch for state {}", state),
+                _ => panic!("Final weight mismatch for state {state}"),
             }
         }
 

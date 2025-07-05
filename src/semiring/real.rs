@@ -737,9 +737,9 @@ mod tests {
         assert!(nan.is_nan());
 
         // Test display formatting
-        assert_eq!(format!("{}", inf), "∞");
-        assert_eq!(format!("{}", neg_inf), "-∞");
-        assert_eq!(format!("{}", nan), "NaN");
+        assert_eq!(format!("{inf}"), "∞");
+        assert_eq!(format!("{neg_inf}"), "-∞");
+        assert_eq!(format!("{nan}"), "NaN");
 
         // Infinity operations
         assert_eq!(inf.inverse(), Some(RealWeight::new(0.0)));

@@ -315,8 +315,8 @@ mod tests {
         let w = TropicalWeight::new(5.0);
         let zero = TropicalWeight::zero();
 
-        assert_eq!(format!("{}", w), "5");
-        assert_eq!(format!("{}", zero), "∞");
+        assert_eq!(format!("{w}"), "5");
+        assert_eq!(format!("{zero}"), "∞");
     }
 
     #[test]

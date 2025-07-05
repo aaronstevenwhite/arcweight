@@ -620,9 +620,9 @@ mod tests {
         let zero = MinWeight::zero();
         let one = MinWeight::one();
 
-        assert_eq!(format!("{}", w), "5");
-        assert_eq!(format!("{}", zero), "∞");
-        assert_eq!(format!("{}", one), "-∞");
+        assert_eq!(format!("{w}"), "5");
+        assert_eq!(format!("{zero}"), "∞");
+        assert_eq!(format!("{one}"), "-∞");
     }
 
     #[test]
@@ -689,9 +689,9 @@ mod tests {
         let zero = MaxWeight::zero();
         let one = MaxWeight::one();
 
-        assert_eq!(format!("{}", w), "5");
-        assert_eq!(format!("{}", zero), "-∞");
-        assert_eq!(format!("{}", one), "∞");
+        assert_eq!(format!("{w}"), "5");
+        assert_eq!(format!("{zero}"), "-∞");
+        assert_eq!(format!("{one}"), "∞");
     }
 
     #[test]

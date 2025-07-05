@@ -692,10 +692,10 @@ mod tests {
     #[test]
     fn test_product_display() {
         let w = ProductWeight::new(TropicalWeight::new(2.0), ProbabilityWeight::new(0.5));
-        assert_eq!(format!("{}", w), "(2, 0.5)");
+        assert_eq!(format!("{w}"), "(2, 0.5)");
 
         let zero = ProductWeight::<TropicalWeight, ProbabilityWeight>::zero();
-        assert_eq!(format!("{}", zero), "(∞, 0)");
+        assert_eq!(format!("{zero}"), "(∞, 0)");
     }
 
     #[test]

@@ -152,7 +152,8 @@ fn create_linear_fst_string(size: usize) -> VectorFst<StringWeight> {
     fst.set_final(states[size - 1], StringWeight::one());
 
     for i in 0..size - 1 {
-        let weight_str = format!("w{}", i % 10);
+        let index = i % 10;
+        let weight_str = format!("w{index}");
         fst.add_arc(
             states[i],
             Arc::new(

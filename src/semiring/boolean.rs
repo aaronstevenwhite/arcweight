@@ -332,8 +332,8 @@ mod tests {
         let w_true = BooleanWeight::new(true);
         let w_false = BooleanWeight::new(false);
 
-        assert_eq!(format!("{}", w_true), "true");
-        assert_eq!(format!("{}", w_false), "false");
+        assert_eq!(format!("{w_true}"), "true");
+        assert_eq!(format!("{w_false}"), "false");
     }
 
     #[test]

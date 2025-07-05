@@ -194,22 +194,28 @@ where
     // write arcs
     for state in fst.states() {
         for arc in fst.arcs(state) {
-            write!(writer, "{state}\t{}\t", arc.nextstate)?;
+            let nextstate = arc.nextstate;
+            write!(writer, "{state}\t{nextstate}\t")?;
 
             // write symbols or labels
             if let Some(syms) = isyms {
-                write!(writer, "{}\t", syms.find(arc.ilabel).unwrap_or("?"))?;
+                let symbol = syms.find(arc.ilabel).unwrap_or("?");
+                write!(writer, "{symbol}\t")?;
             } else {
-                write!(writer, "{}\t", arc.ilabel)?;
+                let ilabel = arc.ilabel;
+                write!(writer, "{ilabel}\t")?;
             }
 
             if let Some(syms) = osyms {
-                write!(writer, "{}\t", syms.find(arc.olabel).unwrap_or("?"))?;
+                let symbol = syms.find(arc.olabel).unwrap_or("?");
+                write!(writer, "{symbol}\t")?;
             } else {
-                write!(writer, "{}\t", arc.olabel)?;
+                let olabel = arc.olabel;
+                write!(writer, "{olabel}\t")?;
             }
 
-            writeln!(writer, "{}", arc.weight)?;
+            let weight = &arc.weight;
+            writeln!(writer, "{weight}")?;
         }
 
         // write final states
@@ -384,7 +390,7 @@ mod tests {
             match (original_final, read_final) {
                 (Some(w1), Some(w2)) => assert_eq!(w1, w2),
                 (None, None) => {}
-                _ => panic!("Final weight mismatch for state {}", state),
+                _ => panic!("Final weight mismatch for state {state}"),
             }
         }
 

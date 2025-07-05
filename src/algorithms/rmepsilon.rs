@@ -441,7 +441,7 @@ mod tests {
         // Check no epsilon transitions remain
         for state in no_eps.states() {
             for arc in no_eps.arcs(state) {
-                assert!(!arc.is_epsilon(), "Found epsilon arc: {:?}", arc);
+                assert!(!arc.is_epsilon(), "Found epsilon arc: {arc:?}");
             }
         }
 

@@ -404,8 +404,8 @@ mod tests {
         let w = LogWeight::new(2.5);
         let zero = LogWeight::zero();
 
-        assert_eq!(format!("{}", w), "2.5");
-        assert_eq!(format!("{}", zero), "∞");
+        assert_eq!(format!("{w}"), "2.5");
+        assert_eq!(format!("{zero}"), "∞");
     }
 
     #[test]

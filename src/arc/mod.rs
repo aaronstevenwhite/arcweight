@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn test_arc_display() {
         let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
-        let display_str = format!("{}", arc);
+        let display_str = format!("{arc}");
 
         assert!(display_str.contains("1"));
         assert!(display_str.contains("2"));
@@ -317,7 +317,7 @@ mod tests {
     #[test]
     fn test_arc_debug() {
         let arc = Arc::new(1, 2, TropicalWeight::new(3.0), 4);
-        let debug_str = format!("{:?}", arc);
+        let debug_str = format!("{arc:?}");
 
         assert!(debug_str.contains("Arc"));
         assert!(debug_str.contains("ilabel"));
@@ -338,7 +338,7 @@ mod tests {
     #[test]
     fn test_arc_display_format() {
         let arc = Arc::new(10, 20, TropicalWeight::new(0.5), 30);
-        let display = format!("{}", arc);
+        let display = format!("{arc}");
         assert_eq!(display, "10:20:0.5 -> 30");
     }
 

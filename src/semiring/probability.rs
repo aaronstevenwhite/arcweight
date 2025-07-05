@@ -424,7 +424,7 @@ mod tests {
     #[test]
     fn test_probability_display() {
         let w = ProbabilityWeight::new(0.5);
-        assert_eq!(format!("{}", w), "0.5");
+        assert_eq!(format!("{w}"), "0.5");
     }
 
     #[test]

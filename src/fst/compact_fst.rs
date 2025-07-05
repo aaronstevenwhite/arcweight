@@ -2311,7 +2311,7 @@ mod tests {
         for value in [0, 1, 127, 128, 255, 256, 1000, 10_000, 100_000, 1_000_000] {
             let encoded = encode_varint(value);
             let decoded = decode_varint(&encoded);
-            assert_eq!(decoded, value, "Round-trip failed for {}", value);
+            assert_eq!(decoded, value, "Round-trip failed for {value}");
         }
     }
 
@@ -2685,14 +2685,14 @@ mod tests {
         for &value in &edge_cases {
             let encoded = encode_varint(value);
             let decoded = decode_varint(&encoded);
-            assert_eq!(decoded, value, "Varint round-trip failed for {}", value);
+            assert_eq!(decoded, value, "Varint round-trip failed for {value}");
 
             // Check expected encoding lengths
             match value {
-                0..=127 => assert_eq!(encoded.len(), 1, "Single byte expected for {}", value),
-                128..=16_383 => assert_eq!(encoded.len(), 2, "Two bytes expected for {}", value),
+                0..=127 => assert_eq!(encoded.len(), 1, "Single byte expected for {value}"),
+                128..=16_383 => assert_eq!(encoded.len(), 2, "Two bytes expected for {value}"),
                 16_384..=2_097_151 => {
-                    assert_eq!(encoded.len(), 3, "Three bytes expected for {}", value)
+                    assert_eq!(encoded.len(), 3, "Three bytes expected for {value}")
                 }
                 _ => assert!(encoded.len() <= 5, "Max 5 bytes for any u32"),
             }

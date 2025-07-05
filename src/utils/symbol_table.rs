@@ -457,7 +457,7 @@ mod tests {
         table.add_symbol("hello");
         table.add_symbol("world");
 
-        let debug = format!("{:?}", table);
+        let debug = format!("{table:?}");
         assert!(debug.contains("hello"));
         assert!(debug.contains("world"));
     }

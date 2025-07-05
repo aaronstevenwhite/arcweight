@@ -567,7 +567,8 @@ impl FiniteStateLexicon {
 
         // Check for y → i rule (happy + ness → happiness)
         if stem.ends_with('y') && !suffix.is_empty() {
-            let modified_stem = format!("{}i", &stem[..stem.len() - 1]);
+            let stem_prefix = &stem[..stem.len() - 1];
+            let modified_stem = format!("{stem_prefix}i");
             let expected = format!("{modified_stem}{suffix}");
             if expected == surface_form {
                 return true;
@@ -629,7 +630,8 @@ impl FiniteStateLexicon {
 
         // Apply y → i rule
         if stem.ends_with('y') && !suffix.is_empty() {
-            let modified_stem = format!("{}i", &stem[..stem.len() - 1]);
+            let stem_prefix = &stem[..stem.len() - 1];
+            let modified_stem = format!("{stem_prefix}i");
             results.push(format!("{modified_stem}{suffix}"));
         }
 
@@ -699,16 +701,22 @@ fn main() -> Result<()> {
     let _morphotactic_fst = build_morphotactic_fst();
 
     println!("Lexicon initialized with:");
-    println!("  {} noun stems", lexicon.noun_stems.len());
-    println!("  {} verb stems", lexicon.verb_stems.len());
-    println!("  {} adjective stems", lexicon.adjective_stems.len());
-    println!("  {} noun suffixes", lexicon.noun_suffixes.len());
-    println!("  {} verb suffixes", lexicon.verb_suffixes.len());
+    let noun_count = lexicon.noun_stems.len();
+    println!("  {noun_count} noun stems");
+    let verb_count = lexicon.verb_stems.len();
+    println!("  {verb_count} verb stems");
+    let adj_count = lexicon.adjective_stems.len();
+    println!("  {adj_count} adjective stems");
+    let noun_suffix_count = lexicon.noun_suffixes.len();
+    println!("  {noun_suffix_count} noun suffixes");
+    let verb_suffix_count = lexicon.verb_suffixes.len();
+    println!("  {verb_suffix_count} verb suffixes");
     println!(
         "  {} derivational suffixes",
         lexicon.derivational_suffixes.len()
     );
-    println!("  {} phonological rules", lexicon.phonological_rules.len());
+    let phono_count = lexicon.phonological_rules.len();
+    println!("  {phono_count} phonological rules");
 
     // Example 1: Finnish morphological analysis (Karttunen's classic examples)
     println!("\n1. Finnish Morphological Analysis");
@@ -741,8 +749,10 @@ fn main() -> Result<()> {
                     analysis.lexical_form,
                     tags.join("+")
                 );
-                println!("    Gloss: {}", analysis.gloss);
-                println!("    Morphemes: {}", analysis.morphemes.join(" + "));
+                let gloss = &analysis.gloss;
+                println!("    Gloss: {gloss}");
+                let morphemes = analysis.morphemes.join(" + ");
+                println!("    Morphemes: {morphemes}");
             }
         }
     }
@@ -779,8 +789,10 @@ fn main() -> Result<()> {
                     analysis.lexical_form,
                     tags.join("+")
                 );
-                println!("    Gloss: {}", analysis.gloss);
-                println!("    Morphemes: {}", analysis.morphemes.join(" + "));
+                let gloss = &analysis.gloss;
+                println!("    Gloss: {gloss}");
+                let morphemes = analysis.morphemes.join(" + ");
+                println!("    Morphemes: {morphemes}");
             }
         }
     }
@@ -803,7 +815,8 @@ fn main() -> Result<()> {
         println!("\nGenerating '{lexical_form}':");
         let surface_forms = lexicon.generate(lexical_form);
         for (i, surface) in surface_forms.iter().enumerate() {
-            println!("  Form {}: {surface}", i + 1);
+            let idx = i + 1;
+            println!("  Form {idx}: {surface}");
         }
     }
 

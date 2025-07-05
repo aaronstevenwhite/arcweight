@@ -45,13 +45,13 @@ An optimal alignment minimizes the total cost of operations. The cost depends on
 
 ### Mathematical Formulation
 
-An alignment A between strings S[1..m] and T[1..n] can be represented as a sequence of edit operations:
+An alignment A between strings S(1..m) and T(1..n) can be represented as a sequence of edit operations:
 
 ```
 A = (op₁, op₂, ..., opₖ)
 ```
 
-Where each operation opᵢ is one of Match(i,j) where S[i] = T[j], Substitute(i,j) where S[i] → T[j], Insert(j) where ε → T[j], or Delete(i) where S[i] → ε.
+Where each operation opᵢ is one of Match(i,j) where S(i) = T(j), Substitute(i,j) where S(i) → T(j), Insert(j) where ε → T(j), or Delete(i) where S(i) → ε.
 
 The cost of an alignment is:
 ```

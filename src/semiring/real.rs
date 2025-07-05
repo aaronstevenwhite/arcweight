@@ -431,7 +431,8 @@ impl fmt::Display for RealWeight {
         } else if self.0.is_nan() {
             write!(f, "NaN")
         } else {
-            write!(f, "{}", self.0)
+            let value = self.0;
+            write!(f, "{value}")
         }
     }
 }

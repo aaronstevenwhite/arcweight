@@ -462,7 +462,9 @@ impl<W1: Semiring, W2: Semiring> ProductWeight<W1, W2> {
 
 impl<W1: Semiring, W2: Semiring> fmt::Display for ProductWeight<W1, W2> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.w1, self.w2)
+        let w1 = &self.w1;
+        let w2 = &self.w2;
+        write!(f, "({w1}, {w2})")
     }
 }
 

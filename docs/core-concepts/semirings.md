@@ -168,10 +168,10 @@ where:
 - **Multiplicative identity**: \\(\mathbf{1} = 0\\) (log of probability 1)
 
 **Mathematical Relationship**: If \\(p, q\\) are probabilities, then:
-\\[-\log p \oplus -\log q = -\log(p + q)\\]
+$$-\log p \oplus -\log q = -\log(p + q)$$
 
 **Numerical Advantages**: Avoids underflow for very small probabilities and maintains precision. Log-sum-exp can be computed stably using:
-\\[-\log(e^{-a} + e^{-b}) = -\max(a,b) - \log(1 + e^{-|a-b|})\\]
+$$-\log(e^{-a} + e^{-b}) = -\max(a,b) - \log(1 + e^{-|a-b|})$$
 
 ```rust
 use arcweight::prelude::*;
@@ -196,7 +196,7 @@ fn log_semiring_example() {
 The Boolean semiring provides the simplest non-trivial semiring structure, corresponding to unweighted finite state automata and basic recognition problems.
 
 **Definition 2.9**: The **Boolean semiring** is defined as:
-\\[\mathcal{B} = \langle \{0, 1\}, \vee, \wedge, 0, 1 \rangle\\]
+$$\mathcal{B} = \langle \{0, 1\}, \vee, \wedge, 0, 1 \rangle$$
 
 where:
 - **Set**: \\(S = \{0, 1\} \equiv \{\text{false}, \text{true}\}\\)
@@ -233,10 +233,10 @@ fn boolean_semiring_example() {
 The MinMax family of semirings provides mathematical frameworks for optimization problems involving bottlenecks, capacity constraints, and reliability analysis.
 
 **Definition 2.10**: The **Min semiring** (for bottleneck optimization) is defined as:
-\\[\mathcal{M}_{\min} = \langle \mathbb{R} \cup \{+\infty, -\infty\}, \min, \max, +\infty, -\infty \rangle\\]
+$$\mathcal{M}_{\min} = \langle \mathbb{R} \cup \{+\infty, -\infty\}, \min, \max, +\infty, -\infty \rangle$$
 
 **Definition 2.11**: The **Max semiring** (for capacity maximization) is defined as:
-\\[\mathcal{M}_{\max} = \langle \mathbb{R} \cup \{+\infty, -\infty\}, \max, \min, -\infty, +\infty \rangle\\]
+$$\mathcal{M}_{\max} = \langle \mathbb{R} \cup \{+\infty, -\infty\}, \max, \min, -\infty, +\infty \rangle$$
 
 ```rust
 use arcweight::prelude::*;
@@ -262,7 +262,7 @@ fn minmax_semiring_example() {
 The Product semiring enables simultaneous computation over multiple independent semiring structures, providing the foundation for multi-objective optimization and composite metric tracking.
 
 **Definition 2.12**: Given semirings \\(\mathcal{K}_1\\) and \\(\mathcal{K}_2\\), their **product semiring** is:
-\\[\mathcal{K}_1 \times \mathcal{K}_2 = \langle S_1 \times S_2, \oplus, \otimes, (\mathbf{0}_1, \mathbf{0}_2), (\mathbf{1}_1, \mathbf{1}_2) \rangle\\]
+$$\mathcal{K}_1 \times \mathcal{K}_2 = \langle S_1 \times S_2, \oplus, \otimes, (\mathbf{0}_1, \mathbf{0}_2), (\mathbf{1}_1, \mathbf{1}_2) \rangle$$
 
 where operations are defined component-wise:
 - **Addition**: \\((a_1, a_2) \oplus (b_1, b_2) = (a_1 \oplus_1 b_1, a_2 \oplus_2 b_2)\\)
@@ -300,7 +300,7 @@ fn product_semiring_example() {
 The String semiring provides a framework for string operations where addition computes longest common prefixes and multiplication performs concatenation, enabling sophisticated pattern analysis and sequence processing.
 
 **Definition 2.13**: The **String semiring** over alphabet \\(\Sigma\\) is defined as:
-\\[\mathcal{S} = \langle \Sigma^* \cup \{\perp\}, \text{lcp}, \cdot, \perp, \varepsilon \rangle\\]
+$$\mathcal{S} = \langle \Sigma^* \cup \{\perp\}, \text{lcp}, \cdot, \perp, \varepsilon \rangle$$
 
 where:
 - **Set**: \\(S = \Sigma^*\\) (finite strings) plus special zero element \\(\perp\\)

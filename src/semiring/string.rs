@@ -337,7 +337,10 @@ impl fmt::Display for StringWeight {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.to_string() {
             Ok(s) => write!(f, "\"{s}\""),
-            Err(_) => write!(f, "{:?}", self.0),
+            Err(_) => {
+                let bytes = &self.0;
+                write!(f, "{bytes:?}")
+            }
         }
     }
 }

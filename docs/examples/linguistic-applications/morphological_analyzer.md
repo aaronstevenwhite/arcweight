@@ -91,7 +91,7 @@ struct FiniteStateLexicon {
 
 **Key Design Principles:**
 
-The system follows several key design principles. **Stem Classes** group words by inflection patterns, with English distinguishing regular vs. irregular verbs (walk/walked vs. go/went) and Finnish using vowel harmony classes (front vs. back vowels). **Feature Bundles** ensure each morpheme carries grammatical information, such as "+ed" → \\[Past, Active\\] and "+ssa" → \\[Inessive, Singular\\]. **Rule-Based Alternations** keep sound changes separate from the lexicon, storing "happy" (stem) and "+ness" (suffix), applying the rule y→i before suffixes to produce the surface form "happiness".
+The system follows several key design principles. **Stem Classes** group words by inflection patterns, with English distinguishing regular vs. irregular verbs (walk/walked vs. go/went) and Finnish using vowel harmony classes (front vs. back vowels). **Feature Bundles** ensure each morpheme carries grammatical information, such as "+ed" → `[Past, Active]` and "+ssa" → `[Inessive, Singular]`. **Rule-Based Alternations** keep sound changes separate from the lexicon, storing "happy" (stem) and "+ness" (suffix), applying the rule y→i before suffixes to produce the surface form "happiness".
 
 ## Implementation
 

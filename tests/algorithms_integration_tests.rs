@@ -36,7 +36,7 @@ proptest! {
                 let mut seen_labels = std::collections::HashSet::new();
                 for arc in det.arcs(state) {
                     prop_assert!(seen_labels.insert(arc.ilabel),
-                        "Non-deterministic: duplicate label {} from state {}", arc.ilabel, state);
+                        "Non-deterministic: duplicate label {} from state {state}", arc.ilabel);
                 }
             }
         }

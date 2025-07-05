@@ -124,7 +124,7 @@ fn build_dictionary_fst(words: &[&str]) -> VectorFst<TropicalWeight> {
 
 Tries excel for dictionaries for several reasons. Prefix sharing allows words like "test", "testing", "tester" to share the prefix "test", where traditional approaches store each word separately (4+7+6 = 17 characters) while trie approaches store "test" once, then branch (4+3+2 = 9 characters). Fast lookup operates in O(m) time where m is word length, independent of dictionary size. Natural FST structure means each path from start to final state represents a valid word. Composability allows composition with other FSTs (like edit distance) efficiently.
 
-**Example trie structure for \\["cat", "cats", "car", "card"\\]:**
+**Example trie structure for `["cat", "cats", "car", "card"]`:**
 ```
      start
        |

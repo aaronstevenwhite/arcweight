@@ -155,7 +155,8 @@ impl fmt::Display for TropicalWeight {
         if self.0.is_infinite() {
             write!(f, "∞")
         } else {
-            write!(f, "{}", self.0)
+            let value = self.0;
+        write!(f, "{value}")
         }
     }
 }

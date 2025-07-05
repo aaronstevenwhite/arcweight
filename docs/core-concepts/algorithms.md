@@ -53,7 +53,7 @@ Composition represents the most fundamental and computationally significant oper
 
 **Mathematical Foundation**: For WFSTs \\(T_1: \Sigma^* \to \Gamma^* \\) and \\(T_2: \Gamma^* \to \Delta^* \\) over semiring \\(\mathcal{K}\\), their composition \\(T_1 \circ T_2: \Sigma^* \to \Delta^* \\) is defined by:
 
-\\\[ (T_1 \circ T_2)( \langle x, z \rangle ) = \bigoplus_{ y \in \Gamma^* } T_1( \langle x, y \rangle ) \otimes T_2 ( \langle y, z \rangle ) \\\]
+$$ (T_1 \circ T_2)( \langle x, z \rangle ) = \bigoplus_{ y \in \Gamma^* } T_1( \langle x, y \rangle ) \otimes T_2 ( \langle y, z \rangle ) $$
 
 This definition captures the essential idea that composition considers all possible intermediate strings \\(y\\) and combines their contributions through the semiring operations.
 
@@ -107,7 +107,7 @@ fn sophisticated_composition_example() -> Result<(), Box<dyn std::error::Error>>
 Union operations enable the combination of alternative transductions, creating systems that can handle multiple input variations or provide multiple output options.
 
 **Mathematical Definition**: For WFSTs \\(T_1\\) and \\(T_2\\) over the same alphabet, their union \\(T_1 \cup T_2\\) satisfies:
-\\[(T_1 \cup T_2)(\langle x, y \rangle) = T_1(\langle x, y \rangle) \oplus T_2(\langle x, y \rangle)\\]
+$$(T_1 \cup T_2)(\langle x, y \rangle) = T_1(\langle x, y \rangle) \oplus T_2(\langle x, y \rangle)$$
 
 **Construction Algorithm**: The union algorithm creates a new transducer with:
 1. A new initial state \\(q_0'\\)
@@ -143,7 +143,7 @@ fn union_construction_example() -> Result<(), Box<dyn std::error::Error>> {
 Concatenation creates sequential combinations of transductions, enabling the modeling of temporal or structural ordering constraints.
 
 **Mathematical Formulation**: For transducers \\(T_1\\) and \\(T_2\\), their concatenation \\(T_1 \cdot T_2\\) satisfies:
-\\[(T_1 \cdot T_2)(\langle xy, uv \rangle) = T_1(\langle x, u \rangle) \otimes T_2(\langle y, v \rangle)\\]
+$$(T_1 \cdot T_2)(\langle xy, uv \rangle) = T_1(\langle x, u \rangle) \otimes T_2(\langle y, v \rangle)$$
 where \\(x, y\\) are substrings of the input and \\(u, v\\) are corresponding output substrings.
 
 **Construction Strategy**: The concatenation algorithm:
@@ -173,7 +173,7 @@ fn concatenation_linguistics_example() -> Result<(), Box<dyn std::error::Error>>
 The Kleene closure operation enables the modeling of repetitive processes and unbounded iteration, crucial for many linguistic and computational phenomena.
 
 **Mathematical Definition**: For a transducer \\(T\\), its Kleene closure \\(T^* \\) is defined as:
-\\[T^* = \varepsilon \cup T \cup T^2 \cup T^3 \cup \ldots = \bigcup_{i=0}^{\infty} T^i\\]
+$$T^* = \varepsilon \cup T \cup T^2 \cup T^3 \cup \ldots = \bigcup_{i=0}^{\infty} T^i$$
 
 **Construction Algorithm**: The closure construction:
 1. Makes the initial state final (accepting empty string)
@@ -302,7 +302,7 @@ Shortest path algorithms find optimal paths through weighted transducers, enabli
 **Algorithm Outline**:
 1. **Initialize**: Set distance to initial state as \\(\mathbf{1}\\), all others as \\(\mathbf{0}\\)
 2. **Priority Queue**: Maintain states ordered by current best distance
-3. **Relaxation**: Update distances using semiring operations: \\(d[v] \oplus (d[u] \otimes w(u,v))\\)
+3. **Relaxation**: Update distances using semiring operations: \\(d_{v} \oplus (d_{u} \otimes w(u,v))\\)
 4. **Termination**: Continue until queue is empty or target conditions met
 
 **Mathematical Properties**: The algorithm requires naturally ordered semirings to ensure correctness and termination. The semiring's ordering must be compatible with the addition operation.
@@ -333,7 +333,7 @@ For applications requiring distance information between all state pairs, the all
 
 **Floyd-Warshall Generalization**: The algorithm adapts Floyd-Warshall to semirings:
 
-\\[d^{(k)}_{ij} = d^{(k-1)}_{ij} \oplus (d^{(k-1)}_{ik} \otimes d^{(k-1)}_{kj})\\]
+$$d^{(k)}_{ij} = d^{(k-1)}_{ij} \oplus (d^{(k-1)}_{ik} \otimes d^{(k-1)}_{kj})$$
 
 **Applications**: Particularly useful for:
 - **Transitive closure computation**: Finding all reachable state pairs

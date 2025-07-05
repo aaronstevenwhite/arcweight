@@ -131,6 +131,16 @@ jobs:
         curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz | tar xz -C bin
         echo "$(pwd)/bin" >> $GITHUB_PATH
 
+    - name: Install mdbook-mermaid
+      run: |
+        curl -sSL https://github.com/badboy/mdbook-mermaid/releases/download/v0.14.0/mdbook-mermaid-v0.14.0-x86_64-unknown-linux-gnu.tar.gz | tar xz -C bin
+        
+    - name: Install mdbook-linkcheck
+      run: |
+        curl -sSL https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v0.7.7/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -o mdbook-linkcheck.zip
+        unzip mdbook-linkcheck.zip -d bin
+        chmod +x bin/mdbook-linkcheck
+
     - name: Build mdBook documentation
       run: mdbook build
 
@@ -152,9 +162,6 @@ jobs:
     permissions:
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
     - name: Deploy to GitHub Pages
       id: deployment

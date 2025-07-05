@@ -141,14 +141,14 @@ fn bench_closure_linear(c: &mut Criterion) {
     for size in [5, 20, 50, 100].iter() {
         let fst = create_linear_fst(*size);
 
-        group.bench_function(format!("kleene_star_{}", size), |b| {
+        group.bench_function(format!("kleene_star_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<BooleanWeight> = closure(black_box(&fst)).unwrap();
                 black_box(result)
             })
         });
 
-        group.bench_function(format!("kleene_plus_{}", size), |b| {
+        group.bench_function(format!("kleene_plus_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<BooleanWeight> = closure_plus(black_box(&fst)).unwrap();
                 black_box(result)
@@ -165,14 +165,14 @@ fn bench_closure_branching(c: &mut Criterion) {
     for size in [5, 20, 50].iter() {
         let fst = create_branching_fst(*size, 3);
 
-        group.bench_function(format!("kleene_star_branching_{}", size), |b| {
+        group.bench_function(format!("kleene_star_branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<BooleanWeight> = closure(black_box(&fst)).unwrap();
                 black_box(result)
             })
         });
 
-        group.bench_function(format!("kleene_plus_branching_{}", size), |b| {
+        group.bench_function(format!("kleene_plus_branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<BooleanWeight> = closure_plus(black_box(&fst)).unwrap();
                 black_box(result)
@@ -189,14 +189,14 @@ fn bench_closure_cyclic(c: &mut Criterion) {
     for size in [5, 15, 30].iter() {
         let fst = create_cyclic_fst(*size);
 
-        group.bench_function(format!("kleene_star_cyclic_{}", size), |b| {
+        group.bench_function(format!("kleene_star_cyclic_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<BooleanWeight> = closure(black_box(&fst)).unwrap();
                 black_box(result)
             })
         });
 
-        group.bench_function(format!("kleene_plus_cyclic_{}", size), |b| {
+        group.bench_function(format!("kleene_plus_cyclic_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<BooleanWeight> = closure_plus(black_box(&fst)).unwrap();
                 black_box(result)

@@ -130,7 +130,7 @@ fn bench_intersect_linear(c: &mut Criterion) {
         let fst1 = create_linear_fst(*size, 0);
         let fst2 = create_linear_fst(*size, 0); // Same symbols
 
-        group.bench_function(format!("identical_linear_{}", size), |b| {
+        group.bench_function(format!("identical_linear_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     intersect(black_box(&fst1), black_box(&fst2)).unwrap();
@@ -141,7 +141,7 @@ fn bench_intersect_linear(c: &mut Criterion) {
         // Create FSTs with partially overlapping symbols
         let fst3 = create_linear_fst(*size, 5); // Offset symbols
 
-        group.bench_function(format!("partial_overlap_linear_{}", size), |b| {
+        group.bench_function(format!("partial_overlap_linear_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     intersect(black_box(&fst1), black_box(&fst3)).unwrap();
@@ -160,7 +160,7 @@ fn bench_intersect_branching(c: &mut Criterion) {
         let fst1 = create_branching_fst(*size, 3, 0);
         let fst2 = create_branching_fst(*size, 3, 0);
 
-        group.bench_function(format!("branching_{}", size), |b| {
+        group.bench_function(format!("branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     intersect(black_box(&fst1), black_box(&fst2)).unwrap();
@@ -180,7 +180,7 @@ fn bench_intersect_overlapping_patterns(c: &mut Criterion) {
         let fst1 = create_overlapping_fst(*size, 5); // pattern length 5
         let fst2 = create_overlapping_fst(*size, 7); // pattern length 7
 
-        group.bench_function(format!("pattern_overlap_{}", size), |b| {
+        group.bench_function(format!("pattern_overlap_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     intersect(black_box(&fst1), black_box(&fst2)).unwrap();
@@ -200,7 +200,7 @@ fn bench_intersect_disjoint(c: &mut Criterion) {
         let fst1 = create_linear_fst(*size, 0); // symbols a-z
         let fst2 = create_linear_fst(*size, 26); // symbols A-Z (shifted by 26)
 
-        group.bench_function(format!("disjoint_{}", size), |b| {
+        group.bench_function(format!("disjoint_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     intersect(black_box(&fst1), black_box(&fst2)).unwrap();
@@ -219,7 +219,7 @@ fn bench_intersect_mixed(c: &mut Criterion) {
         let linear_fst = create_linear_fst(*size, 0);
         let branching_fst = create_branching_fst(*size / 2, 4, 0);
 
-        group.bench_function(format!("linear_x_branching_{}", size), |b| {
+        group.bench_function(format!("linear_x_branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     intersect(black_box(&linear_fst), black_box(&branching_fst)).unwrap();

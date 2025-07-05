@@ -83,7 +83,7 @@ fn bench_binary_serialization(c: &mut Criterion) {
     for &size in &[100, 1000, 5000] {
         let linear_fst = create_linear_fst(size);
 
-        group.bench_function(format!("linear_{}", size), |b| {
+        group.bench_function(format!("linear_{size}"), |b| {
             b.iter(|| {
                 // Placeholder for binary serialization
                 let fst_size = linear_fst.num_states() + linear_fst.num_arcs(0);
@@ -93,7 +93,7 @@ fn bench_binary_serialization(c: &mut Criterion) {
 
         let branching_fst = create_branching_fst(size / 2, 3);
 
-        group.bench_function(format!("branching_{}", size), |b| {
+        group.bench_function(format!("branching_{size}"), |b| {
             b.iter(|| {
                 // Placeholder for binary serialization
                 let fst_size = branching_fst.num_states() + branching_fst.num_arcs(0);
@@ -112,7 +112,7 @@ fn bench_binary_deserialization(c: &mut Criterion) {
     for &size in &[100, 1000, 5000] {
         let _linear_fst = create_linear_fst(size);
 
-        group.bench_function(format!("linear_{}", size), |b| {
+        group.bench_function(format!("linear_{size}"), |b| {
             b.iter(|| {
                 // Placeholder for binary deserialization
                 let fst = create_linear_fst(black_box(size));
@@ -122,7 +122,7 @@ fn bench_binary_deserialization(c: &mut Criterion) {
 
         let _branching_fst = create_branching_fst(size / 2, 3);
 
-        group.bench_function(format!("branching_{}", size), |b| {
+        group.bench_function(format!("branching_{size}"), |b| {
             b.iter(|| {
                 // Placeholder for binary deserialization
                 let fst = create_branching_fst(black_box(size / 2), 3);
@@ -141,7 +141,7 @@ fn bench_binary_roundtrip(c: &mut Criterion) {
     for &size in &[100, 500, 1000] {
         let _fst = create_linear_fst(size);
 
-        group.bench_function(format!("linear_{}", size), |b| {
+        group.bench_function(format!("linear_{size}"), |b| {
             b.iter(|| {
                 // Placeholder for binary roundtrip
                 let fst_copy = create_linear_fst(black_box(size));
@@ -160,7 +160,7 @@ fn bench_format_comparison(c: &mut Criterion) {
     for &size in &[100, 500, 1000] {
         let _fst = create_linear_fst(size);
 
-        group.bench_function(format!("create_fst_{}", size), |b| {
+        group.bench_function(format!("create_fst_{size}"), |b| {
             b.iter(|| {
                 let fst = create_linear_fst(black_box(size));
                 black_box(fst)

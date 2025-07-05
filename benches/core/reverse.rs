@@ -190,7 +190,7 @@ fn bench_reverse_linear(c: &mut Criterion) {
     for size in [10, 100, 1000, 5000].iter() {
         let fst = create_linear_fst(*size);
 
-        group.bench_function(format!("linear_{}", size), |b| {
+        group.bench_function(format!("linear_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> = reverse(black_box(&fst)).unwrap();
                 black_box(result)
@@ -207,7 +207,7 @@ fn bench_reverse_branching(c: &mut Criterion) {
     for size in [10, 100, 500, 1000].iter() {
         let fst = create_branching_fst(*size, 3);
 
-        group.bench_function(format!("branching_{}", size), |b| {
+        group.bench_function(format!("branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> = reverse(black_box(&fst)).unwrap();
                 black_box(result)
@@ -224,7 +224,7 @@ fn bench_reverse_multi_final(c: &mut Criterion) {
     for size in [50, 200, 500, 1000].iter() {
         let fst = create_multi_final_fst(*size, 5);
 
-        group.bench_function(format!("multi_final_{}", size), |b| {
+        group.bench_function(format!("multi_final_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> = reverse(black_box(&fst)).unwrap();
                 black_box(result)
@@ -241,7 +241,7 @@ fn bench_reverse_cyclic(c: &mut Criterion) {
     for size in [10, 50, 200, 500].iter() {
         let fst = create_cyclic_fst(*size);
 
-        group.bench_function(format!("cyclic_{}", size), |b| {
+        group.bench_function(format!("cyclic_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> = reverse(black_box(&fst)).unwrap();
                 black_box(result)

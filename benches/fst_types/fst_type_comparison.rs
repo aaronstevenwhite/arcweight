@@ -107,14 +107,14 @@ fn bench_memory_usage_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_usage_comparison");
 
     for &size in &[100, 500, 1000, 2000] {
-        group.bench_function(format!("vector_fst_creation_{}", size), |b| {
+        group.bench_function(format!("vector_fst_creation_{size}"), |b| {
             b.iter(|| {
                 let fst = create_vector_fst(black_box(size));
                 black_box(fst)
             })
         });
 
-        group.bench_function(format!("const_fst_conversion_{}", size), |b| {
+        group.bench_function(format!("const_fst_conversion_{size}"), |b| {
             let vector_fst = create_vector_fst(size);
             b.iter(|| {
                 let const_fst = ConstFst::from_fst(black_box(&vector_fst)).unwrap();

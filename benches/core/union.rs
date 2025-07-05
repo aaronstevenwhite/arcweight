@@ -80,7 +80,7 @@ fn bench_union_linear(c: &mut Criterion) {
         let fst1 = create_linear_fst(*size);
         let fst2 = create_linear_fst(*size);
 
-        group.bench_function(format!("linear_{}", size), |b| {
+        group.bench_function(format!("linear_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     union(black_box(&fst1), black_box(&fst2)).unwrap();
@@ -99,7 +99,7 @@ fn bench_union_branching(c: &mut Criterion) {
         let fst1 = create_branching_fst(*size, 3);
         let fst2 = create_branching_fst(*size, 3);
 
-        group.bench_function(format!("branching_{}", size), |b| {
+        group.bench_function(format!("branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     union(black_box(&fst1), black_box(&fst2)).unwrap();
@@ -118,7 +118,7 @@ fn bench_union_mixed(c: &mut Criterion) {
         let linear_fst = create_linear_fst(*size);
         let branching_fst = create_branching_fst(*size / 2, 4);
 
-        group.bench_function(format!("linear_x_branching_{}", size), |b| {
+        group.bench_function(format!("linear_x_branching_{size}"), |b| {
             b.iter(|| {
                 let result: VectorFst<TropicalWeight> =
                     union(black_box(&linear_fst), black_box(&branching_fst)).unwrap();

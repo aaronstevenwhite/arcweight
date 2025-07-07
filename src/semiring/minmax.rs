@@ -204,7 +204,7 @@ impl fmt::Display for MinWeight {
             }
         } else {
             let value = self.0;
-        write!(f, "{value}")
+            write!(f, "{value}")
         }
     }
 }
@@ -521,7 +521,7 @@ impl fmt::Display for MaxWeight {
             }
         } else {
             let value = self.0;
-        write!(f, "{value}")
+            write!(f, "{value}")
         }
     }
 }

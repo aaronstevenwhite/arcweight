@@ -327,7 +327,8 @@ fn main() -> Result<()> {
         println!(
             "Finding spelling corrections for '{misspelled}' (max edit distance: {max_distance}):"
         );
-        println!("{}", "-".repeat(50));
+        let line = "-".repeat(50);
+        println!("{line}");
 
         let corrections = find_spelling_corrections(&dict_fst, misspelled, max_distance)?;
 
@@ -343,7 +344,8 @@ fn main() -> Result<()> {
 
     // Demonstrate finding words within edit distance 1
     println!("\nWords within edit distance 1 of 'help':");
-    println!("{}", "=".repeat(40));
+    let line = "=".repeat(40);
+    println!("{line}");
 
     let corrections = find_spelling_corrections(&dict_fst, "help", 1)?;
     for (word, distance) in corrections {
@@ -354,7 +356,8 @@ fn main() -> Result<()> {
 
     // Show how different edit distances affect results
     println!("\n\nEffect of different edit distances for 'wrld':");
-    println!("{}", "=".repeat(50));
+    let line = "=".repeat(50);
+    println!("{line}");
 
     for k in 1..=3 {
         println!("\nEdit distance <= {k}:");

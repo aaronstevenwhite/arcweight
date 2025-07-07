@@ -144,29 +144,6 @@ jobs:
     - name: Build mdBook documentation
       run: mdbook build
 
-    - name: Setup Pages
-      if: github.ref == 'refs/heads/main'
-      uses: actions/configure-pages@v3
-
-    - name: Upload Pages artifact
-      if: github.ref == 'refs/heads/main'
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: book
-
-  deploy-docs:
-    name: Deploy Documentation
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: docs
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v3
-
   msrv:
     name: MSRV Check
     runs-on: ubuntu-latest

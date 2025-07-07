@@ -245,7 +245,7 @@ impl fmt::Display for LogWeight {
             write!(f, "∞")
         } else {
             let value = self.0;
-        write!(f, "{value}")
+            write!(f, "{value}")
         }
     }
 }

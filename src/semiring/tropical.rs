@@ -156,7 +156,7 @@ impl fmt::Display for TropicalWeight {
             write!(f, "∞")
         } else {
             let value = self.0;
-        write!(f, "{value}")
+            write!(f, "{value}")
         }
     }
 }

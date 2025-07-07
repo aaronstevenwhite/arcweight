@@ -2473,10 +2473,7 @@ mod tests {
                 let error = (dequantized - weight_val).abs();
                 assert!(
                     error <= 0.1,
-                    "Round-trip error too large: {} -> {} -> {}",
-                    weight_val,
-                    quantized,
-                    dequantized
+                    "Round-trip error too large: {weight_val} -> {quantized} -> {dequantized}"
                 );
             }
         }

@@ -693,19 +693,14 @@ mod tests {
                 let product = w.times(&inv_w);
                 assert!(
                     product.approx_eq(&one, 1e-10),
-                    "Failed for value {}: {} * {} = {}",
-                    val,
-                    w,
-                    inv_w,
-                    product
+                    "Failed for value {val}: {w} * {inv_w} = {product}"
                 );
 
                 // (w^(-1))^(-1) = w
                 if let Some(inv_inv_w) = inv_w.inverse() {
                     assert!(
                         inv_inv_w.approx_eq(&w, 1e-10),
-                        "Double inverse failed for value {}",
-                        val
+                        "Double inverse failed for value {val}"
                     );
                 }
             }

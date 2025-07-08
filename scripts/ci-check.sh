@@ -15,27 +15,35 @@ echo "📋 2. Running tests (no default features)..."
 cargo test --no-default-features --verbose
 
 echo ""
-echo "📋 3. Running Clippy (all features)..."
+echo "📋 3. Running tests (parallel only)..."
+cargo test --no-default-features --features parallel --verbose
+
+echo ""
+echo "📋 4. Running tests (serde only)..."
+cargo test --no-default-features --features serde --verbose
+
+echo ""
+echo "📋 5. Running Clippy (all features)..."
 cargo clippy --all-features --all-targets -- -D warnings
 
 echo ""
-echo "📋 4. Running Clippy (no default features)..."
+echo "📋 6. Running Clippy (no default features)..."
 cargo clippy --no-default-features -- -D warnings
 
 echo ""
-echo "📋 5. Checking code formatting..."
+echo "📋 7. Checking code formatting..."
 cargo fmt --all -- --check
 
 echo ""
-echo "📋 6. Building documentation..."
+echo "📋 8. Building documentation..."
 cargo doc --all-features --no-deps --document-private-items
 
 echo ""
-echo "📋 7. Compiling benchmarks..."
+echo "📋 9. Compiling benchmarks..."
 cargo bench --no-run --verbose
 
 echo ""
-echo "📋 8. Running examples..."
+echo "📋 10. Running examples..."
 cargo run --example edit_distance
 cargo run --example string_alignment
 cargo run --example morphological_analyzer

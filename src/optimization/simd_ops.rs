@@ -5,8 +5,6 @@
 
 use crate::semiring::Semiring;
 use num_traits::Zero;
-#[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
 
 /// SIMD-optimized operations for weight computations
 ///
@@ -304,8 +302,7 @@ mod tropical_simd {
     use super::*;
     use crate::semiring::TropicalWeight;
     use std::arch::x86_64::{
-        _mm_add_ps, _mm_loadu_ps, _mm_max_ps, _mm_min_ps, _mm_prefetch, _mm_set1_ps, _mm_storeu_ps,
-        _MM_HINT_T0,
+        _mm_add_ps, _mm_loadu_ps, _mm_max_ps, _mm_min_ps, _mm_set1_ps, _mm_storeu_ps,
     };
 
     impl SimdOps<TropicalWeight> for TropicalWeight {

@@ -786,9 +786,7 @@ where
 
     /// Estimate memory usage of the cache
     fn estimate_cache_memory_usage(&self, state_cache: &HashMap<StateId, LazyState<W>>) -> usize {
-        state_cache
-            .iter()
-            .map(|(_, lazy_state)| {
+        state_cache.values().map(|lazy_state| {
                 std::mem::size_of::<LazyState<W>>()
                     + lazy_state.arcs.len() * std::mem::size_of::<Arc<W>>()
             })
@@ -1265,9 +1263,7 @@ impl<W: Semiring, G: StateGenerator<W>> StreamingLazyFst<W, G> {
 
     /// Estimate memory usage of state cache
     fn estimate_memory_usage(&self, state_cache: &HashMap<StateId, LazyState<W>>) -> usize {
-        state_cache
-            .iter()
-            .map(|(_, lazy_state)| {
+        state_cache.values().map(|lazy_state| {
                 std::mem::size_of::<LazyState<W>>()
                     + lazy_state.arcs.len() * std::mem::size_of::<Arc<W>>()
             })

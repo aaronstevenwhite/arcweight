@@ -49,6 +49,8 @@
 //!     weight_threshold: 10.0,
 //!     state_threshold: Some(1000),
 //!     npath: None,
+//!     use_forward_backward: false,
+//!     delta: 1e-6,
 //! })?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```

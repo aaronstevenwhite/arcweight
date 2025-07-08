@@ -1,10 +1,8 @@
 # Installation & Setup
 
-**Get ArcWeight running in under 5 minutes**
+*Setup guide for all platforms*
 
-*Complete setup guide for all platforms*
-
-This guide covers installing ArcWeight and setting up your development environment for working with weighted finite state transducers (FSTs). Whether you're new to Rust or an experienced developer, this guide will get you up and running quickly.
+This guide covers installing ArcWeight and setting up your development environment for working with weighted finite state transducers (FSTs).
 
 **What's Covered**: 
 
@@ -36,7 +34,7 @@ cargo --version
 # Should show: cargo 1.75.0+
 ```
 
-> **Need Rust?** Install from [rustup.rs](https://rustup.rs/)
+**Rust Installation**: Install from [rustup.rs](https://rustup.rs/)
 
 ### Verify Rust Installation
 
@@ -143,7 +141,7 @@ arcweight = { version = "0.1.0", default-features = false }
 
 Create a simple test file to verify ArcWeight is working:
 
-```rust
+```rust,ignore
 // test_installation.rs
 use arcweight::prelude::*;
 
@@ -167,7 +165,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         s1
     ));
     
-    println!("✅ ArcWeight is working!");
+    println!("ArcWeight is working");
     println!("Created FST with {} states and {} arcs", 
              fst.num_states(), fst.num_arcs());
     
@@ -183,8 +181,8 @@ rustc test_installation.rs --extern arcweight
 ```
 
 Expected output:
-```
-✅ ArcWeight is working!
+```text
+ArcWeight is working
 Created FST with 2 states and 1 arcs
 ```
 

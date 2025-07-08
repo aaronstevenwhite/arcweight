@@ -18,7 +18,7 @@ Connection removes states that don't participate in any successful path. Always 
 
 ### Basic Connection
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn optimize_fst(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
@@ -31,13 +31,13 @@ fn optimize_fst(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWei
     
     Ok(connected)
 }
-```
+```text
 
 ### Understanding Dead States
 
 Dead states can't reach a final state or can't be reached from the initial state:
 
-```rust
+```rust,ignore
 // Example: Building an FST with dead states
 let mut fst = VectorFst::new();
 let s0 = fst.add_state();
@@ -56,7 +56,7 @@ fst.add_arc(s2, Arc::new(3, 3, TropicalWeight::one(), s2)); // Self loop
 // s2 is not connected - will be removed
 let connected = connect(&fst)?;
 assert_eq!(connected.num_states(), 3); // s2 removed
-```
+```text
 
 ## Epsilon Removal
 
@@ -70,7 +70,7 @@ Epsilon transitions (ε:ε) can make FSTs harder to work with. Removing them sim
 
 ### Basic Epsilon Removal
 
-```rust
+```rust,ignore
 fn remove_epsilons(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Remove epsilon transitions
     let no_eps = rm_epsilon(fst)?;
@@ -80,11 +80,11 @@ fn remove_epsilons(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropical
     
     Ok(cleaned)
 }
-```
+```text
 
 ### Epsilon Removal in Practice
 
-```rust
+```rust,ignore
 // FST with epsilon transitions
 let mut fst = VectorFst::new();
 let s0 = fst.add_state();
@@ -102,7 +102,7 @@ fst.add_arc(s1, Arc::new(0, 0, TropicalWeight::new(1.0), s2)); // ε:ε
 // After epsilon removal
 let clean = rm_epsilon(&fst)?;
 // Direct path from s0 to s2 with combined weights
-```
+```text
 
 ## Determinization
 
@@ -116,7 +116,7 @@ Determinization ensures that for any state and input symbol, there's at most one
 
 ### Basic Determinization
 
-```rust
+```rust,ignore
 fn make_deterministic(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Check if already deterministic
     let props = fst.properties();
@@ -128,11 +128,11 @@ fn make_deterministic(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
     let det = determinize(fst)?;
     Ok(det)
 }
-```
+```text
 
 ### Determinization Example
 
-```rust
+```rust,ignore
 // Non-deterministic FST: multiple paths for same input
 let mut fst = VectorFst::new();
 let s0 = fst.add_state();
@@ -150,11 +150,11 @@ fst.add_arc(s0, Arc::new(1, 3, TropicalWeight::new(2.0), s2));
 // After determinization: one transition per input
 let det = determinize(&fst)?;
 // Now only one outgoing arc with label 1 from start state
-```
+```text
 
 ### Handling Determinization Explosion
 
-```rust
+```rust,ignore
 fn safe_determinize(
     fst: &VectorFst<TropicalWeight>,
     max_states: usize
@@ -173,7 +173,7 @@ fn safe_determinize(
         }
     }
 }
-```
+```text
 
 ## Minimization
 
@@ -187,7 +187,7 @@ Minimization produces the smallest FST that recognizes the same language with th
 
 ### Basic Minimization
 
-```rust
+```rust,ignore
 fn minimize_fst(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Ensure FST is deterministic
     let det = determinize(fst)?;
@@ -201,11 +201,11 @@ fn minimize_fst(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWei
     
     Ok(min)
 }
-```
+```text
 
 ### Complete Optimization Pipeline
 
-```rust
+```rust,ignore
 fn full_optimization(
     fst: &VectorFst<TropicalWeight>
 ) -> Result<VectorFst<TropicalWeight>> {
@@ -231,11 +231,11 @@ fn full_optimization(
     
     Ok(min)
 }
-```
+```text
 
 ### Minimization Example
 
-```rust
+```rust,ignore
 // FST with redundant states
 let redundant_fst = build_redundant_fst()?;
 // States: 0 -a-> 1 -b-> 3
@@ -245,7 +245,7 @@ let redundant_fst = build_redundant_fst()?;
 let minimized = minimize(&determinize(&redundant_fst)?)?;
 // After minimization: states 1 and 2 merged
 // States: 0 -a-> 1 -b-> 2
-```
+```text
 
 ## Advanced Optimization Techniques
 
@@ -253,7 +253,7 @@ let minimized = minimize(&determinize(&redundant_fst)?)?;
 
 Distribute weights to make FST more efficient:
 
-```rust
+```rust,ignore
 fn push_weights(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Push weights toward initial state
     let pushed = push(fst, PushType::Initial)?;
@@ -261,13 +261,13 @@ fn push_weights(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWei
     // Useful for probability FSTs
     Ok(pushed)
 }
-```
+```text
 
 ### Pruning
 
 Remove paths with high weights (low probability):
 
-```rust
+```rust,ignore
 fn prune_unlikely_paths(
     fst: &VectorFst<TropicalWeight>,
     threshold: f32
@@ -280,13 +280,13 @@ fn prune_unlikely_paths(
     
     Ok(connected)
 }
-```
+```text
 
 ### Lazy Operations
 
 For very large FSTs, use lazy operations:
 
-```rust
+```rust,ignore
 use arcweight::fst::{LazyFst, ComposeFst};
 
 fn lazy_composition(
@@ -296,13 +296,13 @@ fn lazy_composition(
     // Composition computed on-demand
     ComposeFst::new(fst1, fst2)
 }
-```
+```text
 
 ## Optimization Strategies
 
 ### Strategy 1: Memory-Constrained Systems
 
-```rust
+```rust,ignore
 fn optimize_for_memory(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Aggressive optimization for small size
     let connected = connect(fst)?;
@@ -315,11 +315,11 @@ fn optimize_for_memory(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Trop
     
     Ok(compacted)
 }
-```
+```text
 
 ### Strategy 2: Speed-Critical Systems
 
-```rust
+```rust,ignore
 fn optimize_for_speed(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Optimize for fast traversal
     let connected = connect(fst)?;
@@ -331,11 +331,11 @@ fn optimize_for_speed(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
     // Don't minimize if it would slow down access
     Ok(pushed)
 }
-```
+```text
 
 ### Strategy 3: Balanced Optimization
 
-```rust
+```rust,ignore
 fn balanced_optimization(
     fst: &VectorFst<TropicalWeight>,
     size_threshold: usize
@@ -351,7 +351,7 @@ fn balanced_optimization(
         Ok(connected)
     }
 }
-```
+```text
 
 ## Performance Benchmarks
 
@@ -368,7 +368,7 @@ Typical optimization impact on real-world FSTs:
 
 ### 1. Profile Before Optimizing
 
-```rust
+```rust,ignore
 fn should_optimize(fst: &VectorFst<TropicalWeight>) -> bool {
     let num_states = fst.num_states();
     let num_arcs = fst.num_arcs();
@@ -377,11 +377,11 @@ fn should_optimize(fst: &VectorFst<TropicalWeight>) -> bool {
     // Optimize if large or has many epsilons
     num_states > 1000 || num_arcs > 5000 || has_epsilons
 }
-```
+```text
 
 ### 2. Test Equivalence
 
-```rust
+```rust,ignore
 fn verify_optimization(
     original: &VectorFst<TropicalWeight>,
     optimized: &VectorFst<TropicalWeight>
@@ -389,11 +389,11 @@ fn verify_optimization(
     // Ensure optimization preserved behavior
     equivalent(original, optimized)
 }
-```
+```text
 
 ### 3. Monitor Resources
 
-```rust
+```rust,ignore
 use std::time::Instant;
 
 fn timed_optimization(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
@@ -404,7 +404,7 @@ fn timed_optimization(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
     println!("Optimization took: {:?}", duration);
     Ok(result)
 }
-```
+```text
 
 ## Common Issues and Solutions
 

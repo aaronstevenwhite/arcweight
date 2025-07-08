@@ -65,16 +65,26 @@
 mod cache_fst;
 mod compact_fst;
 mod const_fst;
+mod conversion;
 mod lazy_fst;
 mod traits;
 mod vector_fst;
 
 pub use cache_fst::CacheFst;
 pub use compact_fst::{
-    BitPackCompactor, CompactFst, Compactor, DefaultCompactor, DeltaCompactor, QuantizationMode,
-    QuantizedCompactor, VarIntCompactor,
+    AdaptiveConfig, BitPackCompactor, CompactFst, Compactor, ContextCompactor, DefaultCompactor,
+    DeltaCompactor, HuffmanCompactor, LZ4Compactor, QuantizationMode, QuantizedCompactor,
+    RunLengthCompactor, StreamingConfig, VarIntCompactor,
 };
 pub use const_fst::ConstFst;
-pub use lazy_fst::{LazyFstImpl, LazyState};
+pub use conversion::{
+    auto_convert, convert_to_cache, convert_to_compact, convert_to_compact_with, convert_to_const,
+    convert_to_evicting_cache, convert_to_lazy, convert_to_vector, estimate_conversion_metrics,
+    BatchConverter, ConversionMetrics, ConversionStrategy, ConvertedFst,
+};
+pub use lazy_fst::{
+    CacheConfig, CacheStats, EvictingCacheFst, EvictionPolicy, LazyFstImpl, LazyState,
+    LazyStreamingConfig, MemoryMappedProvider, StateGenerator, StreamingLazyFst, StreamingStats,
+};
 pub use traits::*;
 pub use vector_fst::VectorFst;

@@ -19,7 +19,7 @@ Projection extracts either the input or output language of an FST, creating an F
 
 ### Input Projection
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn extract_input_language(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
@@ -29,11 +29,11 @@ fn extract_input_language(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<T
     // Result accepts same inputs, but output = input
     Ok(input_fsa)
 }
-```
+```text
 
 ### Output Projection
 
-```rust
+```rust,ignore
 fn extract_output_language(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Project onto output labels
     let output_fsa = project(fst, ProjectType::Output)?;
@@ -41,11 +41,11 @@ fn extract_output_language(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<
     // Result accepts original outputs as inputs
     Ok(output_fsa)
 }
-```
+```text
 
 ### Practical Example: Vocabulary Extraction
 
-```rust
+```rust,ignore
 fn extract_vocabularies(
     translator: &VectorFst<TropicalWeight>
 ) -> Result<(HashSet<String>, HashSet<String>)> {
@@ -59,11 +59,11 @@ fn extract_vocabularies(
     
     Ok((source_words, target_words))
 }
-```
+```text
 
 ### Using Projection for Validation
 
-```rust
+```rust,ignore
 fn validate_translation_coverage(
     translator: &VectorFst<TropicalWeight>,
     required_vocabulary: &VectorFst<TropicalWeight>
@@ -77,7 +77,7 @@ fn validate_translation_coverage(
     // If difference is empty, full coverage
     Ok(uncovered.num_states() == 0)
 }
-```
+```text
 
 ## Intersection
 
@@ -92,7 +92,7 @@ Intersection creates an FST that accepts only strings accepted by both input FST
 
 ### Basic Intersection
 
-```rust
+```rust,ignore
 fn find_common_words(
     vocab1: &VectorFst<TropicalWeight>,
     vocab2: &VectorFst<TropicalWeight>
@@ -107,11 +107,11 @@ fn find_common_words(
     
     Ok(common)
 }
-```
+```text
 
 ### Intersection for Constraint Application
 
-```rust
+```rust,ignore
 fn apply_constraints(
     generator: &VectorFst<TropicalWeight>,
     constraints: Vec<VectorFst<TropicalWeight>>
@@ -130,11 +130,11 @@ fn apply_constraints(
     
     Ok(result)
 }
-```
+```text
 
 ### Real-World Example: Password Validation
 
-```rust
+```rust,ignore
 struct PasswordValidator {
     length_constraint: VectorFst<TropicalWeight>,
     char_constraint: VectorFst<TropicalWeight>,
@@ -155,7 +155,7 @@ impl PasswordValidator {
         Ok(valid.num_states() > 0)
     }
 }
-```
+```text
 
 ## Difference
 
@@ -170,7 +170,7 @@ Difference creates an FST accepting strings in the first FST but not in the seco
 
 ### Basic Difference
 
-```rust
+```rust,ignore
 fn find_unique_words(
     vocab: &VectorFst<TropicalWeight>,
     common_words: &VectorFst<TropicalWeight>
@@ -180,11 +180,11 @@ fn find_unique_words(
     
     Ok(unique)
 }
-```
+```text
 
 ### Difference for Filtering
 
-```rust
+```rust,ignore
 fn filter_blocklist(
     text: &VectorFst<TropicalWeight>,
     blocklist: &VectorFst<TropicalWeight>
@@ -197,11 +197,11 @@ fn filter_blocklist(
     
     Ok(cleaned)
 }
-```
+```text
 
 ### Real-World Example: Spell Checker Candidates
 
-```rust
+```rust,ignore
 fn get_correction_candidates(
     misspelling: &str,
     dictionary: &VectorFst<TropicalWeight>,
@@ -219,13 +219,13 @@ fn get_correction_candidates(
     // Extract suggestions
     extract_strings(&good_candidates)
 }
-```
+```text
 
 ## Advanced Structural Operations
 
 ### Composition with Projection
 
-```rust
+```rust,ignore
 fn extract_translation_pairs(
     source_text: &VectorFst<TropicalWeight>,
     translator: &VectorFst<TropicalWeight>
@@ -244,11 +244,11 @@ fn extract_translation_pairs(
     
     Ok(pairs)
 }
-```
+```text
 
 ### Set Operations Pipeline
 
-```rust
+```rust,ignore
 fn analyze_vocabulary_overlap(
     vocabs: Vec<VectorFst<TropicalWeight>>
 ) -> Result<VocabularyAnalysis> {
@@ -277,11 +277,11 @@ fn analyze_vocabulary_overlap(
         unique_words,
     })
 }
-```
+```text
 
 ### Language Comparison
 
-```rust
+```rust,ignore
 fn compare_languages(
     lang1: &VectorFst<TropicalWeight>,
     lang2: &VectorFst<TropicalWeight>
@@ -305,13 +305,13 @@ fn compare_languages(
         total: count_paths(&union)?,
     })
 }
-```
+```text
 
 ## Practical Applications
 
 ### FST Debugging
 
-```rust
+```rust,ignore
 fn debug_fst_coverage(
     fst: &VectorFst<TropicalWeight>,
     test_inputs: &[String]
@@ -339,11 +339,11 @@ fn debug_fst_coverage(
         rejected,
     })
 }
-```
+```text
 
 ### Language Model Analysis
 
-```rust
+```rust,ignore
 fn analyze_language_model(
     model: &VectorFst<TropicalWeight>,
     corpus: &VectorFst<TropicalWeight>
@@ -365,7 +365,7 @@ fn analyze_language_model(
         hallucinated_words: extract_strings(&hallucinated)?,
     })
 }
-```
+```text
 
 ## Performance Considerations
 
@@ -383,7 +383,7 @@ fn analyze_language_model(
 2. **Use lazy evaluation**: For large FSTs, consider lazy intersection/difference
 3. **Early termination**: Stop when you find what you need
 
-```rust
+```rust,ignore
 fn early_termination_search(
     fst1: &VectorFst<TropicalWeight>,
     fst2: &VectorFst<TropicalWeight>
@@ -394,13 +394,13 @@ fn early_termination_search(
     // Just check if start state has any valid paths
     has_any_path(&intersection)
 }
-```
+```text
 
 ## Common Patterns
 
 ### Pattern: Multi-Level Filtering
 
-```rust
+```rust,ignore
 fn multi_level_filter(
     input: &VectorFst<TropicalWeight>,
     filters: Vec<(&str, VectorFst<TropicalWeight>)>
@@ -419,11 +419,11 @@ fn multi_level_filter(
     
     Ok(result)
 }
-```
+```text
 
 ### Pattern: Incremental Vocabulary Building
 
-```rust
+```rust,ignore
 struct VocabularyBuilder {
     vocabulary: VectorFst<TropicalWeight>,
     excluded: VectorFst<TropicalWeight>,
@@ -444,13 +444,13 @@ impl VocabularyBuilder {
         Ok(())
     }
 }
-```
+```text
 
 ## Best Practices
 
 ### 1. Validate Operations
 
-```rust
+```rust,ignore
 fn safe_intersection(
     fst1: &VectorFst<TropicalWeight>,
     fst2: &VectorFst<TropicalWeight>
@@ -469,11 +469,11 @@ fn safe_intersection(
     
     Ok(result)
 }
-```
+```text
 
 ### 2. Use Type-Safe Wrappers
 
-```rust
+```rust,ignore
 struct InputLanguage(VectorFst<TropicalWeight>);
 struct OutputLanguage(VectorFst<TropicalWeight>);
 
@@ -483,7 +483,7 @@ fn project_safe(fst: &VectorFst<TropicalWeight>) -> (InputLanguage, OutputLangua
     
     (InputLanguage(input), OutputLanguage(output))
 }
-```
+```text
 
 ## Next Steps
 

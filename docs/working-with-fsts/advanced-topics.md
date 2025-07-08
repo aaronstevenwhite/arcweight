@@ -12,7 +12,7 @@ Closure operations (Kleene star and plus) allow FSTs to accept repeated applicat
 
 ### Kleene Star (Zero or More)
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn build_word_breaker() -> Result<VectorFst<TropicalWeight>> {
@@ -24,11 +24,11 @@ fn build_word_breaker() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(word)
 }
-```
+```text
 
 ### Kleene Plus (One or More)
 
-```rust
+```rust,ignore
 fn build_number_matcher() -> Result<VectorFst<TropicalWeight>> {
     // Match digits
     let digit = build_character_class_fst(&['0'..='9'])?;
@@ -38,11 +38,11 @@ fn build_number_matcher() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(number)
 }
-```
+```text
 
 ### Practical Example: Pattern Repetition
 
-```rust
+```rust,ignore
 fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
     // Components
     let word = build_word_pattern()?;
@@ -59,7 +59,7 @@ fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(sentence)
 }
-```
+```text
 
 ## Performance Guidelines
 
@@ -67,7 +67,7 @@ fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
 
 The order of operations significantly impacts performance:
 
-```rust
+```rust,ignore
 fn optimal_pipeline(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // 1. Remove useless states first
     let connected = connect(fst)?;
@@ -83,11 +83,11 @@ fn optimal_pipeline(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropica
     
     Ok(min)
 }
-```
+```text
 
 ### When to Optimize
 
-```rust
+```rust,ignore
 struct OptimizationStrategy {
     size_threshold: usize,
     time_budget: Duration,
@@ -138,13 +138,13 @@ impl OptimizationStrategy {
         Ok(result)
     }
 }
-```
+```text
 
 ### Lazy Evaluation
 
 For very large FSTs, use lazy evaluation:
 
-```rust
+```rust,ignore
 use arcweight::fst::{ComposeFst, LazyFst};
 
 fn lazy_pipeline(
@@ -158,13 +158,13 @@ fn lazy_pipeline(
     
     result
 }
-```
+```text
 
 ## Memory Management
 
 ### Large FST Handling
 
-```rust
+```rust,ignore
 struct LargeFstHandler {
     memory_limit: usize,
     disk_cache_path: PathBuf,
@@ -202,11 +202,11 @@ impl LargeFstHandler {
         Ok(())
     }
 }
-```
+```text
 
 ### Streaming Operations
 
-```rust
+```rust,ignore
 fn stream_compose<F>(
     fst1: &VectorFst<TropicalWeight>,
     fst2: &VectorFst<TropicalWeight>,
@@ -236,11 +236,11 @@ where
     
     Ok(())
 }
-```
+```text
 
 ### Memory Pooling
 
-```rust
+```rust,ignore
 struct FstPool {
     pool: Vec<VectorFst<TropicalWeight>>,
     max_size: usize,
@@ -258,7 +258,7 @@ impl FstPool {
         }
     }
 }
-```
+```text
 
 ## Specialized Techniques
 
@@ -266,7 +266,7 @@ impl FstPool {
 
 Redistribute weights for better numerical stability:
 
-```rust
+```rust,ignore
 fn optimize_weights(
     fst: &VectorFst<TropicalWeight>
 ) -> Result<VectorFst<TropicalWeight>> {
@@ -276,13 +276,13 @@ fn optimize_weights(
     // Helps with shortest path and prevents underflow
     Ok(pushed)
 }
-```
+```text
 
 ### Epsilon Sequencing
 
 Handle epsilon transitions efficiently:
 
-```rust
+```rust,ignore
 fn epsilon_sequence_optimize(
     fst: &VectorFst<TropicalWeight>
 ) -> Result<VectorFst<TropicalWeight>> {
@@ -297,11 +297,11 @@ fn epsilon_sequence_optimize(
     
     Ok(result)
 }
-```
+```text
 
 ### Incremental Determinization
 
-```rust
+```rust,ignore
 struct IncrementalDeterminizer {
     partial_fst: VectorFst<TropicalWeight>,
     determinized_states: HashSet<StateId>,
@@ -324,13 +324,13 @@ impl IncrementalDeterminizer {
         Ok(())
     }
 }
-```
+```text
 
 ## Production Patterns
 
 ### Pattern: Multi-threaded Processing
 
-```rust
+```rust,ignore
 use rayon::prelude::*;
 
 fn parallel_fst_processing(
@@ -346,11 +346,11 @@ fn parallel_fst_processing(
         })
         .collect()
 }
-```
+```text
 
 ### Pattern: Caching and Memoization
 
-```rust
+```rust,ignore
 struct FstCache {
     cache: LruCache<String, Arc<VectorFst<TropicalWeight>>>,
     build_fn: Box<dyn Fn(&str) -> Result<VectorFst<TropicalWeight>>>,
@@ -368,11 +368,11 @@ impl FstCache {
         Ok(fst)
     }
 }
-```
+```text
 
 ### Pattern: Graceful Degradation
 
-```rust
+```rust,ignore
 struct RobustProcessor {
     primary_fst: VectorFst<TropicalWeight>,
     fallback_fst: VectorFst<TropicalWeight>,
@@ -396,13 +396,13 @@ impl RobustProcessor {
         }
     }
 }
-```
+```text
 
 ## Debugging and Profiling
 
 ### FST Visualization
 
-```rust
+```rust,ignore
 fn debug_fst(fst: &VectorFst<TropicalWeight>, name: &str) -> Result<()> {
     // Generate DOT format
     let dot = fst_to_dot(fst)?;
@@ -421,11 +421,11 @@ fn debug_fst(fst: &VectorFst<TropicalWeight>, name: &str) -> Result<()> {
     
     Ok(())
 }
-```
+```text
 
 ### Performance Profiling
 
-```rust
+```rust,ignore
 struct FstProfiler {
     timings: HashMap<String, Duration>,
 }
@@ -451,23 +451,23 @@ impl FstProfiler {
         }
     }
 }
-```
+```text
 
 ## Best Practices Summary
 
 ### 1. Design for Scale
 
-```rust
+```rust,ignore
 // Good: Lazy evaluation for large FSTs
 let large_composition = LazyComposeFst::new(fst1, fst2);
 
 // Bad: Eager evaluation of huge FST
 let huge_fst = compose(&million_state_fst1, &million_state_fst2)?;
-```
+```text
 
 ### 2. Handle Failures Gracefully
 
-```rust
+```rust,ignore
 // Good: Timeout and fallback
 match timeout(Duration::from_secs(5), || expensive_operation(fst)) {
     Ok(result) => result,
@@ -476,11 +476,11 @@ match timeout(Duration::from_secs(5), || expensive_operation(fst)) {
 
 // Bad: Unbounded operation
 let result = expensive_operation(fst)?; // Might hang
-```
+```text
 
 ### 3. Monitor Resource Usage
 
-```rust
+```rust,ignore
 // Good: Check before operations
 if estimate_composition_size(fst1, fst2) > MAX_FST_SIZE {
     return Err("Composition would be too large");
@@ -488,7 +488,7 @@ if estimate_composition_size(fst1, fst2) > MAX_FST_SIZE {
 
 // Bad: Blind composition
 let result = compose(fst1, fst2)?; // Might OOM
-```
+```text
 
 ## Next Steps
 

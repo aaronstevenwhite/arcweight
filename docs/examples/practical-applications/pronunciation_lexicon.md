@@ -14,7 +14,7 @@ This system demonstrates the complete pipeline from text to phonemes, including 
 
 ```bash
 cargo run --example pronunciation_lexicon
-```
+```text
 
 ## What You'll Learn
 
@@ -34,30 +34,30 @@ cargo run --example pronunciation_lexicon
 The system uses a rich phoneme set covering English sounds:
 
 **Vowels:**
-```rust
+```rust,ignore
 AA, AE, AH, AO, AW, AY,  // /ɑ/, /æ/, /ʌ/, /ɔ/, /aʊ/, /aɪ/
 EH, ER, EY, IH, IY,      // /ɛ/, /ɝ/, /eɪ/, /ɪ/, /i/
 OW, OY, UH, UW           // /oʊ/, /ɔɪ/, /ʊ/, /u/
-```
+```text
 
 **Consonants:**
-```rust
+```rust,ignore
 B, CH, D, DH, F, G, HH,  // /b/, /tʃ/, /d/, /ð/, /f/, /g/, /h/
 JH, K, L, M, N, NG,      // /dʒ/, /k/, /l/, /m/, /n/, /ŋ/
 P, R, S, SH, T, TH,      // /p/, /r/, /s/, /ʃ/, /t/, /θ/
 V, W, Y, Z, ZH           // /v/, /w/, /j/, /z/, /ʒ/
-```
+```text
 
 **Special Symbols:**
-```rust
+```rust,ignore
 Sil  // Silence marker for word boundaries
-```
+```text
 
 ### Phoneme Encoding
 
 Phonemes are encoded with unique labels to avoid conflicts with character labels:
 
-```rust
+```rust,ignore
 impl Phoneme {
     fn to_label(self) -> u32 {
         (self as u32) + 1000  // Offset to avoid character conflicts
@@ -69,7 +69,7 @@ impl Phoneme {
         }
     }
 }
-```
+```text
 
 ### Lexicon Structure
 
@@ -77,15 +77,15 @@ impl Phoneme {
 
 Each lexicon entry supports multiple pronunciations:
 
-```rust
+```rust,ignore
 struct LexiconEntry {
     word: String,
     pronunciations: Vec<Vec<Phoneme>>,
 }
-```
+```text
 
 **Example entries:**
-```rust
+```rust,ignore
 LexiconEntry {
     word: "read".to_string(),
     pronunciations: vec![
@@ -93,13 +93,13 @@ LexiconEntry {
         vec![R, EH, D], // past tense /rɛd/
     ],
 }
-```
+```text
 
 ### Sample Lexicon
 
 The example includes a comprehensive test lexicon:
 
-```rust
+```rust,ignore
 fn create_sample_lexicon() -> Vec<LexiconEntry> {
     vec![
         // Basic words
@@ -130,7 +130,7 @@ fn create_sample_lexicon() -> Vec<LexiconEntry> {
         },
     ]
 }
-```
+```text
 
 ## FST Implementation
 
@@ -138,7 +138,7 @@ fn create_sample_lexicon() -> Vec<LexiconEntry> {
 
 A basic approach directly encodes word-to-phoneme mappings:
 
-```rust
+```rust,ignore
 fn build_simple_lexicon(entries: &[LexiconEntry]) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -179,13 +179,13 @@ fn build_simple_lexicon(entries: &[LexiconEntry]) -> VectorFst<TropicalWeight> {
     
     fst
 }
-```
+```text
 
 ### Word Acceptor
 
 Helper function to create FSTs for individual words:
 
-```rust
+```rust,ignore
 fn word_acceptor(word: &str) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let mut current = fst.add_state();
@@ -203,7 +203,7 @@ fn word_acceptor(word: &str) -> VectorFst<TropicalWeight> {
     fst.set_final(current, TropicalWeight::one());
     fst
 }
-```
+```text
 
 ## Grapheme-to-Phoneme Rules
 
@@ -211,7 +211,7 @@ fn word_acceptor(word: &str) -> VectorFst<TropicalWeight> {
 
 For unknown words, the system falls back to grapheme-to-phoneme rules:
 
-```rust
+```rust,ignore
 fn build_g2p_rules() -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -244,13 +244,13 @@ fn build_g2p_rules() -> VectorFst<TropicalWeight> {
 
     fst
 }
-```
+```text
 
 ### G2P Processing
 
 Extract phonemes from G2P composition:
 
-```rust
+```rust,ignore
 fn extract_g2p_phonemes(
     fst: &VectorFst<TropicalWeight>, 
     word: &str
@@ -266,7 +266,7 @@ fn extract_g2p_phonemes(
     
     Vec::new()
 }
-```
+```text
 
 ## Text-to-Phoneme Pipeline
 
@@ -274,7 +274,7 @@ fn extract_g2p_phonemes(
 
 The system provides end-to-end text processing:
 
-```rust
+```rust,ignore
 fn text_to_phonemes(
     lexicon_entries: &[LexiconEntry],
     g2p_fst: &VectorFst<TropicalWeight>,
@@ -302,13 +302,13 @@ fn text_to_phonemes(
 
     result_phonemes
 }
-```
+```text
 
 ### Lexicon Lookup
 
 Direct dictionary lookup for efficiency:
 
-```rust
+```rust,ignore
 fn lookup_word_in_lexicon(
     entries: &[LexiconEntry], 
     word: &str
@@ -320,17 +320,17 @@ fn lookup_word_in_lexicon(
     }
     None
 }
-```
+```text
 
 ## Running the Example
 
 ```bash
 cargo run --example pronunciation_lexicon
-```
+```text
 
 ### Sample Output
 
-```
+```text
 Word to Phoneme Lookup:
 --------------------------
 Looking up 'hello':
@@ -360,7 +360,7 @@ Phonemes: HH AH L OW SIL W ER L D
 
 Text: "read the book"  
 Phonemes: R IY D SIL DH AH SIL B UH K
-```
+```text
 
 ## Advanced Features
 
@@ -369,26 +369,26 @@ Phonemes: R IY D SIL DH AH SIL B UH K
 The system handles words with multiple valid pronunciations:
 
 **Homophones:**
-```
+```text
 "read" /riːd/ (present) vs /rɛd/ (past)
 "live" /lɪv/ (verb) vs /laɪv/ (adjective)
-```
+```text
 
 **Stress Variants:**
-```
+```text
 "the" /ðə/ (unstressed) vs /ðiː/ (stressed)
-```
+```text
 
 **Regional Variants:**
-```
+```text
 "tomato" /təˈmeɪtoʊ/ (American) vs /təˈmɑːtoʊ/ (British)
-```
+```text
 
 ### Pronunciation Quality Assessment
 
 Different pronunciation sources have different reliability:
 
-```rust
+```rust,ignore
 enum PronunciationSource {
     Dictionary(f32),    // High confidence
     G2P(f32),          // Medium confidence  
@@ -400,13 +400,13 @@ struct PronunciationResult {
     source: PronunciationSource,
     confidence: f32,
 }
-```
+```text
 
 ### Context-Aware Processing
 
 Future extensions could handle contextual pronunciation:
 
-```rust
+```rust,ignore
 fn contextual_pronunciation(
     word: &str,
     prev_word: Option<&str>,
@@ -419,7 +419,7 @@ fn contextual_pronunciation(
         SpeechStyle::Fast => apply_heavy_reduction(word),
     }
 }
-```
+```text
 
 ## Applications
 
@@ -427,14 +427,14 @@ fn contextual_pronunciation(
 
 Pronunciation lexicons enable acoustic-to-linguistic mapping:
 
-```
+```text
 Audio Signal $\to$ Acoustic Features $\to$ Phoneme Sequence $\to$ Word Sequence
               ↓                   ↓                  ↓
          Neural Network    Pronunciation Lexicon  Language Model
-```
+```text
 
 **Implementation:**
-```rust
+```rust,ignore
 fn speech_recognition_pipeline(
     audio: &[f32],
     acoustic_model: &AcousticModel,
@@ -446,20 +446,20 @@ fn speech_recognition_pipeline(
     let best_words = language_model.score_candidates(word_candidates);
     best_words
 }
-```
+```text
 
 ### Speech Synthesis
 
 Convert text to speech through phoneme generation:
 
-```
+```text
 Text $\to$ Words $\to$ Phonemes $\to$ Acoustic Parameters $\to$ Audio Signal
       ↓        ↓          ↓                     ↓
    Tokenizer  Lexicon   Neural Vocoder    Digital Signal
-```
+```text
 
 **Implementation:**
-```rust
+```rust,ignore
 fn text_to_speech_pipeline(
     text: &str,
     lexicon: &PronunciationLexicon,
@@ -470,13 +470,13 @@ fn text_to_speech_pipeline(
     let audio = vocoder.features_to_audio(acoustic_features);
     audio
 }
-```
+```text
 
 ### Phonetic Analysis
 
 Study pronunciation patterns in speech corpora:
 
-```rust
+```rust,ignore
 fn analyze_pronunciation_variation(
     corpus: &SpeechCorpus,
     lexicon: &PronunciationLexicon,
@@ -496,7 +496,7 @@ fn analyze_pronunciation_variation(
     
     VariationReport::new(variations)
 }
-```
+```text
 
 ### Speech Systems
 
@@ -504,7 +504,7 @@ fn analyze_pronunciation_variation(
 
 Complete speech systems compose multiple FSTs:
 
-```rust
+```rust,ignore
 // L ∘ G ∘ P ∘ A architecture
 let lexicon_fst = build_lexicon_fst(&dictionary);      // L: Words $\to$ Phonemes
 let grammar_fst = build_grammar_fst(&language_model);  // G: Sentence structure  
@@ -517,13 +517,13 @@ let complete_system = compose_chain(vec![
     phoneme_fst,
     acoustic_fst,
 ])?;
-```
+```text
 
 ### Search Space Management
 
 FST composition creates large search spaces that require efficient navigation:
 
-```rust
+```rust,ignore
 fn beam_search_decode(
     fst: &VectorFst<TropicalWeight>,
     observations: &[Observation],
@@ -550,7 +550,7 @@ fn beam_search_decode(
         .map(|state| state.path)
         .collect()
 }
-```
+```text
 
 ## Performance Considerations
 
@@ -558,7 +558,7 @@ fn beam_search_decode(
 
 Large lexicons require careful memory management:
 
-```rust
+```rust,ignore
 struct CompactLexicon {
     trie: TrieNode,              // Shared prefix storage
     phoneme_sequences: Vec<Vec<Phoneme>>, // Deduplicated sequences
@@ -571,13 +571,13 @@ impl CompactLexicon {
             .map(|&idx| &self.phoneme_sequences[idx])
     }
 }
-```
+```text
 
 ### Lookup Optimization
 
 Fast dictionary access for real-time applications:
 
-```rust
+```rust,ignore
 struct FastLexicon {
     hash_table: HashMap<String, Vec<Vec<Phoneme>>>,
     prefix_tree: Trie<Vec<Phoneme>>,
@@ -595,13 +595,13 @@ impl FastLexicon {
         self.hash_table.get(word)
     }
 }
-```
+```text
 
 ### Caching Strategies
 
 Cache frequent lookups and G2P results:
 
-```rust
+```rust,ignore
 struct CachedLexicon {
     lexicon: PronunciationLexicon,
     g2p_cache: LruCache<String, Vec<Phoneme>>,
@@ -619,7 +619,7 @@ impl CachedLexicon {
         result
     }
 }
-```
+```text
 
 ## Quality Assurance
 
@@ -627,7 +627,7 @@ impl CachedLexicon {
 
 Ensure lexicon quality through validation:
 
-```rust
+```rust,ignore
 fn validate_lexicon(lexicon: &[LexiconEntry]) -> ValidationReport {
     let mut errors = Vec::new();
     
@@ -654,13 +654,13 @@ fn validate_lexicon(lexicon: &[LexiconEntry]) -> ValidationReport {
     
     ValidationReport::new(errors)
 }
-```
+```text
 
 ### Coverage Analysis
 
 Assess lexicon coverage for target domain:
 
-```rust
+```rust,ignore
 fn analyze_coverage(
     lexicon: &PronunciationLexicon,
     corpus: &TextCorpus,
@@ -685,14 +685,14 @@ fn analyze_coverage(
         covered_words: covered,
     }
 }
-```
+```text
 
 ## Extensions and Future Work
 
 ### Enhanced G2P Models
 
 **Neural G2P:**
-```rust
+```rust,ignore
 struct NeuralG2P {
     encoder: TransformerEncoder,
     decoder: TransformerDecoder,
@@ -706,10 +706,10 @@ impl NeuralG2P {
         phoneme_sequence
     }
 }
-```
+```text
 
 **Contextual G2P:**
-```rust
+```rust,ignore
 fn contextual_g2p(
     word: &str,
     context: &SentenceContext,
@@ -721,12 +721,12 @@ fn contextual_g2p(
         PronunciationStyle::Regional(dialect) => apply_dialect_rules(word, dialect),
     }
 }
-```
+```text
 
 ### Multilingual Support
 
 **Cross-Language Lexicons:**
-```rust
+```rust,ignore
 struct MultilingualLexicon {
     lexicons: HashMap<Language, PronunciationLexicon>,
     language_detector: LanguageDetector,
@@ -745,12 +745,12 @@ impl MultilingualLexicon {
         }
     }
 }
-```
+```text
 
 ### Dynamic Adaptation
 
 **Online Learning:**
-```rust
+```rust,ignore
 struct AdaptiveLexicon {
     base_lexicon: PronunciationLexicon,
     user_corrections: HashMap<String, Vec<Phoneme>>,
@@ -779,7 +779,7 @@ impl AdaptiveLexicon {
         }
     }
 }
-```
+```text
 
 ## Related Examples
 
@@ -791,18 +791,18 @@ This pronunciation lexicon connects with other examples. **[Phonological Rules](
 
 Modern voice assistants rely heavily on pronunciation lexicons:
 
-```
+```text
 User: "Call John Smith"
 ASR: Phonemes → "call john smith"  
 NLU: Extract intent and entities
 TTS: "Calling John Smith" → Phonemes → Audio
-```
+```text
 
 ### Language Learning
 
 Pronunciation feedback systems:
 
-```rust
+```rust,ignore
 fn pronunciation_feedback(
     student_audio: &[f32],
     target_word: &str,
@@ -820,13 +820,13 @@ fn pronunciation_feedback(
         suggestions: generate_practice_suggestions(&errors),
     }
 }
-```
+```text
 
 ### Accessibility Technology
 
 Screen readers and assistive devices:
 
-```rust
+```rust,ignore
 fn screen_reader_pronunciation(
     text: &str,
     user_preferences: &AccessibilityPreferences,
@@ -839,7 +839,7 @@ fn screen_reader_pronunciation(
     );
     synthesize_speech(adjusted_phonemes)
 }
-```
+```text
 
 ### Troubleshooting
 
@@ -847,7 +847,7 @@ fn screen_reader_pronunciation(
 
 Large pronunciation lexicons can consume significant memory. Here are strategies to optimize:
 
-```rust
+```rust,ignore
 struct MemoryEfficientLexicon {
     // Use a trie for prefix sharing
     trie: PronunciationTrie,
@@ -875,13 +875,13 @@ impl MemoryEfficientLexicon {
         self.word_to_phoneme_indices.insert(word.to_string(), indices);
     }
 }
-```
+```text
 
 ### Handling Pronunciation Conflicts
 
 When multiple sources provide different pronunciations:
 
-```rust
+```rust,ignore
 struct PronunciationConflictResolver {
     priority_sources: Vec<PronunciationSource>,
     voting_threshold: f32,
@@ -913,13 +913,13 @@ impl PronunciationConflictResolver {
         selected.into_iter().map(|(pron, _)| pron).collect()
     }
 }
-```
+```text
 
 ### G2P Model Training
 
 Training custom G2P models for better coverage:
 
-```rust
+```rust,ignore
 struct G2PTrainer {
     alignment_model: AlignmentModel,
     sequence_model: SequenceModel,
@@ -949,7 +949,7 @@ impl G2PTrainer {
         }
     }
 }
-```
+```text
 
 ### Best Practices
 
@@ -957,7 +957,7 @@ impl G2PTrainer {
 
 Always validate pronunciations before deployment:
 
-```rust
+```rust,ignore
 fn validate_pronunciation_quality(
     lexicon: &PronunciationLexicon,
     test_words: &[(String, Vec<Phoneme>)],
@@ -986,13 +986,13 @@ fn validate_pronunciation_quality(
         accuracy: 1.0 - (errors.len() as f32 / test_words.len() as f32),
     }
 }
-```
+```text
 
 ### 2. Handling Pronunciation Variants
 
 Design for multiple valid pronunciations from the start:
 
-```rust
+```rust,ignore
 struct VariantAwareLexicon {
     // Primary pronunciations (most common)
     primary: HashMap<String, Vec<Phoneme>>,
@@ -1013,13 +1013,13 @@ enum VariantType {
     Historical,     // Older pronunciations
     Foreign,        // Non-native adaptations
 }
-```
+```text
 
 ### 3. Efficient Updates
 
 Support incremental lexicon updates:
 
-```rust
+```rust,ignore
 struct UpdateableLexicon {
     base_lexicon: PronunciationLexicon,
     updates: Vec<LexiconUpdate>,
@@ -1051,5 +1051,5 @@ impl UpdateableLexicon {
         self.update_index.clear();
     }
 }
-```
+```text
 

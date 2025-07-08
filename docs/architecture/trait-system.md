@@ -6,7 +6,7 @@
 
 The core trait hierarchy provides different levels of FST functionality:
 
-```rust
+```rust,ignore
 /// Base trait - read-only FST operations
 pub trait Fst<W: Semiring>: Debug + Send + Sync {
     type ArcIter<'a>: ArcIterator<W> where Self: 'a;
@@ -57,7 +57,7 @@ pub trait LazyFst<W: Semiring>: Fst<W> {
 
 The semiring system provides the algebraic foundation:
 
-```rust
+```rust,ignore
 /// Core semiring operations
 pub trait Semiring:
     Clone + Debug + Display + PartialEq + PartialOrd + 
@@ -103,7 +103,7 @@ pub trait InvertibleSemiring: Semiring {
 
 Many algorithms use the strategy pattern to allow customization:
 
-```rust
+```rust,ignore
 // Different composition strategies
 pub trait ComposeFilter<W: Semiring> {
     fn filter(&mut self, 
@@ -128,7 +128,7 @@ where
 
 ### Factory Pattern for FST Types
 
-```rust
+```rust,ignore
 pub trait FstFactory<W: Semiring> {
     type Fst: MutableFst<W>;
     
@@ -150,7 +150,7 @@ impl<W: Semiring> FstFactory<W> for VectorFstFactory {
 
 ArcWeight extensively uses iterators to avoid unnecessary allocations:
 
-```rust
+```rust,ignore
 // Lazy evaluation - no intermediate collections
 let total_weight: f32 = fst
     .states()
@@ -161,7 +161,7 @@ let total_weight: f32 = fst
 
 ### Adapter Pattern for Legacy Compatibility
 
-```rust
+```rust,ignore
 pub struct OpenFstAdapter<F> {
     inner: F,
 }

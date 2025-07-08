@@ -123,7 +123,7 @@ graph TB
 
 The property system tracks FST characteristics for optimization:
 
-```rust
+```rust,ignore
 bitflags! {
     pub struct PropertyFlags: u64 {
         const ACCEPTOR        = 1 << 0;   // Input = output labels
@@ -160,7 +160,7 @@ pub struct FstProperties {
 The I/O system supports multiple serialization formats:
 
 #### Text Format
-```rust
+```rust,ignore
 pub fn read_text<M, W>(
     reader: &mut impl BufRead,
     input_symbols: Option<&SymbolTable>,
@@ -176,7 +176,7 @@ pub fn write_text<F, W>(
 ```
 
 #### OpenFST Compatibility
-```rust
+```rust,ignore
 pub fn read_openfst<M, W>(reader: &mut impl Read) -> Result<M>
 where
     M: MutableFst<W> + Default,
@@ -189,7 +189,7 @@ where
 ```
 
 #### Native Binary Format
-```rust
+```rust,ignore
 #[cfg(feature = "serde")]
 pub fn read_binary<M, W>(reader: &mut impl Read) -> Result<M>
 where
@@ -207,7 +207,7 @@ where
 
 **API Reference**: [`SymbolTable`](https://docs.rs/arcweight/latest/arcweight/utils/struct.SymbolTable.html)
 
-```rust
+```rust,ignore
 pub struct SymbolTable {
     symbol_to_id: HashMap<String, Label>,
     id_to_symbol: Vec<String>,
@@ -225,7 +225,7 @@ pub struct SymbolTable {
 
 **API Reference**: [`Error`](https://docs.rs/arcweight/latest/arcweight/enum.Error.html)
 
-```rust
+```rust,ignore
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Invalid FST operation

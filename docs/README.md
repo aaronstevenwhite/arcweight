@@ -1,20 +1,18 @@
 # ArcWeight Documentation
 
-**High-performance weighted finite state transducers for Rust**
-
-*Elegant • Efficient • Extensible*
+**Weighted finite state transducers for Rust**
 
 [![Crates.io](https://img.shields.io/crates/v/arcweight.svg)](https://crates.io/crates/arcweight)
 [![Documentation](https://docs.rs/arcweight/badge.svg)](https://docs.rs/arcweight)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/aaronstevenwhite/arcweight/blob/main/LICENSE)
 
-This book contains comprehensive documentation for **[ArcWeight](https://github.com/aaronstevenwhite/arcweight)**, a high-performance Rust library for weighted finite state transducers (FSTs). ArcWeight provides a modular and efficient implementation of FST algorithms with extensive support for different semiring structures, making it suitable for applications in computational linguistics, natural language processing, and speech recognition.
+This book contains comprehensive documentation for **[ArcWeight](https://github.com/aaronstevenwhite/arcweight)**, a Rust library for weighted finite state transducers (FSTs). ArcWeight provides a modular implementation of FST algorithms with support for different semiring structures, suitable for applications in computational linguistics, natural language processing, and speech recognition.
 
 ## About Finite State Transducers
 
-> **What are FSTs?** Finite state transducers are mathematical structures that map input sequences to output sequences through a finite set of states and weighted transitions.
+Finite state transducers are mathematical structures that map input sequences to output sequences through a finite set of states and weighted transitions.
 
-FSTs provide an elegant framework for modeling sequential transformations and have found widespread applications in language processing tasks such as:
+FSTs provide a framework for modeling sequential transformations and have applications in language processing tasks such as:
 
  
 - **Spell checking** — Error detection and correction
@@ -36,7 +34,7 @@ The **weighted** nature of FSTs allows for probabilistic modeling and optimizati
 For newcomers and quick setup
 
 - **[Installation](installation.md)** — Setup and dependencies
-- **[Quick Start](quick-start.md)** — Your first FST in 15 minutes
+- **[Quick Start](quick-start.md)** — Introduction to FST construction
 
 ### User Guide
 In-depth coverage of FST operations
@@ -67,7 +65,7 @@ Optimization and troubleshooting
 
 ## Practical Examples
 
-> **Learn by doing!** Each example includes theory, working code, and real-world applications.
+Each example includes theoretical background, implementation code, and applications.
 
 ### Text Processing Fundamentals
 
@@ -88,26 +86,19 @@ Optimization and troubleshooting
 
 ## Learning Paths
 
-Choose your adventure based on your background and goals.
+Suggested reading sequences based on background and objectives.
 
 ### For Beginners
-*New to FSTs? Start with hands-on learning!*
+*For readers new to finite state transducers*
 
 1. **[Core Concepts](core-concepts/)** — Theoretical foundations
 2. **[Quick Start](quick-start.md)** — Build first FST
 3. **[Text Processing Fundamentals](examples/text-processing/)** — Real-world examples
 
-**Perfect for**: Students, researchers new to FSTs, developers wanting practical understanding
-
 ### For Experienced Developers
-*Ready for the technical deep-dive?*
+*For readers with prior FST experience*
 
 1. **[Working with FSTs](working-with-fsts/README.md)** — In-depth guide to the package
 2. **[Architecture](architecture/README.md)** — Implementation details
 3. **[Benchmarks](benchmarks.md)** — Performance analysis
 4. **[API Reference](api-reference.md)** — Complete technical docs
-
-
-**Perfect for**: Systems engineers, library authors, performance-critical applications
-
-> **Tip**: Examples are self-contained but build conceptually. Each includes runnable code, theory, and connections to related topics.

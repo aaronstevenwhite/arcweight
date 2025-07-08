@@ -121,6 +121,12 @@ pub use crate::{
     // i/o
     io::{read_openfst, read_text, write_openfst, write_text},
 
+    // optimization
+    optimization::{
+        optimize_for_performance, prefetch_cache_line, AccessPattern, ArcPool, CacheMetadata,
+        OptimizationRecommendation, OptimizedFst, SimdOps,
+    },
+
     // properties
     properties::{compute_properties, FstProperties, PropertyFlags},
 

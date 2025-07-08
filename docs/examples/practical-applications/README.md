@@ -11,21 +11,21 @@ These examples show practical applications of FSTs in production systems, coveri
 **Concepts:** Pattern recognition, format conversion  
 ```bash
 cargo run --example number_date_normalizer
-```
+```text
 
 ### [Pronunciation Lexicon](pronunciation_lexicon.md)
 **Complexity:** Advanced  
 **Concepts:** Grapheme-to-phoneme, phonological mapping  
 ```bash
 cargo run --example pronunciation_lexicon
-```
+```text
 
 ### [Transliteration](transliteration.md)
 **Complexity:** Advanced  
 **Concepts:** Cross-script mapping, Unicode handling  
 ```bash
 cargo run --example transliteration
-```
+```text
 
 ## Use Cases
 

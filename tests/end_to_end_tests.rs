@@ -283,6 +283,8 @@ fn test_connect_prune_operations() {
         weight_threshold: 5.0,
         state_threshold: None,
         npath: None,
+        delta: 0.0,
+        use_forward_backward: false,
     };
 
     let pruned: VectorFst<TropicalWeight> = prune(&weighted_fst, config).unwrap();

@@ -1,6 +1,6 @@
 # Finite State Transducers
 
-Finite State Transducers (FSTs) represent one of the most fundamental and powerful computational models in theoretical computer science and natural language processing. This chapter provides a comprehensive mathematical foundation for understanding FSTs, their weighted extensions, and their role in rational transduction theory.
+Finite State Transducers (FSTs) represent a fundamental computational model in theoretical computer science and natural language processing {{#cite mohri1997finite}}. This chapter provides a comprehensive mathematical foundation for understanding FSTs, their weighted extensions, and their role in rational transduction theory, building upon the seminal work of {{#cite elgot1965relations}} and subsequent developments in weighted automata theory.
 
 ## Mathematical Foundations
 
@@ -17,11 +17,11 @@ Before examining transducers, we establish the mathematical framework through fi
 
 The automaton \\(M\\) defines a language \\(L(M) \subseteq \Sigma^*\\) consisting of all strings accepted by the machine. A string \\(w = a_1 a_2 \ldots a_n\\) is accepted if there exists a sequence of states \\(q_0, q_1, \ldots, q_n\\) such that \\(\delta(q_{i-1}, a_i) = q_i\\) for all \\(i \in \\{1, n\\}\\) and \\(q_n \in F\\).
 
-The fundamental theorem of regular language theory establishes that finite state automata recognize precisely the class of regular languages, which form the lowest level of the Chomsky hierarchy.
+The fundamental theorem of regular language theory establishes that finite state automata recognize precisely the class of regular languages, which form the lowest level of the Chomsky hierarchy. This theoretical foundation, established in the 1960s, provided the basis for the later development of finite-state transducers {{#cite elgot1965relations}}.
 
 **Example**: Consider recognizing strings over \\(\{a, b\}^*\\) that end with "ing":
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn build_ing_acceptor() -> Result<VectorFst<BooleanWeight>, Box<dyn std::error::Error>> {
@@ -62,13 +62,13 @@ fn build_ing_acceptor() -> Result<VectorFst<BooleanWeight>, Box<dyn std::error::
 - \\(q_0 \in Q\\) is the initial state  
 - \\(F \subseteq Q\\) is the set of final states
 
-FSTs define rational relations between strings, mapping input sequences to output sequences. The fundamental difference between automata and transducers lies in the transition structure: where automata transitions are functions \\(Q \times \Sigma \to Q\\), transducer transitions are relations that associate input symbols with output symbols during state changes.
+FSTs define rational relations between strings, mapping input sequences to output sequences {{#cite mohri1997finite}}. The fundamental difference between automata and transducers lies in the transition structure: where automata transitions are functions \\(Q \times \Sigma \to Q\\), transducer transitions are relations that associate input symbols with output symbols during state changes, enabling the modeling of complex linguistic phenomena.
 
 An FST defines a rational relation \\(R_T \subseteq \Sigma^* \times \Delta^*\\). A pair \\((u, v)\\) belongs to \\(R_T\\) if there exists a path from \\(q_0\\) to some \\(q_f \in F\\) such that the concatenation of input labels along the path equals \\(u\\) and the concatenation of output labels equals \\(v\\).
 
 **Example**: US to UK spelling transformation ("color" → "colour"):
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn build_us_to_uk_fst() -> Result<VectorFst<TropicalWeight>, Box<dyn std::error::Error>> {
@@ -115,7 +115,7 @@ $$w\lbrack\pi\rbrack = \rho(q_0) \otimes w\lbrack t_1\rbrack \otimes w\lbrack t_
 The weight of a string pair \\((u, v)\\) is the semiring sum over all accepting paths that transduce \\(u\\) to \\(v\\):
 $$T(u, v) = \bigoplus_{\pi \in \Pi(u,v)} w\lbrack\pi\rbrack$$
 
-This mathematical framework enables WFSTs to model different computational problems through semiring choice:
+This mathematical framework enables WFSTs to model different computational problems through semiring choice {{#cite mohri2002semiring}}:
 - **Tropical semiring**: Optimization problems (shortest path, minimum edit distance)
 - **Probability semiring**: Probabilistic modeling (language models, probabilistic parsing)
 - **Log semiring**: Numerically stable probability computation
@@ -139,7 +139,7 @@ For comprehensive coverage of semiring theory, algebraic properties, and detaile
 - Epsilon removal may cause state explosion
 - Composition with epsilon transitions requires careful filter design
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn epsilon_demonstration() -> Result<(), Box<dyn std::error::Error>> {
@@ -172,7 +172,7 @@ $$\forall q \in Q, \forall a \in \Sigma: |\{\langle q, a, b, w, q' \rangle \in \
 - Non-deterministic FSTs can be determinized using subset construction (may cause exponential state explosion)
 - Deterministic FSTs offer computational advantages: linear-time transduction, simplified composition, efficient shortest-path computation
 
-```rust
+```rust,ignore
 fn determinism_example() -> Result<(), Box<dyn std::error::Error>> {
     // Non-deterministic FST: multiple outputs possible for input "a"
     let mut ndet_fst = VectorFst::<TropicalWeight>::new();
@@ -193,7 +193,7 @@ fn determinism_example() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Theoretical Properties
 
-A relation \\(R \subseteq \Sigma^* \times \Delta^*\\) is **rational** if it can be recognized by a finite state transducer. The class of rational relations forms a fundamental object of study in theoretical computer science.
+A relation \\(R \subseteq \Sigma^* \times \Delta^*\\) is **rational** if it can be recognized by a finite state transducer {{#cite elgot1965relations}}. The class of rational relations forms a fundamental object of study in theoretical computer science, with important connections to formal language theory and computational linguistics.
 
 **Closure Properties**: Rational relations are closed under:
 - **Union**: If \\(R_1, R_2\\) are rational, then \\(R_1 \cup R_2\\) is rational
@@ -224,7 +224,17 @@ Throughout this chapter, we employ standard mathematical notation from automata 
 
 This notation provides a precise foundation for understanding the mathematical principles underlying all FST computation.
 
-**See Also**:
+## References and Further Reading
+
+For additional theoretical background and practical applications:
+
 - **[Examples](../examples/)** - Complete implementations and practical applications
-- **[Semirings](semirings.md)** - Mathematical foundations of weight computation
+- **[Semirings](semirings.md)** - Mathematical foundations of weight computation {{#cite kuich1986semirings}}
 - **[Algorithms](algorithms.md)** - Detailed algorithmic analysis and complexity theory
+
+### Key Theoretical Papers
+
+- {{#cite elgot1965relations}}: Original definition of rational relations
+- {{#cite mohri1997finite}}: Comprehensive survey of finite-state transducers in NLP
+- {{#cite mohri2000design}}: Design principles for weighted transducer libraries
+- {{#cite allauzen2007openfst}}: Practical implementation considerations

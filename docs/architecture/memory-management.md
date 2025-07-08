@@ -1,325 +1,256 @@
 # Memory Management
 
+## Overview
+
+ArcWeight's memory management strategy leverages Rust's ownership system to provide safe, efficient FST operations without manual memory management. This document describes the key memory patterns and strategies used throughout the library.
+
 ## Ownership Patterns
 
-ArcWeight uses Rust's ownership system for memory safety:
+### FST Ownership
 
-### Value Semantics
-```rust
-// Weights and arcs are values (Copy/Clone)
-let arc = Arc::new(input, output, weight, next_state);
-let new_weight = weight1.plus(&weight2);  // No aliasing issues
-```
+FSTs own their internal data structures:
 
-### Reference Semantics
-```rust
-// FSTs passed by reference to algorithms
-let result = compose(&fst1, &fst2, filter);  // No unnecessary copying
-```
+```rust,ignore
+pub struct VectorFst<W: Semiring> {
+    states: Vec<VectorState<W>>,  // Owned vector of states
+    start: Option<StateId>,
+    properties: FstProperties,
+}
 
-### Zero-Copy Operations
-```rust
-// Iterator provides references to internal data
-for arc in fst.arcs(state) {
-    // arc: Arc<W> - cloned from internal storage
+struct VectorState<W: Semiring> {
+    arcs: Vec<Arc<W>>,            // Owned vector of arcs
+    final_weight: Option<W>,
 }
 ```
 
-## Memory Layout Optimization
+### Reference-Based Algorithms
 
-### VectorFst Layout
-```
-States: [State0, State1, State2, ...]
-         │       │       │
-         ▼       ▼       ▼
-       Arcs    Arcs    Arcs
-```
+Algorithms operate on FST references to avoid unnecessary copying:
 
-### ConstFst Layout
+```rust,ignore
+pub fn compose<W, F1, F2, M>(
+    fst1: &F1,    // Borrowed reference
+    fst2: &F2,    // Borrowed reference
+    filter: impl ComposeFilter<W>,
+) -> Result<M>    // Returns owned result
+where
+    F1: Fst<W>,
+    F2: Fst<W>,
+    M: MutableFst<W> + Default,
 ```
-States: [StateRef0, StateRef1, StateRef2, ...]
-         │           │           │
-         ▼           ▼           ▼
-Arcs:   [Arc0, Arc1, Arc2, Arc3, Arc4, Arc5, ...]
-```
-
-**Benefits of ConstFst layout:**
-- **Better cache locality** - arcs stored contiguously
-- **Reduced pointer indirection** - single allocation for all arcs
-- **Lower memory overhead** - fewer allocations
 
 ## Memory Strategies by FST Type
 
-### VectorFst Strategy
-- Dynamic growth with `Vec<T>`
-- Good for construction and modification
+### VectorFst - Dynamic Growth
+
+- Uses `Vec<T>` for dynamic growth
+- Amortized O(1) insertion
 - Higher memory overhead but flexible
 
-**Memory characteristics:**
-- Each state stores its own `Vec<Arc<W>>`
-- Arcs allocated independently as vectors grow
-- Good cache locality within each state's arcs
-- Higher allocation overhead due to multiple vectors
+```rust,ignore
+// Pre-allocate when size is known
+let mut fst = VectorFst::new();
+fst.reserve_states(expected_states);
+```
 
-### ConstFst Strategy
-- Single allocation for all data
-- Optimized for read-only access
-- Lower memory overhead, better cache performance
+### ConstFst - Compact Storage
 
-**Memory characteristics:**
-- All arcs stored in single contiguous array
-- States store indices into arc array
-- Minimal allocation overhead
-- Excellent cache locality for iteration
+- Uses boxed slices for immutability
+- Single allocation for all arcs
+- ~30% less memory than VectorFst
 
-### CompactFst Strategy
-- Custom compression for specific data patterns
-- Significant memory savings for large FSTs
-- Trade-off: compression/decompression overhead
+```rust,ignore
+pub struct ConstFst<W: Semiring> {
+    states: Box<[ConstState<W>]>,  // Fixed-size array
+    arcs: Box<[Arc<W>]>,           // All arcs in one array
+    // ...
+}
+```
 
-**Memory characteristics:**
-- Uses `Compactor<W>` trait for compression
-- Memory usage depends on compression ratio
-- CPU overhead for compression/decompression
-- Best for memory-constrained environments
+### CompactFst - Compressed Representation
 
-## Memory Allocation Patterns
+- Custom compression via `Compactor` trait
+- Trade memory for computation
+- 40-70% reduction possible
 
-### Pre-allocation for Performance
+```rust,ignore
+// User-defined compression strategy
+impl<W: Semiring> Compactor<W> for MyCompactor {
+    type Element = CompressedArc;
+    // Compression logic
+}
+```
 
-```rust
-impl<W: Semiring> VectorFst<W> {
-    /// Create FST with pre-allocated capacity
-    pub fn with_capacity(states: usize, total_arcs: usize) -> Self {
-        let mut fst = Self {
-            states: Vec::with_capacity(states),
-            start: None,
-            properties: FstProperties::default(),
-        };
-        
-        // Pre-allocate space for states
-        for _ in 0..states {
-            fst.states.push(VectorState {
-                arcs: Vec::with_capacity(total_arcs / states),
-                final_weight: None,
-            });
-        }
-        
-        fst
+### LazyFstImpl - On-Demand Allocation
+
+- Computes states/arcs only when accessed
+- Caches results for reuse
+- Minimal initial memory footprint
+
+## Arc Storage Patterns
+
+### Copy Semantics
+
+Arcs use copy semantics for efficiency:
+
+```rust,ignore
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Arc<W> {
+    pub ilabel: Label,
+    pub olabel: Label,
+    pub weight: W,
+    pub nextstate: StateId,
+}
+```
+
+This allows:
+- Efficient iteration without references
+- Simple arc manipulation
+- Predictable memory layout
+
+### Arc Iteration
+
+Different iteration strategies for different FST types:
+
+```rust,ignore
+// VectorFst: Direct slice iteration
+impl<W: Semiring> ExpandedFst<W> for VectorFst<W> {
+    fn arcs_slice(&self, state: StateId) -> &[Arc<W>] {
+        &self.states[state as usize].arcs
+    }
+}
+
+// LazyFst: Computed on demand
+impl<W: Semiring> Fst<W> for LazyFstImpl<F, W> {
+    fn arcs(&self, state: StateId) -> Self::ArcIter<'_> {
+        // Compute or retrieve from cache
     }
 }
 ```
 
-### Memory Pool for Temporary Objects
+## Weight Memory Management
 
-```rust
-pub struct FstBuilder<W: Semiring> {
-    fst: VectorFst<W>,
-    arc_pool: Vec<Arc<W>>,  // Reuse arc objects
-    state_pool: Vec<StateId>,  // Reuse state IDs
-}
+### Semiring Value Storage
 
-impl<W: Semiring> FstBuilder<W> {
-    pub fn add_arc_pooled(&mut self, state: StateId, arc: Arc<W>) {
-        // Reuse pooled objects when possible
-        if let Some(mut pooled_arc) = self.arc_pool.pop() {
-            pooled_arc.ilabel = arc.ilabel;
-            pooled_arc.olabel = arc.olabel;
-            pooled_arc.weight = arc.weight;
-            pooled_arc.nextstate = arc.nextstate;
-            self.fst.add_arc(state, pooled_arc);
-        } else {
-            self.fst.add_arc(state, arc);
-        }
-    }
+Weights are stored by value in arcs:
+
+```rust,ignore
+pub trait Semiring: Clone + Debug + /* other bounds */ {
+    type Value: Clone + Debug + PartialEq + PartialOrd;
+    
+    fn new(value: Self::Value) -> Self;
+    fn value(&self) -> &Self::Value;
 }
 ```
+
+Common weight types and their memory footprint:
+- `TropicalWeight`: 4-8 bytes (f32/f64)
+- `BooleanWeight`: 1 byte
+- `StringWeight`: Variable (Vec-based)
 
 ## Memory Optimization Techniques
 
-### Cache-Friendly Iteration
+### 1. Capacity Pre-allocation
 
-```rust
-// Process states in order for better cache locality
-pub fn iterate_cache_friendly<W, F>(fst: &F) 
-where 
-    F: ExpandedFst<W>,
-    W: Semiring,
-{
-    // Process states in order for better cache locality
-    for state in 0..fst.num_states() {
-        let arcs = fst.arcs_slice(state);  // Direct slice access
-        
-        // Process all arcs for this state before moving to next
-        for arc in arcs {
-            process_arc(arc);
-        }
-    }
-}
+When building FSTs with known size:
+
+```rust,ignore
+let mut fst = VectorFst::new();
+fst.reserve_states(num_states);
+
+// For specific states
+fst.reserve_arcs(state_id, expected_arcs);
 ```
 
-### Memory-Mapped FSTs
+### 2. FST Conversion
 
-For very large FSTs that don't fit in memory:
+Convert to more memory-efficient representations:
 
-```rust
-pub struct MappedFst<W: Semiring> {
-    mmap: Mmap,
-    header: *const FstHeader,
-    states: *const [ConstState<W>],
-    arcs: *const [Arc<W>],
-}
+```rust,ignore
+// Build with VectorFst
+let mut mutable_fst = VectorFst::new();
+// ... construction ...
 
-impl<W: Semiring> MappedFst<W> {
-    pub fn from_file(path: &Path) -> Result<Self> {
-        let file = File::open(path)?;
-        let mmap = unsafe { MmapOptions::new().map(&file)? };
-        
-        // Parse memory-mapped structure
-        let header = mmap.as_ptr() as *const FstHeader;
-        let states_offset = unsafe { (*header).states_offset };
-        let arcs_offset = unsafe { (*header).arcs_offset };
-        
-        Ok(MappedFst {
-            mmap,
-            header,
-            states: unsafe { mmap.as_ptr().add(states_offset) as *const [ConstState<W>] },
-            arcs: unsafe { mmap.as_ptr().add(arcs_offset) as *const [Arc<W>] },
-        })
-    }
-}
+// Convert to ConstFst for deployment
+let const_fst = ConstFst::from(&mutable_fst);
 ```
 
-### Lazy Memory Allocation
+### 3. Lazy Evaluation
 
-```rust
-pub struct LazyFst<W: Semiring> {
-    generator: Box<dyn Fn(StateId) -> Vec<Arc<W>>>,
-    cache: RefCell<LruCache<StateId, Vec<Arc<W>>>>,
-}
+Use lazy FSTs for large computations:
 
-impl<W: Semiring> LazyFst<W> {
-    fn get_arcs(&self, state: StateId) -> Vec<Arc<W>> {
-        let mut cache = self.cache.borrow_mut();
-        
-        if let Some(arcs) = cache.get(&state) {
-            arcs.clone()
-        } else {
-            let arcs = (self.generator)(state);
-            cache.put(state, arcs.clone());
-            arcs
-        }
-    }
-}
+```rust,ignore
+// Instead of materializing large composition
+let composed = compose(&fst1, &fst2)?;
+
+// Use lazy composition
+let lazy = LazyFstImpl::new(|state| {
+    // Compute arcs on demand
+});
 ```
 
-## Memory Profiling and Debugging
+## Cache Efficiency
 
-### Memory Usage Tracking
+### Memory Layout
 
-```rust
-pub struct MemoryTracker {
-    allocations: AtomicUsize,
-    peak_usage: AtomicUsize,
-    current_usage: AtomicUsize,
-}
+FST implementations optimize for cache locality:
 
-impl MemoryTracker {
-    pub fn track_allocation(&self, size: usize) {
-        self.allocations.fetch_add(1, Ordering::Relaxed);
-        let current = self.current_usage.fetch_add(size, Ordering::Relaxed) + size;
-        
-        // Update peak usage
-        let mut peak = self.peak_usage.load(Ordering::Relaxed);
-        while current > peak {
-            match self.peak_usage.compare_exchange_weak(peak, current, Ordering::Relaxed, Ordering::Relaxed) {
-                Ok(_) => break,
-                Err(new_peak) => peak = new_peak,
-            }
-        }
-    }
-}
-```
+- `VectorFst`: Arcs stored contiguously per state
+- `ConstFst`: All arcs in single array for better prefetching
+- State data separate from arc data
 
-### Memory Leak Detection
+### Access Patterns
 
-```rust
-#[cfg(debug_assertions)]
-pub struct FstDropGuard<W: Semiring> {
-    fst: VectorFst<W>,
-    allocated_states: usize,
-    allocated_arcs: usize,
-}
+Algorithms designed for sequential access:
 
-#[cfg(debug_assertions)]
-impl<W: Semiring> Drop for FstDropGuard<W> {
-    fn drop(&mut self) {
-        // Verify all memory was properly cleaned up
-        assert_eq!(self.fst.num_states(), 0, "FST not properly cleared before drop");
-        
-        // Track memory statistics
-        MEMORY_TRACKER.track_deallocation(
-            self.allocated_states * size_of::<VectorState<W>>() +
-            self.allocated_arcs * size_of::<Arc<W>>()
-        );
+```rust,ignore
+// Good: Sequential state processing
+for state in fst.states() {
+    for arc in fst.arcs(state) {
+        // Process arc
     }
 }
 ```
 
 ## Best Practices
 
-### 1. Choose the Right FST Type
+### 1. Choose Appropriate FST Type
 
-```rust
-// For construction and modification
-let mut fst = VectorFst::<TropicalWeight>::new();
+- Construction: Use `VectorFst`
+- Read-only operations: Convert to `ConstFst`
+- Memory-constrained: Use `CompactFst`
+- Large FSTs: Consider `LazyFstImpl`
 
-// For read-only production use
-let fst = ConstFst::from(vector_fst);
+### 2. Minimize Allocations
 
-// For memory-constrained environments
-let fst = CompactFst::from(vector_fst);
+```rust,ignore
+// Reuse buffers when possible
+let mut queue = VecDeque::with_capacity(fst.num_states());
+let mut visited = HashSet::with_capacity(fst.num_states());
 ```
 
-### 2. Pre-allocate When Possible
+### 3. Use Move Semantics
 
-```rust
-// Better: Pre-allocate based on known size
-let mut fst = VectorFst::with_capacity(expected_states, expected_arcs);
-
-// Avoid: Growing incrementally
-let mut fst = VectorFst::new();
-for _ in 0..1000000 {
-    fst.add_state();  // May cause multiple reallocations
-}
+```rust,ignore
+// Move large FSTs instead of cloning
+let result = expensive_computation();
+process_fst(result);  // Move, don't clone
 ```
 
-### 3. Use Memory-Efficient Algorithms
+### 4. Profile Memory Usage
 
-```rust
-// Good: Process in-place when possible
-let minimized = minimize_in_place(&mut fst);
+Use Rust's built-in tools:
+- `valgrind` with `massif` for heap profiling
+- `heaptrack` for allocation tracking
+- Size assertions in tests
 
-// Less efficient: Creates intermediate copies
-let reversed = reverse(&fst);
-let minimized = minimize(&reversed);
-```
+## Memory Safety Guarantees
 
-### 4. Monitor Memory Usage
+Rust's ownership system provides:
 
-```rust
-#[cfg(feature = "memory-profiling")]
-fn profile_memory_usage() {
-    let tracker = MemoryTracker::new();
-    
-    {
-        let _guard = tracker.start_tracking();
-        let fst = build_large_fst();
-        run_algorithms(&fst);
-    } // Memory usage logged when guard drops
-    
-    println!("Peak memory usage: {} MB", tracker.peak_usage() / 1024 / 1024);
-}
-```
+1. **No manual memory management** - RAII handles cleanup
+2. **No dangling pointers** - Lifetime checking
+3. **No data races** - Send/Sync traits
+4. **No buffer overflows** - Bounds checking
 
-This memory management approach ensures ArcWeight is both safe and efficient for production use.
+These guarantees come with zero runtime cost, making ArcWeight both safe and efficient.

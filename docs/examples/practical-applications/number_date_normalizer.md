@@ -14,7 +14,7 @@ This system demonstrates comprehensive normalization covering numbers, dates, ti
 
 ```bash
 cargo run --example number_date_normalizer
-```
+```text
 
 ## What You'll Learn
 
@@ -35,12 +35,12 @@ Understanding where text normalization fits in the NLP pipeline helps appreciate
 
 TTS systems need to expand abbreviated forms for natural pronunciation:
 
-```
+```text
 Input:  "Meeting at 3:30 PM on Jan 15, 2024"
 Step 1: "Meeting at 15:30 on 2024-01-15"          (normalization)
 Step 2: "Meeting at fifteen thirty on January     (expansion for speech)
          fifteenth, twenty twenty-four"
-```
+```text
 
 **Why FSTs?** The bidirectional nature means the same FST can normalize for processing AND expand for speech.
 
@@ -48,7 +48,7 @@ Step 2: "Meeting at fifteen thirty on January     (expansion for speech)
 
 Extract structured data from unstructured text:
 
-```
+```text
 Input text: "The company raised $1.5 million in Series A funding"
 Extracted:  {
   amount: 1500000.00,
@@ -64,18 +64,18 @@ Extracted:  {
   time: "12:00",
   unit: "fahrenheit/celsius"
 }
-```
+```text
 
 ### Cross-Format Search
 
 Enable users to find information regardless of how it's written:
 
-```
+```text
 User query: "flights on March 3rd"
 Should match "03/03/2024 departure", "March 3, 2024 flights", "2024-03-03 available seats", and "3rd of March booking".
 
 This requires normalizing BOTH the query and the documents to a common format.
-```
+```text
 
 ### Core Components
 
@@ -84,70 +84,70 @@ This requires normalizing BOTH the query and the documents to a common format.
 The system handles a comprehensive range of number representations:
 
 **Basic Numbers (0-19):**
-```rust
+```rust,ignore
 ("zero", "0"), ("one", "1"), ("two", "2"), ..., ("nineteen", "19")
-```
+```text
 
 **Tens:**
-```rust
+```rust,ignore
 ("twenty", "20"), ("thirty", "30"), ..., ("ninety", "90")
-```
+```text
 
 **Compound Numbers:**
-```rust
+```rust,ignore
 ("twenty-one", "21"), ("thirty-five", "35"), ("forty-seven", "47")
-```
+```text
 
 **Large Numbers:**
-```rust
+```rust,ignore
 ("hundred", "100"), ("thousand", "1000"), ("million", "1000000")
-```
+```text
 
 ### Date Pattern Recognition
 
 Multiple date formats are normalized to ISO 8601 format:
 
 **Month Abbreviations:**
-```rust
+```rust,ignore
 ("Jan", "01"), ("Feb", "02"), ("Mar", "03"), ..., ("Dec", "12")
-```
+```text
 
 **Full Month Names:**
-```rust
+```rust,ignore
 ("January", "01"), ("February", "02"), ..., ("December", "12")
-```
+```text
 
 **Common Date Formats:**
-```rust
+```rust,ignore
 ("Jan 15, 2024", "2024-01-15")
 ("12/25/2023", "2023-12-25")  
 ("15-Jan-2024", "2024-01-15")
 ("2024/01/15", "2024-01-15")
-```
+```text
 
 ### Time Normalization
 
 Convert 12-hour format to 24-hour format:
 
-```rust
+```rust,ignore
 ("12:00 AM", "00:00")  // Midnight
 ("1:00 PM", "13:00")   // 1 PM
 ("11:59 PM", "23:59")  // Just before midnight
 ("noon", "12:00")      // Noon
 ("midnight", "00:00")  // Midnight
-```
+```text
 
 ### Currency Patterns
 
 Standardize various currency representations:
 
-```rust
+```rust,ignore
 ("$10", "USD 10.00")
 ("ten dollars", "USD 10.00")  
 ("€100", "EUR 100.00")
 ("fifty pounds", "GBP 50.00")
 ("¥1000", "JPY 1000.00")
-```
+```text
 
 ## Implementation
 
@@ -155,7 +155,7 @@ Standardize various currency representations:
 
 The core normalizer contains pattern databases for different entity types:
 
-```rust
+```rust,ignore
 struct NumberNormalizer {
     word_to_digit: Vec<(String, String)>,
     ordinal_to_number: Vec<(String, String)>,
@@ -164,13 +164,13 @@ struct NumberNormalizer {
     currency_patterns: Vec<(String, String)>,
     measurement_patterns: Vec<(String, String)>,
 }
-```
+```text
 
 ### Text Processing Pipeline
 
 The normalization process follows these steps. **Pattern Matching** identifies normalizable entities in text. **Rule Application** applies transformation rules. **Context Resolution** handles ambiguous cases. **Output Generation** produces normalized text.
 
-```rust
+```rust,ignore
 fn normalize_text(&self, text: &str) -> Vec<NormalizedEntity> {
     let mut results = Vec::new();
     
@@ -189,7 +189,7 @@ fn normalize_text(&self, text: &str) -> Vec<NormalizedEntity> {
     // ... (similar for other types)
     results
 }
-```
+```text
 
 ## FST Implementation
 
@@ -197,7 +197,7 @@ fn normalize_text(&self, text: &str) -> Vec<NormalizedEntity> {
 
 A simple FST demonstrates the concept:
 
-```rust
+```rust,ignore
 fn build_number_normalization_fst() -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -234,17 +234,17 @@ fn build_number_normalization_fst() -> VectorFst<TropicalWeight> {
 
     fst
 }
-```
+```text
 
 ## Running the Example
 
 ```bash
 cargo run --example number_date_normalizer
-```
+```text
 
 ### Sample Output
 
-```
+```text
 Number Normalization:
 ------------------------
 'I have twenty-three apples' → 'I have 23 apples'
@@ -262,7 +262,7 @@ Time Normalization:
 'Meeting at 2:30 PM' → 'Meeting at 14:30'
 'Wake up at 6:15 AM' → 'Wake up at 06:15'
 'Lunch at noon' → 'Lunch at 12:00'
-```
+```text
 
 ## Advanced Features
 
@@ -270,23 +270,23 @@ Time Normalization:
 
 Convert written ordinals to numeric ordinals:
 
-```rust
+```rust,ignore
 ("first", "1st"), ("second", "2nd"), ("third", "3rd"),
 ("twentieth", "20th"), ("twenty-first", "21st")
-```
+```text
 
 **Example Usage:**
-```
+```text
 "This is the first time" → "This is the 1st time"
 "Take the second exit" → "Take the 2nd exit"
 "The twenty-first century" → "The 21st century"
-```
+```text
 
 ### Measurement Normalization
 
 Standardize units and measurements:
 
-```rust
+```rust,ignore
 // Length
 ("5 feet", "5 ft"), ("10 inches", "10 in"), ("2 miles", "2 mi")
 
@@ -298,13 +298,13 @@ Standardize units and measurements:
 
 // Temperature
 ("32 degrees Fahrenheit", "32°F"), ("100 degrees Celsius", "100°C")
-```
+```text
 
 ### Phone Number Normalization
 
 Standardize various phone number formats:
 
-```rust
+```rust,ignore
 fn normalize_phone_numbers(text: &str) -> Vec<NormalizedEntity> {
     let phone_patterns = vec![
         ("(555) 123-4567", "+1-555-123-4567"),
@@ -314,7 +314,7 @@ fn normalize_phone_numbers(text: &str) -> Vec<NormalizedEntity> {
     ];
     // ... implementation
 }
-```
+```text
 
 ### Complex Text Processing
 
@@ -323,27 +323,27 @@ fn normalize_phone_numbers(text: &str) -> Vec<NormalizedEntity> {
 The system can handle complex sentences with multiple entities:
 
 **Input:**
-```
+```text
 "The meeting is on Jan 15, 2024 at 2:30 PM with twenty-three people."
-```
+```text
 
 **Output:**
-```
+```text
 "The meeting is on 2024-01-15 at 14:30 with 23 people."
-```
+```text
 
 **Detected Entities:**
-```
+```text
 Date: 'Jan 15, 2024' → '2024-01-15'
 Time: '2:30 PM' → '14:30'  
 Number: 'twenty-three' → '23'
-```
+```text
 
 ### Entity Recognition
 
 The normalizer identifies and categorizes different entity types:
 
-```rust
+```rust,ignore
 #[derive(Debug, Clone, PartialEq)]
 enum NormalizationType {
     Number,
@@ -361,7 +361,7 @@ struct NormalizedEntity {
     entity_type: NormalizationType,
     confidence: f32,
 }
-```
+```text
 
 ### Localization Support
 
@@ -370,31 +370,31 @@ struct NormalizedEntity {
 The system can be extended to handle locale-specific formats:
 
 **US Format:**
-```
+```text
 Date: MM/DD/YYYY
 Currency: $1,000.00
 Measurements: 5'10", 150 lbs
-```
+```text
 
 **European Format:**
-```
+```text
 Date: DD/MM/YYYY  
 Currency: €1.000,00
 Measurements: 1.78m, 68kg
-```
+```text
 
 **Japanese Format:**
-```
+```text
 Date: YYYY/MM/DD
 Currency: ¥1,000
 Measurements: 178cm
-```
+```text
 
 ### Configurable Rules
 
 The FST-based approach enables easy rule switching:
 
-```rust
+```rust,ignore
 impl NumberNormalizer {
     fn with_locale(locale: &str) -> Self {
         match locale {
@@ -405,7 +405,7 @@ impl NumberNormalizer {
         }
     }
 }
-```
+```text
 
 ## Performance Considerations
 
@@ -423,34 +423,34 @@ Memory optimization uses several strategies. **Shared Pattern Storage** reuses c
 
 Normalization is crucial for speech recognition accuracy:
 
-```
+```text
 Audio: "twenty five dollars"
 ASR Output: "twenty five dollars"
 Normalized: "USD 25.00"
-```
+```text
 
 ### Machine Translation
 
 Enable consistent translation of numerical expressions:
 
-```
+```text
 English: "January 15th, 2024"
 Normalized: "2024-01-15"
 German: "15. Januar 2024"
-```
+```text
 
 ### Information Extraction
 
 Support structured data extraction:
 
-```
+```text
 Text: "The company raised $1.5 million in Series A funding."
 Extracted: {
   entity: "funding",
   amount: "USD 1500000.00",
   round: "Series A"
 }
-```
+```text
 
 ### Error Handling
 
@@ -458,7 +458,7 @@ Extracted: {
 
 Handle potentially ambiguous inputs:
 
-```rust
+```rust,ignore
 // "12/01/2024" could be:
 // - December 1, 2024 (US format)
 // - January 12, 2024 (European format)
@@ -470,19 +470,19 @@ fn resolve_date_ambiguity(&self, date_str: &str, locale: &str) -> String {
         _ => self.parse_iso_date(date_str),
     }
 }
-```
+```text
 
 ### Validation
 
 Ensure normalized output is valid:
 
-```rust
+```rust,ignore
 fn validate_normalized_date(&self, date: &str) -> bool {
     // Check if date is valid ISO 8601 format
     // Validate month (01-12), day (01-31), year ranges
     true // simplified
 }
-```
+```text
 
 ### Enhanced Pattern Recognition
 

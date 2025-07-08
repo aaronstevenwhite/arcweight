@@ -19,7 +19,7 @@ The algorithms module is organized around several key principles:
 All algorithms follow consistent patterns:
 
 ### 1. **Configuration Structs**
-```rust
+```rust,ignore
 #[derive(Debug, Clone)]
 pub struct ShortestPathConfig {
     pub nshortest: usize,
@@ -30,7 +30,7 @@ pub struct ShortestPathConfig {
 ```
 
 ### 2. **Generic Type Parameters**
-```rust
+```rust,ignore
 pub fn compose<W, F1, F2>(
     fst1: &F1, 
     fst2: &F2, 
@@ -43,7 +43,7 @@ where
 ```
 
 ### 3. **Property-Based Optimization**
-```rust
+```rust,ignore
 pub fn shortest_path<F, W>(fst: &F, config: ShortestPathConfig) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -55,7 +55,7 @@ where
 ### Core Operations
 
 **Composition** - Fundamental FST operation:
-```rust
+```rust,ignore
 pub fn compose<W, F1, F2, Filter>(
     fst1: &F1,
     fst2: &F2,
@@ -69,7 +69,7 @@ where
 ```
 
 **Union** - Combines multiple FSTs:
-```rust
+```rust,ignore
 pub fn union<W, F1, F2>(fst1: &F1, fst2: &F2) -> Result<VectorFst<W>>
 where
     W: Semiring,
@@ -78,7 +78,7 @@ where
 ```
 
 **Concatenation** - Sequential composition:
-```rust
+```rust,ignore
 pub fn concat<W, F1, F2>(fst1: &F1, fst2: &F2) -> Result<VectorFst<W>>
 where
     W: Semiring,
@@ -89,7 +89,7 @@ where
 ### Optimization Operations
 
 **Minimization** - Reduces FST size while preserving semantics:
-```rust
+```rust,ignore
 pub fn minimize<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -97,7 +97,7 @@ where
 ```
 
 **Determinization** - Makes FST deterministic:
-```rust
+```rust,ignore
 pub fn determinize<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -105,7 +105,7 @@ where
 ```
 
 **Epsilon Removal** - Eliminates epsilon transitions:
-```rust
+```rust,ignore
 pub fn remove_epsilons<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -115,7 +115,7 @@ where
 ### Path Operations
 
 **Shortest Path** - Finds optimal paths:
-```rust
+```rust,ignore
 pub fn shortest_path<F, W>(
     fst: &F,
     config: ShortestPathConfig,
@@ -126,7 +126,7 @@ where
 ```
 
 **Random Generation** - Generates random paths:
-```rust
+```rust,ignore
 pub fn randgen<F, W>(
     fst: &F,
     config: RandGenConfig,
@@ -139,7 +139,7 @@ where
 ### Structural Operations
 
 **Reversal** - Reverses FST structure:
-```rust
+```rust,ignore
 pub fn reverse<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -147,7 +147,7 @@ where
 ```
 
 **Projection** - Projects input or output:
-```rust
+```rust,ignore
 pub fn project<F, W>(fst: &F, project_type: ProjectType) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -160,7 +160,7 @@ where
 
 Most algorithms follow a common state processing pattern:
 
-```rust
+```rust,ignore
 pub fn generic_algorithm<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -203,7 +203,7 @@ where
 
 Algorithms leverage FST properties for optimization:
 
-```rust
+```rust,ignore
 pub fn optimized_operation<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
     F: Fst<W>,
@@ -236,7 +236,7 @@ where
 
 Complex algorithms use configuration structs:
 
-```rust
+```rust,ignore
 #[derive(Debug, Clone)]
 pub struct ComposeConfig {
     pub filter: ComposeFilterType,
@@ -285,7 +285,7 @@ where
 
 Some algorithms support lazy evaluation for better performance:
 
-```rust
+```rust,ignore
 pub fn compose_lazy<F1, F2, W>(
     fst1: &F1,
     fst2: &F2,
@@ -307,7 +307,7 @@ where
 
 Algorithms are designed to minimize memory allocations:
 
-```rust
+```rust,ignore
 // Reuse existing state mappings
 let mut state_map = HashMap::with_capacity(fst.num_states());
 

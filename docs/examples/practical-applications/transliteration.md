@@ -14,7 +14,7 @@ This system supports Cyrillic, Arabic, and Greek to Latin conversion, demonstrat
 
 ```bash
 cargo run --example transliteration
-```
+```text
 
 ## What You'll Learn
 
@@ -38,25 +38,25 @@ Cyrillic presents several transliteration challenges that our FST system must ha
 #### Character Mappings
 
 **Basic Letters (Mostly Straightforward):**
-```
+```text
 а → a    б → b    в → v    г → g    д → d
 е → e    з → z    и → i    к → k    л → l
 м → m    н → n    о → o    п → p    р → r
 с → s    т → t    у → u    ф → f
-```
+```text
 
 **Complex Mappings (Digraphs and Special Cases):**
-```
+```text
 ж → zh   (one Cyrillic letter → two Latin letters)
 х → kh   (BGN/PCGN) or h (popular)
 ц → ts   (represents /ts/ sound)
 ч → ch   (represents /tʃ/ sound)
 ш → sh   (represents /ʃ/ sound)
 щ → shch (most complex: one → four letters!)
-```
+```text
 
 **Special Characters:**
-```
+```text
 ъ → " (hard sign: prevents palatalization)
 ь → ' (soft sign: marks palatalization)
 ё → yo (BGN/PCGN) or e (when diacritic is dropped)
@@ -65,13 +65,13 @@ Cyrillic presents several transliteration challenges that our FST system must ha
 э → e (used for foreign words)
 ю → yu (represents /ju/)
 я → ya (represents /ja/)
-```
+```text
 
 #### Real-World Examples
 
 Let's see how these rules apply to actual Russian words:
 
-```
+```text
 москва → moskva (Moscow)
   м(m) о(o) с(s) к(k) в(v) а(a)
 
@@ -86,51 +86,51 @@ Let's see how these rules apply to actual Russian words:
 
 щи → shchi (cabbage soup)
   Single letter → four letters!
-```
+```text
 
 ### Arabic Script
 
 Implements Arabic to Latin transliteration following international standards:
 
 **Arabic Letters:**
-```
+```text
 ا -> a    ب -> b    ت -> t    ث -> th   ج -> j
 ح -> h    خ -> kh   د -> d    ذ -> dh   ر -> r
 ز -> z    س -> s    ش -> sh   ص -> s    ض -> d
 ط -> t    ظ -> z    ع -> '    غ -> gh   ف -> f
 ق -> q    ك -> k    ل -> l    م -> m    ن -> n
 ه -> h    و -> w    ي -> y
-```
+```text
 
 **Example Words:**
-```
+```text
 السلام -> assalam (peace)
 مرحبا -> marhaba (hello)
 قاهرة -> qahirah (Cairo)
 بغداد -> baghdad (Baghdad)
 مكة -> makkah (Mecca)
-```
+```text
 
 ### Greek Script
 
 Classical and modern Greek transliteration:
 
 **Greek Letters:**
-```
+```text
 α -> a    β -> v    γ -> g    δ -> d    ε -> e
 ζ -> z    η -> i    θ -> th   ι -> i    κ -> k
 λ -> l    μ -> m    ν -> n    ξ -> x    ο -> o
 π -> p    ρ -> r    σ/ς -> s  τ -> t    υ -> y
 φ -> f    χ -> ch   ψ -> ps   ω -> o
-```
+```text
 
 **Example Words:**
-```
+```text
 αθήνα -> athina (Athens)
 θεσσαλονίκη -> thessaloniki
 φιλοσοφία -> filosofia (philosophy)
 δημοκρατία -> dimokratia (democracy)
-```
+```text
 
 ### Transliteration Schemes
 
@@ -138,13 +138,13 @@ Classical and modern Greek transliteration:
 
 The Board on Geographic Names/Permanent Committee on Geographical Names standard for official geographic transliteration:
 
-```rust
+```rust,ignore
 TransliterationRule {
     source: "х".to_string(),
     target: "kh".to_string(),
     scheme: TransliterationScheme::BgnPcgn,
 }
-```
+```text
 
 **Characteristics:** This international standard for geographic names preserves linguistic accuracy, is used in official documents and maps, and handles diacritical marks precisely.
 
@@ -152,13 +152,13 @@ TransliterationRule {
 
 Simplified transliteration for general use:
 
-```rust
+```rust,ignore
 TransliterationRule {
     source: "х".to_string(),
     target: "h".to_string(),    // Simplified vs "kh"
     scheme: TransliterationScheme::Popular,
 }
-```
+```text
 
 **Characteristics:** This scheme is easier to type and read, uses no special characters, is used in informal contexts, and is better for keyboard input.
 
@@ -172,19 +172,19 @@ International Organization for Standardization schemes include **ISO 9** for Cyr
 
 The core system organizes rules by script and scheme:
 
-```rust
+```rust,ignore
 struct TransliterationSystem {
     cyrillic_to_latin: HashMap<TransliterationScheme, Vec<TransliterationRule>>,
     arabic_to_latin: HashMap<TransliterationScheme, Vec<TransliterationRule>>,
     greek_to_latin: HashMap<TransliterationScheme, Vec<TransliterationRule>>,
 }
-```
+```text
 
 ### TransliterationRule Definition
 
 Individual rules specify context and constraints:
 
-```rust
+```rust,ignore
 struct TransliterationRule {
     source: String,              // Input character/sequence
     target: String,              // Output character/sequence
@@ -192,13 +192,13 @@ struct TransliterationRule {
     context_after: Option<String>,  // Right context
     scheme: TransliterationScheme,  // Transliteration standard
 }
-```
+```text
 
 ### Simple String-Based Processing
 
 For demonstration, the system uses efficient string replacement:
 
-```rust
+```rust,ignore
 fn transliterate_simple(
     &self,
     text: &str,
@@ -228,7 +228,7 @@ fn transliterate_simple(
         text.to_string()
     }
 }
-```
+```text
 
 ## FST-Based Implementation
 
@@ -236,7 +236,7 @@ fn transliterate_simple(
 
 Build FSTs for rule-based transliteration:
 
-```rust
+```rust,ignore
 fn build_transliteration_fst(rules: &[TransliterationRule]) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -295,13 +295,13 @@ fn build_transliteration_fst(rules: &[TransliterationRule]) -> VectorFst<Tropica
 
     fst
 }
-```
+```text
 
 ### Bidirectional Transliteration
 
 Create reverse mappings for back-transliteration:
 
-```rust
+```rust,ignore
 fn create_reverse_mappings(rules: &[TransliterationRule]) -> Vec<TransliterationRule> {
     rules.iter().map(|rule| TransliterationRule {
         source: rule.target.clone(),
@@ -311,27 +311,27 @@ fn create_reverse_mappings(rules: &[TransliterationRule]) -> Vec<Transliteration
         scheme: rule.scheme,
     }).collect()
 }
-```
+```text
 
 **Usage:**
-```rust
+```rust,ignore
 // Forward: Cyrillic -> Latin
 let forward_fst = build_transliteration_fst(&cyrillic_rules);
 
 // Reverse: Latin -> Cyrillic  
 let reverse_rules = create_reverse_mappings(&cyrillic_rules);
 let reverse_fst = build_transliteration_fst(&reverse_rules);
-```
+```text
 
 ## Running the Example
 
 ```bash
 cargo run --example transliteration
-```
+```text
 
 ### Sample Output
 
-```
+```text
 Cyrillic to Latin Transliteration:
 ------------------------------------
 Russian: 'москва'
@@ -361,7 +361,7 @@ Greek: 'αθήνα'
 
 Greek: 'φιλοσοφία'
   Latin: 'filosofia'
-```
+```text
 
 ## Advanced Features
 
@@ -369,7 +369,7 @@ Greek: 'φιλοσοφία'
 
 Different schemes handle characters differently:
 
-```
+```text
 Character: х (Cyrillic KHA)
 BGN/PCGN: 'kh'    (linguistic accuracy)
 Popular:  'h'     (simplified)
@@ -381,13 +381,13 @@ Popular:  'yo'    (ASCII-only)
 Character: щ (Cyrillic SHCHA)
 BGN/PCGN: 'shch'  (full representation)
 Popular:  'sch'   (simplified)
-```
+```text
 
 ### Context-Sensitive Rules
 
 Handle position-dependent transliteration:
 
-```rust
+```rust,ignore
 struct ContextualRule {
     source: String,
     target: String,
@@ -402,20 +402,20 @@ enum Position {
     Final,      // Word-final
     Any,        // Any position
 }
-```
+```text
 
 **Example:**
-```
+```text
 Arabic ة (ta marbuta):
 Word-final: ة -> ah
 Word-medial: ة -> at
-```
+```text
 
 ### Digraph Handling
 
 Multi-character sequences require careful processing:
 
-```rust
+```rust,ignore
 // Process longest matches first
 let digraphs = vec![
     ("дж", "dzh"),  // Cyrillic digraph
@@ -425,7 +425,7 @@ let digraphs = vec![
 
 // Sort by length descending
 digraphs.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
-```
+```text
 
 ## Applications
 
@@ -433,7 +433,7 @@ digraphs.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
 
 Enable cross-script search:
 
-```rust
+```rust,ignore
 fn cross_script_search(
     query: &str,
     documents: &[Document],
@@ -459,13 +459,13 @@ fn cross_script_search(
     
     deduplicate_and_rank(results)
 }
-```
+```text
 
 ### Machine Translation
 
 Preprocessing for MT systems:
 
-```rust
+```rust,ignore
 fn preprocess_for_mt(
     text: &str,
     source_lang: Language,
@@ -486,13 +486,13 @@ fn preprocess_for_mt(
         _ => text.to_string(),
     }
 }
-```
+```text
 
 ### Name Matching
 
 Cross-cultural name standardization:
 
-```rust
+```rust,ignore
 fn match_names(
     name1: &str,
     name2: &str,
@@ -516,13 +516,13 @@ fn match_names(
     
     best_similarity >= threshold
 }
-```
+```text
 
 ### Geographic Information Systems
 
 Standardize place names:
 
-```rust
+```rust,ignore
 fn standardize_place_names(
     places: &[PlaceName],
     transliterator: &TransliterationSystem,
@@ -546,7 +546,7 @@ fn standardize_place_names(
         }
     }).collect()
 }
-```
+```text
 
 ### Challenges and Solutions
 
@@ -554,7 +554,7 @@ fn standardize_place_names(
 
 Some characters have multiple valid transliterations:
 
-```rust
+```rust,ignore
 // Arabic ج can be transliterated as:
 // - 'j' (common usage)
 // - 'g' (Egyptian pronunciation)
@@ -576,13 +576,13 @@ fn handle_multiple_mappings(
         ('ج', _) => "j".to_string(),  // default
     }
 }
-```
+```text
 
 ### Diacritical Marks
 
 Handle optional diacritics:
 
-```rust
+```rust,ignore
 enum DiacriticPolicy {
     Preserve,   // Keep all diacritics
     Simplified, // Remove or simplify
@@ -606,13 +606,13 @@ fn handle_diacritics(
         }
     }
 }
-```
+```text
 
 ### Ambiguous Sequences
 
 Handle ambiguous character combinations:
 
-```rust
+```rust,ignore
 // Russian "сх" could be:
 // - с + х -> "skh" 
 // - digraph -> "sh" (rare)
@@ -633,7 +633,7 @@ fn resolve_ambiguity(
         TransliterationChoice::Ambiguous(get_all_possibilities(sequence))
     }
 }
-```
+```text
 
 ### Quality Assurance
 
@@ -641,7 +641,7 @@ fn resolve_ambiguity(
 
 Ensure transliteration quality:
 
-```rust
+```rust,ignore
 fn validate_transliteration_rules(
     rules: &[TransliterationRule],
 ) -> ValidationReport {
@@ -674,13 +674,13 @@ fn validate_transliteration_rules(
     
     ValidationReport::new(issues)
 }
-```
+```text
 
 ### Round-Trip Testing
 
 Test bidirectional consistency:
 
-```rust
+```rust,ignore
 fn test_round_trip_consistency(
     transliterator: &TransliterationSystem,
     test_words: &[String],
@@ -709,7 +709,7 @@ fn test_round_trip_consistency(
     
     ConsistencyReport::new(inconsistencies)
 }
-```
+```text
 
 ## Performance Optimization
 
@@ -717,7 +717,7 @@ fn test_round_trip_consistency(
 
 Optimize for large-scale processing:
 
-```rust
+```rust,ignore
 struct OptimizedTransliterator {
     trie: AhoCorasick,           // Multi-pattern matching
     longest_rule: usize,         // Maximum rule length
@@ -753,13 +753,13 @@ impl OptimizedTransliterator {
         result
     }
 }
-```
+```text
 
 ### Caching Strategies
 
 Cache frequent transliterations:
 
-```rust
+```rust,ignore
 struct CachedTransliterator {
     transliterator: TransliterationSystem,
     word_cache: LruCache<(String, Script, TransliterationScheme), String>,
@@ -785,7 +785,7 @@ impl CachedTransliterator {
         result
     }
 }
-```
+```text
 
 ### Standards Compliance
 
@@ -799,7 +799,7 @@ Implement official transliteration standards:
 
 Measure transliteration quality:
 
-```rust
+```rust,ignore
 struct QualityMetrics {
     accuracy: f32,           // Correct vs total
     consistency: f32,        // Same input -> same output
@@ -847,13 +847,13 @@ fn calculate_quality_metrics(
         reversibility: reversible as f32 / total as f32,
     }
 }
-```
+```text
 
 ### Neural Transliteration
 
 Integrate machine learning approaches:
 
-```rust
+```rust,ignore
 struct NeuralTransliterator {
     encoder: TransformerEncoder,
     decoder: TransformerDecoder,
@@ -870,13 +870,13 @@ impl NeuralTransliterator {
         self.decode_to_string(decoded)
     }
 }
-```
+```text
 
 ### Context-Aware Processing
 
 Use surrounding text for better accuracy:
 
-```rust
+```rust,ignore
 fn contextual_transliteration(
     word: &str,
     context: &SentenceContext,
@@ -895,13 +895,13 @@ fn contextual_transliteration(
         }
     )
 }
-```
+```text
 
 ### Real-Time Processing
 
 Streaming transliteration for live applications:
 
-```rust
+```rust,ignore
 struct StreamingTransliterator {
     buffer: CharBuffer,
     state_machine: TransliterationStateMachine,
@@ -921,7 +921,7 @@ impl StreamingTransliterator {
         }
     }
 }
-```
+```text
 
 ## Related Examples
 

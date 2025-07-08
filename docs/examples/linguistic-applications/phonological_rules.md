@@ -4,7 +4,7 @@ This example demonstrates modeling phonological rule systems using FSTs to captu
 
 ## Overview
 
-Every language has unconsciously applied sound rules. When English speakers say "cats" \\[kæts\\] but "dogs" \\[dɔgz\\], they're following phonological rules determining when plural -s is voiced. FSTs provide a mathematically precise yet linguistically intuitive way to model these patterns.
+Every language has unconsciously applied sound rules. When English speakers say "cats" \[kæts\] but "dogs" \[dɔgz\], they're following phonological rules determining when plural -s is voiced. FSTs provide a mathematically precise yet linguistically intuitive way to model these patterns.
 
 Phonological rules transform abstract mental representations ("underlying forms") into actual pronunciations ("surface forms"). The challenge lies in rule interactions: ordering affects outcomes, opacity hides intermediate steps, context sensitivity limits application environments, and variation differs across dialects.
 
@@ -54,7 +54,7 @@ In Turkish, which we model here, all vowels in a word must agree in backness. Th
 The abstract vowel 'E' represents an underspecified vowel that gets its backness feature from the stem. This is similar to how the English plural suffix is underspecified for voicing and gets it from the preceding sound.
 
 **Implementation:**
-```rust
+```rust,ignore
 fn build_vowel_harmony_fst() -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -76,7 +76,7 @@ fn build_vowel_harmony_fst() -> VectorFst<TropicalWeight> {
 ```
 
 **Examples:**
-```
+```text
 kitabE  → kitaba  (back vowel context)
 evE     → eve     (front vowel context)
 adamE   → adama   (back vowel context)
@@ -93,7 +93,7 @@ This process is incredibly common in casual English where "exactly" → \[ɪˈz�
 This models a common pattern where the first consonant in a difficult cluster gets deleted. The FST elegantly captures this by looking ahead to see if a /t/ follows a /k/.
 
 **Implementation:**
-```rust
+```rust,ignore
 fn build_cluster_simplification_fst() -> VectorFst<TropicalWeight> {
     // Delete /k/ when followed by /t/
     fst.add_arc(start, Arc::new(
@@ -109,7 +109,7 @@ fn build_cluster_simplification_fst() -> VectorFst<TropicalWeight> {
 ```
 
 **Examples:**
-```
+```text
 akt     → at      (cluster simplified)
 ekte    → ete     (cluster simplified)  
 doktor  → dotor   (cluster simplified)
@@ -126,7 +126,7 @@ Real-world examples include Japanese borrowings where "strike" → \[sutoraiku\]
 The rule inserts an epenthetic vowel (here, /i/) whenever two consonants would otherwise be adjacent. The choice of /i/ is language-specific—Japanese uses \[u\], Hindi often uses \[i\] or \[ə\], and other languages make different choices.
 
 **Implementation:**
-```rust
+```rust,ignore
 fn build_epenthesis_fst() -> VectorFst<TropicalWeight> {
     // After first consonant, insert /i/ before second consonant
     for ch in consonants.chars() {
@@ -145,7 +145,7 @@ fn build_epenthesis_fst() -> VectorFst<TropicalWeight> {
 ```
 
 **Examples:**
-```
+```text
 sport   → sipórt  (cluster broken)
 program → pirogirám (clusters broken)
 strong  → sitirong (clusters broken)
@@ -162,7 +162,7 @@ This creates interesting alternations where "Hund" \[hunt\] 'dog' contrasts with
 The rule applies to all voiced obstruents (b→p, d→t, g→k, v→f, z→s) when they occur at the end of a word. This is why German spelling can be tricky—the spelling preserves the underlying voiced consonant even though it's pronounced voiceless.
 
 **Implementation:**
-```rust
+```rust,ignore
 fn build_final_devoicing_fst() -> VectorFst<TropicalWeight> {
     let voiced_obstruents = ['b', 'd', 'g', 'z', 'v'];
     let voiceless_obstruents = ['p', 't', 'k', 's', 'f'];
@@ -179,7 +179,7 @@ fn build_final_devoicing_fst() -> VectorFst<TropicalWeight> {
 ```
 
 **Examples:**
-```
+```text
 hund → hunt  (final /d/ devoiced)
 tag  → tak   (final /g/ devoiced)  
 lieb → liep  (final /b/ devoiced)
@@ -197,7 +197,7 @@ When rules interact, we see several possible relationships. **Feeding** occurs w
 
 FST composition naturally models these interactions. Different ordering produces different results, just like following a recipe in different orders can produce different dishes:
 
-```rust
+```rust,ignore
 fn apply_phonological_rules(
     input: &str, 
     rules: Vec<VectorFst<TropicalWeight>>
@@ -222,14 +222,14 @@ Let's trace through a concrete example to see how this works:
 **Input:** `aktE` (a hypothetical word with a cluster and a harmony-triggering vowel)
 
 **Order 1: Harmony First, Then Cluster Simplification**
-```
+```text
 aktE → (harmony looks at 'a', sees back vowel) → akta
      → (cluster simplification deletes 'k') → ata
 Final output: ata
 ```
 
 **Order 2: Cluster Simplification First, Then Harmony**  
-```
+```text
 aktE → (cluster simplification deletes 'k') → atE
      → (harmony looks at 'a', sees back vowel) → ata
 Final output: ata (same result!)
@@ -245,7 +245,7 @@ cargo run --example phonological_rules
 
 ### Sample Output
 
-```
+```text
 Turkish-style Vowel Harmony
 ------------------------------
 Rule: Suffix vowel 'E' harmonizes with stem vowels
@@ -278,7 +278,7 @@ Rule: Voiced obstruents become voiceless word-finally
 
 Complex phonological systems can be modeled by composing multiple FSTs:
 
-```rust
+```rust,ignore
 let complex_word = "sportE";
 let all_rules = vec![
     epenthesis_fst,    // Break consonant clusters first
@@ -294,7 +294,7 @@ let result = apply_phonological_rules(complex_word, all_rules)?;
 
 The FST framework naturally handles contextual restrictions:
 
-```rust
+```rust,ignore
 // Rule: k → ∅ / _t (only before /t/)
 fst.add_arc(start, Arc::new('k' as u32, 0, weight, k_state));
 fst.add_arc(k_state, Arc::new('t' as u32, 't' as u32, weight, start));
@@ -312,7 +312,7 @@ for vowel in "aeiou".chars() {
 
 Different rules can have different costs, modeling gradient acceptability:
 
-```rust
+```rust,ignore
 // Preferred rule (lower cost)
 fst.add_arc(state1, Arc::new(
     input, output, 
@@ -332,7 +332,7 @@ fst.add_arc(state1, Arc::new(
 
 Each phonological rule is implemented as a separate FST:
 
-```rust
+```rust,ignore
 fn build_rule_fst(rule_type: RuleType) -> VectorFst<TropicalWeight> {
     match rule_type {
         RuleType::VowelHarmony => build_vowel_harmony_fst(),
@@ -347,7 +347,7 @@ fn build_rule_fst(rule_type: RuleType) -> VectorFst<TropicalWeight> {
 
 Results are extracted by traversing successful FST paths:
 
-```rust
+```rust,ignore
 fn extract_output_string(fst: &VectorFst<TropicalWeight>) -> Option<String> {
     if let Some(start) = fst.start() {
         let mut result = String::new();
@@ -380,7 +380,7 @@ Phonological rules aren't just theoretical constructs—they're essential for ma
 
 Speech recognition systems must handle the fact that people don't pronounce words the same way every time. Phonological rules help model this systematic variation:
 
-```
+```text
 Lexical: /ˈæktər/
 Surface: \[ˈætər\] (with cluster simplification)
 ASR: Must handle both forms
@@ -390,7 +390,7 @@ ASR: Must handle both forms
 
 Generate appropriate pronunciations:
 
-```
+```text
 Orthography: "actor"
 Lexical: /ˈæktər/  
 Surface: \[ˈætər\] (apply phonological rules)
@@ -401,7 +401,7 @@ Speech: Generate audio for \[ˈætər\]
 
 Model sound changes over time:
 
-```
+```text
 Proto-Germanic: *hund-
 Old High German: hunt (final devoicing applied)
 Modern German: Hund (final devoicing still active)
@@ -411,7 +411,7 @@ Modern German: Hund (final devoicing still active)
 
 Formalize phonological patterns in endangered languages:
 
-```
+```text
 Language X:
 Vowel harmony: \[±back\] spreading
 Cluster constraints: No more than 2 consonants
@@ -421,30 +421,30 @@ Final neutralization: No voiced obstruents word-finally
 ### Enhanced Rule Types
 
 **Metathesis Rules:**
-```
+```text
 /asks/ → /æsks/ (consonant reordering)
 ```
 
 **Vowel Shifts:**
-```
+```text
 /i/ → /aɪ/ (Great Vowel Shift patterns)
 ```
 
 **Tonal Rules:**
-```
+```text
 H-L → H-∅ (tone sandhi processes)
 ```
 
 ### Prosodic Phonology
 
 **Stress Rules:**
-```
+```text
 Default stress → penultimate syllable
 Stress shift → avoid stress clash
 ```
 
 **Syllable Structure:**
-```
+```text
 Onset maximization: /æt.læs/ → /æ.tlæs/
 Coda constraints: No complex codas
 ```
@@ -453,7 +453,7 @@ Coda constraints: No complex codas
 
 Model constraint-based phonology:
 
-```rust
+```rust,ignore
 struct OTConstraint {
     name: String,
     violation_cost: f32,

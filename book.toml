@@ -14,7 +14,7 @@ create-missing = true
 mathjax-support = true
 git-repository-url = "https://github.com/aaronstevenwhite/arcweight"
 edit-url-template = "https://github.com/aaronstevenwhite/arcweight/edit/main/docs/{path}"
-additional-js = ["mathjax-config.js", "mermaid.min.js", "mermaid-init.js"]
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
 
 [output.html.fold]
 enable = true
@@ -37,5 +37,20 @@ enable = true
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
 
+[preprocessor.bib]
+bibliography = "bibliography.bib"
+title = "References"
+render-bib = "cited"
+
 [output.linkcheck]
-exclude = [ "\\\\\\[.*\\\\\\]" ]
+exclude = [ 
+    "bibliography\\.html#.*",
+    "#cite.*",
+    "\\[\\d+\\]",
+    "https://docs\\.rs/arcweight.*",
+    "https://github\\.com/aaronstevenwhite/arcweight.*",
+    "https://crates\\.io/crates/arcweight.*",
+    "https://img\\.shields\\.io/crates/v/arcweight\\.svg"
+]
+follow-web-links = true
+warning-policy = "warn"

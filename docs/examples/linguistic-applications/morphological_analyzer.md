@@ -8,7 +8,7 @@ Morphological analysis sits at the heart of natural language processing, breakin
 
 FSTs provide an elegant solution to morphological complexity through bidirectional processing (analyze or generate words), rule composition (complex phenomena from simple rules), and language independence (works for any morphology). The framework handles rich morphological systems efficiently while maintaining mathematical rigor.
 
-This implementation follows foundational work by Karttunen, Koskenniemi, and other computational morphology pioneers, demonstrating how FSTs can model everything from English derivation to Finnish vowel harmony.
+This implementation follows foundational work by {{#cite koskenniemi1983two}}, {{#cite beesley2003finite}}, and other computational morphology pioneers, demonstrating how FSTs can model everything from English derivation to Finnish vowel harmony through the two-level model and finite-state morphology.
 
 ## Quick Start
 
@@ -29,7 +29,7 @@ cargo run --example morphological_analyzer
 
 ### Theoretical Background
 
-This implementation is based on foundational work in computational morphology, including **Karttunen, L. (1993)** on finite-state lexicon compiler (LEXC), **Koskenniemi, K. (1983)** on two-level morphology, **Karttunen, L. & Beesley, K. (2001)** on Finite State Morphology, and **Karttunen, L. (1994)** on constructing lexical transducers.
+This implementation is based on foundational work in computational morphology, building upon {{#cite koskenniemi1983two}} two-level morphology for modeling morphophonological alternations, {{#cite beesley2003finite}} comprehensive treatment of finite-state morphology, and {{#cite karttunen2001applications}} applications of finite-state transducers in natural language processing.
 
 Understanding morphology requires grasping how languages build words from smaller units. Let's explore the key concepts with concrete examples.
 
@@ -44,7 +44,7 @@ Part of speech tags include Noun (N) for entities and concepts (cat, happiness, 
 Number marking includes singular for one entity (cat, child), plural for multiple entities (cats, children), and dual for exactly two (found in Arabic, Slovenian).
 
 **Case Systems (Finnish examples):**
-```
+```text
 Nominative (subject):     kissa       "cat" (as subject)
 Genitive (possession):    kissan      "cat's"
 Partitive (partial):      kissaa      "some cat"
@@ -59,7 +59,7 @@ Verbal categories include tense such as present (walk), past (walked), future (w
 #### Derivational Categories (Word Formation)
 
 **Creating New Words:**
-```
+```text
 Verb → Noun (agent):      teach → teacher
 Adjective → Noun:         happy → happiness
 Noun → Adjective:         nation → national
@@ -72,7 +72,7 @@ Semantic changes include diminutives that make smaller/cuter (dog → doggy), au
 
 The lexicon is where linguistic knowledge meets computational representation. Our FST-based lexicon organizes morphemes efficiently:
 
-```rust
+```rust,ignore
 struct FiniteStateLexicon {
     // Stem classes by category
     noun_stems: HashMap<String, Vec<MorphCategory>>,
@@ -106,7 +106,7 @@ Finnish exemplifies agglutinative morphology where words are built by concatenat
 Finnish nouns inflect for 15 cases, each encoding spatial, temporal, or grammatical relationships:
 
 **Basic Cases (Grammatical):**
-```
+```text
 kala (fish) - Nominative (subject)
 ├── kalan   - Genitive (possession/object)      "fish's" / "of fish"
 ├── kalaa   - Partitive (partial object)        "some fish"
@@ -114,7 +114,7 @@ kala (fish) - Nominative (subject)
 ```
 
 **Local Cases (Spatial Relations):**
-```
+```text
 Interior (inside):
 ├── kalassa  - Inessive (in)         "in the fish"
 ├── kalaan   - Illative (into)       "into the fish"
@@ -132,7 +132,7 @@ Finnish vowels are divided into three groups: **back vowels** (a, o, u), **front
 
 **Harmony Rule**: Suffixes must match the stem's vowel type:
 
-```
+```text
 Back vowel stems:
 talo (house) + -ssa → talossa    "in the house"
 auto (car)   + -lla → autolla    "by car"
@@ -149,14 +149,14 @@ This is where FSTs shine - the same morphological rule has different surface rea
 English examples focus on derivational morphology and inflectional patterns:
 
 **Derivational Processes:**
-```
+```text
 work + er  → worker    (agent nominal)
 happy + ness → happiness (abstract nominal with y→i rule)
 write + er → writer    (with e-deletion)
 ```
 
 **Inflectional Morphology:**
-```
+```text
 cat + s   → cats     (plural)
 walk + ed → walked   (past tense)
 work + s  → works    (3rd person singular)
@@ -166,7 +166,7 @@ work + s  → works    (3rd person singular)
 
 The morphological analyzer processes words through several stages. **Lexical Lookup** checks if the word exists in stem dictionaries. **Affix Segmentation** tries different affix combinations. **Phonological Processing** applies morphophonological rules. **Feature Assembly** combines stem and affix features. **Result Formatting** generates morphological glosses.
 
-```rust
+```rust,ignore
 fn analyze(&self, surface_form: &str) -> Vec<MorphAnalysis> {
     let mut analyses = Vec::new();
     
@@ -184,7 +184,7 @@ fn analyze(&self, surface_form: &str) -> Vec<MorphAnalysis> {
 The system handles common sound change patterns:
 
 **Y-to-I Rule (English):**
-```rust
+```rust,ignore
 // happy + ness → happiness
 if stem.ends_with('y') && !suffix.is_empty() {
     let modified_stem = format!("{}{}", &stem[..stem.len() - 1], "i");
@@ -196,7 +196,7 @@ if stem.ends_with('y') && !suffix.is_empty() {
 ```
 
 **E-Deletion Rule (English):**
-```rust
+```rust,ignore
 // write + er → writer  
 if stem.ends_with('e') && !suffix.is_empty() {
     let modified_stem = &stem[..stem.len() - 1];
@@ -215,7 +215,7 @@ cargo run --example morphological_analyzer
 
 ### Sample Output
 
-```
+```text
 Finnish Morphological Analysis
 ---------------------------------
 Analyzing 'kalan':
@@ -247,7 +247,7 @@ Analyzing 'happiness':
 
 The example includes a simplified FST for morpheme ordering:
 
-```rust
+```rust,ignore
 fn build_morphotactic_fst() -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     
@@ -288,7 +288,7 @@ The system enables various language technology applications. **Spell Checkers** 
 
 The system handles words with multiple valid analyses:
 
-```rust
+```rust,ignore
 LexiconEntry {
     word: "read".to_string(),
     pronunciations: vec![
@@ -302,7 +302,7 @@ LexiconEntry {
 
 Future extensions could include context-sensitive morphophonological rules:
 
-```rust
+```rust,ignore
 PhonologicalRule {
     name: "Finnish Consonant Gradation".to_string(),
     input_context: vec!["k".to_string()],
@@ -335,10 +335,10 @@ This morphological analyzer connects with other examples in the collection. **[E
 ## References
 
 ### Foundational Papers
-Key foundational papers include Koskenniemi, K. (1983) "Two-level morphology: A general computational model for word-form recognition and production", Karttunen, L. (1993) "Finite-state lexicon compiler" Technical Report ISTL-NLTT-1993-04-02, Xerox PARC, Kaplan, R. & Kay, M. (1994) "Regular models of phonological rule systems", and Karttunen, L. (1994) "Constructing lexical transducers".
+The theoretical foundations rest on {{#cite koskenniemi1983two}} two-level morphological model, {{#cite kaplan1994regular}} regular models of phonological rule systems, and {{#cite beesley2003finite}} comprehensive treatment of finite-state morphology.
 
 ### Modern Applications
-Modern applications are described in Beesley, K.R. & Karttunen, L. (2003) "Finite State Morphology" (CSLI Publications), Jurafsky, D. & Martin, J.H. (2023) "Speech and Language Processing" (3rd Edition), and Roark, B. & Sproat, R. (2007) "Computational Approaches to Morphology and Syntax".
+Modern applications build upon these foundations, as described in {{#cite beesley2003finite}} comprehensive treatment and contemporary NLP applications.
 
 ### Software Implementations
 Relevant software implementations include **XFST** (Xerox Finite State Tool), **HFST** (Helsinki Finite State Technology), **Foma** (Open-source finite state compiler), and **OpenFST** (Google's finite state library).

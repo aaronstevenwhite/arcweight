@@ -144,6 +144,7 @@ pub mod algorithms;
 pub mod arc;
 pub mod fst;
 pub mod io;
+pub mod optimization;
 pub mod properties;
 pub mod semiring;
 pub mod utils;

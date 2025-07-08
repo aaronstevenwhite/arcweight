@@ -19,7 +19,7 @@ Use composition when you need to:
 
 ### Basic Composition
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 // FST1: a:x, b:y (maps 'a' to 'x', 'b' to 'y')
@@ -30,19 +30,19 @@ let fst2 = /* ... */;
 
 // Composition: a:1, b:2 (maps 'a' to '1', 'b' to '2')
 let composed = compose(&fst1, &fst2)?;
-```
+```text
 
 ### How Composition Works
 
-```
+```text
 Input "a" → FST1 → "x" → FST2 → "1"
          ↘                    ↗
            Composed FST: a:1
-```
+```text
 
 ### Real-World Example: Text Processing Pipeline
 
-```rust
+```rust,ignore
 fn build_text_pipeline() -> Result<VectorFst<TropicalWeight>> {
     // Component FSTs
     let lowercaser = build_lowercase_fst()?;
@@ -61,42 +61,42 @@ let pipeline = build_text_pipeline()?;
 let input = "Hello, World!";
 let output = apply_fst(&pipeline, input)?;
 // Output: ["hello", "world"]
-```
+```text
 
 ### Advanced: Composition with Filters
 
 For large FSTs, use composition filters to improve performance:
 
-```rust
+```rust,ignore
 use arcweight::algorithms::{compose_with_filter, SequenceComposeFilter};
 
 // Use sequence filter for better performance
 let filter = SequenceComposeFilter::new();
 let composed = compose_with_filter(&fst1, &fst2, filter)?;
-```
+```text
 
 ### Composition Patterns
 
 #### Pattern 1: Multi-Stage Pipeline
-```rust
+```rust,ignore
 // Linguistic pipeline: Tokenize → POS Tag → Parse
 let pos_tagged = compose(&tokenizer, &pos_tagger)?;
 let parsed = compose(&pos_tagged, &parser)?;
-```
+```text
 
 #### Pattern 2: Rule Application
-```rust
+```rust,ignore
 // Apply multiple phonological rules
 let stage1 = compose(&word_fst, &rule1)?;
 let stage2 = compose(&stage1, &rule2)?;
 let result = compose(&stage2, &rule3)?;
-```
+```text
 
 #### Pattern 3: Constraint Satisfaction
-```rust
+```rust,ignore
 // Spell checker: Error model + Dictionary
 let candidates = compose(&error_model, &dictionary)?;
-```
+```text
 
 ## Union
 
@@ -111,7 +111,7 @@ Use union when you need to:
 
 ### Basic Union
 
-```rust
+```rust,ignore
 // FST1: accepts "cat", "dog"
 let animals = /* ... */;
 
@@ -120,11 +120,11 @@ let colors = /* ... */;
 
 // Union: accepts "cat", "dog", "red", "blue"
 let combined = union(&animals, &colors)?;
-```
+```text
 
 ### Building Vocabularies
 
-```rust
+```rust,ignore
 fn build_vocabulary() -> Result<VectorFst<TropicalWeight>> {
     let mut vocabulary = VectorFst::new();
     
@@ -143,11 +143,11 @@ fn build_vocabulary() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(vocabulary)
 }
-```
+```text
 
 ### Union for Pattern Matching
 
-```rust
+```rust,ignore
 fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
     // Different patterns for dates
     let us_dates = build_fst_from_regex(r"\d{2}/\d{2}/\d{4}")?;     // MM/DD/YYYY
@@ -160,20 +160,20 @@ fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(date_matcher)
 }
-```
+```text
 
 ### Weighted Union
 
 When using weighted FSTs, union preserves weights:
 
-```rust
+```rust,ignore
 // Word frequencies
 let common_words = /* FST with high-frequency words (low weights) */;
 let rare_words = /* FST with low-frequency words (high weights) */;
 
 // Combined vocabulary preserves frequency information
 let full_vocabulary = union(&common_words, &rare_words)?;
-```
+```text
 
 ## Concatenation
 
@@ -188,7 +188,7 @@ Use concatenation when you need to:
 
 ### Basic Concatenation
 
-```rust
+```rust,ignore
 // FST1: accepts "hello", "hi"
 let greetings = /* ... */;
 
@@ -197,11 +197,11 @@ let targets = /* ... */;
 
 // Concatenation: accepts "hello world", "hello there", "hi world", "hi there"
 let phrases = concat(&greetings, &targets)?;
-```
+```text
 
 ### Building Morphology
 
-```rust
+```rust,ignore
 fn build_verb_forms() -> Result<VectorFst<TropicalWeight>> {
     // Verb stems
     let stems = build_fst_from_list(&["walk", "talk", "play"])?;
@@ -215,11 +215,11 @@ fn build_verb_forms() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(verb_forms)
 }
-```
+```text
 
 ### Template-Based Generation
 
-```rust
+```rust,ignore
 fn build_sentence_templates() -> Result<VectorFst<TropicalWeight>> {
     // Components
     let subjects = build_fst_from_list(&["I", "You", "They"])?;
@@ -236,7 +236,7 @@ fn build_sentence_templates() -> Result<VectorFst<TropicalWeight>> {
     // Generates: "I like coding", "You love FSTs", etc.
     Ok(full_sentence)
 }
-```
+```text
 
 ## Combining Operations
 
@@ -244,7 +244,7 @@ The real power comes from combining these operations:
 
 ### Example: Spell Checker with Suggestions
 
-```rust
+```rust,ignore
 fn build_spell_checker() -> Result<VectorFst<TropicalWeight>> {
     // Build components
     let dictionary = load_dictionary_fst()?;
@@ -265,11 +265,11 @@ fn build_spell_checker() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(suggestions)
 }
-```
+```text
 
 ### Example: Linguistic Pipeline
 
-```rust
+```rust,ignore
 fn process_text(input: &str) -> Result<Vec<String>> {
     // Build pipeline
     let normalizer = build_normalizer()?;
@@ -283,7 +283,7 @@ fn process_text(input: &str) -> Result<Vec<String>> {
     // Apply to input
     apply_fst(&pipeline, input)
 }
-```
+```text
 
 ## Performance Tips
 
@@ -305,30 +305,30 @@ fn process_text(input: &str) -> Result<Vec<String>> {
 ## Common Pitfalls
 
 ### ❌ Composition Order Matters
-```rust
+```rust,ignore
 // Not the same!
 let result1 = compose(&a, &b)?;
 let result2 = compose(&b, &a)?;
 // These produce different FSTs!
-```
+```text
 
 ### ❌ Union Weight Conflicts
-```rust
+```rust,ignore
 // Careful with weights in union
 let fst1 = /* "word" with weight 1.0 */;
 let fst2 = /* "word" with weight 2.0 */;
 let unioned = union(&fst1, &fst2)?;
 // "word" now has two paths with different weights
-```
+```text
 
 ### ❌ Concatenation Explosion
-```rust
+```rust,ignore
 // Can create very large FSTs
 let thousand_words = /* 1000 words */;
 let thousand_suffixes = /* 1000 suffixes */;
 let huge_fst = concat(&thousand_words, &thousand_suffixes)?;
 // Results in 1,000,000 combinations!
-```
+```text
 
 ## Next Steps
 

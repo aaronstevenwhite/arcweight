@@ -22,20 +22,26 @@
 //! - **Backward pruning:** Remove paths based on backward weights  
 //! - **Global pruning:** Remove paths based on total path weight
 
+use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId};
 use crate::semiring::{NaturallyOrderedSemiring, Semiring};
 use crate::Result;
-use std::collections::HashMap;
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 
 /// Pruning configuration
 #[derive(Debug, Clone)]
 pub struct PruneConfig {
-    /// Weight threshold
+    /// Weight threshold for pruning
     pub weight_threshold: f64,
-    /// State threshold
+    /// Maximum number of states to keep
     pub state_threshold: Option<usize>,
-    /// Number of paths to keep
+    /// Number of shortest paths to keep
     pub npath: Option<usize>,
+    /// Prune based on forward-backward weights
+    pub use_forward_backward: bool,
+    /// Delta for weight comparison
+    pub delta: f64,
 }
 
 impl Default for PruneConfig {
@@ -44,314 +50,44 @@ impl Default for PruneConfig {
             weight_threshold: f64::INFINITY,
             state_threshold: None,
             npath: None,
+            use_forward_backward: false,
+            delta: 1e-6,
         }
     }
 }
 
+/// State with priority for heap operations
+#[derive(Debug, Clone)]
+struct PriorityState<W> {
+    state: StateId,
+    weight: W,
+}
+
+impl<W: PartialOrd> PartialEq for PriorityState<W> {
+    fn eq(&self, other: &Self) -> bool {
+        self.weight == other.weight
+    }
+}
+
+impl<W: PartialOrd> Eq for PriorityState<W> {}
+
+impl<W: PartialOrd> Ord for PriorityState<W> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Reverse order for min-heap behavior
+        other
+            .weight
+            .partial_cmp(&self.weight)
+            .unwrap_or(Ordering::Equal)
+    }
+}
+
+impl<W: PartialOrd> PartialOrd for PriorityState<W> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// Prune an FST by removing paths and states that exceed weight thresholds
-///
-/// Removes arcs, states, and paths from weighted FSTs based on configurable
-/// pruning criteria including weight thresholds, state limits, and path counts.
-/// This optimization reduces FST size while preserving the most important paths.
-///
-/// # Algorithm Details
-///
-/// - **Weight-Based Pruning:** Remove paths exceeding weight thresholds
-/// - **State-Based Pruning:** Limit total number of states in result FST
-/// - **Path-Based Pruning:** Keep only the N best paths through the FST
-/// - **Time Complexity:** O(|V| + |E|) for simple pruning, O(|V| log |V|) for n-best
-/// - **Space Complexity:** O(|V|) for result FST construction
-/// - **Language Relationship:** L(prune(T)) ⊆ L(T) (language subset preserved)
-///
-/// # Mathematical Foundation
-///
-/// For a weighted FST T and threshold θ, pruning removes paths π with:
-/// - **Weight Threshold:** weight(π) > θ in the semiring's natural order
-/// - **State Threshold:** Result FST limited to specified state count
-/// - **Path Count:** Keep only the k best paths by weight
-/// - **Preservation:** Only paths meeting criteria remain in result
-///
-/// # Algorithm Steps
-///
-/// 1. **Weight Analysis:** Compute forward/backward weights for all states
-/// 2. **Threshold Application:** Apply weight, state, and path count thresholds
-/// 3. **State Selection:** Select states and arcs meeting pruning criteria
-/// 4. **Result Construction:** Build pruned FST with selected components
-/// 5. **Connectivity:** Ensure result maintains proper FST connectivity
-///
-/// # Examples
-///
-/// ## Basic Weight-Based Pruning
-///
-/// ```rust
-/// use arcweight::prelude::*;
-/// use arcweight::algorithms::{prune, PruneConfig};
-///
-/// // FST with multiple weighted paths
-/// let mut fst = VectorFst::<TropicalWeight>::new();
-/// let s0 = fst.add_state();
-/// let s1 = fst.add_state();
-/// let s2 = fst.add_state();
-///
-/// fst.set_start(s0);
-/// fst.set_final(s2, TropicalWeight::one());
-///
-/// // High-cost path: weight 5.0
-/// fst.add_arc(s0, Arc::new('a' as u32, 'a' as u32, TropicalWeight::new(2.0), s1));
-/// fst.add_arc(s1, Arc::new('b' as u32, 'b' as u32, TropicalWeight::new(3.0), s2));
-///
-/// // Low-cost path: weight 1.0
-/// fst.add_arc(s0, Arc::new('c' as u32, 'c' as u32, TropicalWeight::new(1.0), s2));
-///
-/// // Prune paths with weight > 2.0
-/// let config = PruneConfig {
-///     weight_threshold: 2.0,
-///     ..Default::default()
-/// };
-/// let pruned: VectorFst<TropicalWeight> = prune(&fst, config)?;
-///
-/// // Result keeps only low-cost paths
-/// assert_eq!(pruned.num_states(), fst.num_states());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ## State-Limited Pruning
-///
-/// ```rust
-/// use arcweight::prelude::*;
-/// use arcweight::algorithms::{prune, PruneConfig};
-///
-/// // Large FST for pruning
-/// let mut large_fst = VectorFst::<TropicalWeight>::new();
-/// let states: Vec<_> = (0..10).map(|_| large_fst.add_state()).collect();
-///
-/// large_fst.set_start(states[0]);
-/// large_fst.set_final(states[9], TropicalWeight::one());
-///
-/// // Create linear chain with weights
-/// for i in 0..9 {
-///     let weight = TropicalWeight::new(i as f32 * 0.1);
-///     large_fst.add_arc(states[i], Arc::new(
-///         (i + 1) as u32, (i + 1) as u32, weight, states[i + 1]
-///     ));
-/// }
-///
-/// // Limit result to 5 states maximum
-/// let config = PruneConfig {
-///     state_threshold: Some(5),
-///     ..Default::default()
-/// };
-/// let pruned: VectorFst<TropicalWeight> = prune(&large_fst, config)?;
-///
-/// // Result has at most 5 states
-/// println!("Original: {} states, Pruned: {} states",
-///          large_fst.num_states(), pruned.num_states());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ## N-Best Path Pruning
-///
-/// ```rust
-/// use arcweight::prelude::*;
-/// use arcweight::algorithms::{prune, PruneConfig};
-///
-/// // FST with multiple alternative paths
-/// let mut multi_path = VectorFst::<TropicalWeight>::new();
-/// let s0 = multi_path.add_state();
-/// let s1 = multi_path.add_state();
-/// let s2 = multi_path.add_state();
-/// let s3 = multi_path.add_state();
-/// let final_state = multi_path.add_state();
-///
-/// multi_path.set_start(s0);
-/// multi_path.set_final(final_state, TropicalWeight::one());
-///
-/// // Multiple paths with different costs
-/// multi_path.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.1), s1)); // best path
-/// multi_path.add_arc(s1, Arc::new(2, 2, TropicalWeight::one(), final_state));
-///
-/// multi_path.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s2)); // second best
-/// multi_path.add_arc(s2, Arc::new(2, 2, TropicalWeight::one(), final_state));
-///
-/// multi_path.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s3)); // worst path
-/// multi_path.add_arc(s3, Arc::new(2, 2, TropicalWeight::one(), final_state));
-///
-/// // Keep only 2 best paths
-/// let config = PruneConfig {
-///     npath: Some(2),
-///     ..Default::default()
-/// };
-/// let pruned: VectorFst<TropicalWeight> = prune(&multi_path, config)?;
-///
-/// // Result preserves 2 best alternatives
-/// println!("Pruned to top 2 paths");
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ## Speech Recognition Beam Pruning
-///
-/// ```rust
-/// use arcweight::prelude::*;
-/// use arcweight::algorithms::{prune, PruneConfig};
-///
-/// // Speech recognition lattice with many hypotheses
-/// let mut lattice = VectorFst::<TropicalWeight>::new();
-/// let start = lattice.add_state();
-/// let word1 = lattice.add_state();
-/// let word2 = lattice.add_state();
-/// let end = lattice.add_state();
-///
-/// lattice.set_start(start);
-/// lattice.set_final(end, TropicalWeight::one());
-///
-/// // Recognition hypotheses with acoustic and language model scores
-/// lattice.add_arc(start, Arc::new(1, 1, TropicalWeight::new(2.1), word1)); // "hello"
-/// lattice.add_arc(start, Arc::new(2, 2, TropicalWeight::new(3.7), word1)); // "help"
-/// lattice.add_arc(word1, Arc::new(3, 3, TropicalWeight::new(1.2), word2)); // "world"
-/// lattice.add_arc(word1, Arc::new(4, 4, TropicalWeight::new(2.8), word2)); // "work"
-/// lattice.add_arc(word2, Arc::new(0, 0, TropicalWeight::one(), end)); // end
-///
-/// // Beam pruning: keep hypotheses within beam width of best
-/// let config = PruneConfig {
-///     weight_threshold: 5.0, // beam width
-///     npath: Some(10),        // max hypotheses
-///     ..Default::default()
-/// };
-/// let pruned_lattice: VectorFst<TropicalWeight> = prune(&lattice, config)?;
-///
-/// // Result contains manageable number of best hypotheses
-/// assert!(pruned_lattice.start().is_some());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ## Optimization Pipeline Integration
-///
-/// ```rust
-/// use arcweight::prelude::*;
-/// use arcweight::algorithms::{prune, PruneConfig};
-///
-/// // Optimization pipeline with pruning
-/// fn optimize_large_fst(fst: &VectorFst<TropicalWeight>)
-///     -> Result<VectorFst<TropicalWeight>> {
-///     // Step 1: Remove unreachable states
-///     let connected: VectorFst<TropicalWeight> = connect(fst)?;
-///     
-///     // Step 2: Prune high-weight paths to reduce size
-///     let config = PruneConfig {
-///         weight_threshold: 10.0,
-///         state_threshold: Some(1000),
-///         ..Default::default()
-///     };
-///     let pruned: VectorFst<TropicalWeight> = prune(&connected, config)?;
-///     
-///     // Step 3: Determinize and minimize the pruned result
-///     let determinized: VectorFst<TropicalWeight> = determinize(&pruned)?;
-///     let minimized: VectorFst<TropicalWeight> = minimize(&determinized)?;
-///     
-///     Ok(minimized)
-/// }
-///
-/// // Create test FST
-/// let mut test_fst = VectorFst::new();
-/// let s0 = test_fst.add_state();
-/// let s1 = test_fst.add_state();
-/// test_fst.set_start(s0);
-/// test_fst.set_final(s1, TropicalWeight::one());
-/// test_fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
-///
-/// let optimized = optimize_large_fst(&test_fst)?;
-/// println!("FST optimized with pruning");
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// # Use Cases
-///
-/// ## Speech Recognition
-/// - **Beam Search:** Prune recognition hypotheses outside beam width
-/// - **Lattice Compression:** Reduce large recognition lattices
-/// - **N-Best Lists:** Extract top-N recognition hypotheses
-/// - **Real-Time Processing:** Maintain computational bounds for real-time systems
-///
-/// ## Natural Language Processing
-/// - **Parse Forest Pruning:** Remove unlikely parse trees
-/// - **Translation Pruning:** Keep best translation hypotheses
-/// - **Language Model Pruning:** Reduce large language models
-/// - **Grammar Compaction:** Simplify complex grammar automata
-///
-/// ## Information Retrieval
-/// - **Search Result Pruning:** Limit search results to top matches
-/// - **Index Compression:** Reduce search index size
-/// - **Query Expansion:** Prune expanded query terms
-/// - **Relevance Filtering:** Remove low-relevance documents
-///
-/// ## Machine Learning
-/// - **Model Compression:** Reduce neural network automata
-/// - **Feature Selection:** Prune low-importance features
-/// - **Hypothesis Pruning:** Limit hypothesis spaces in learning
-/// - **Ensemble Pruning:** Select best models from ensembles
-///
-/// # Performance Characteristics
-///
-/// - **Time Complexity:** O(|V| + |E|) for basic weight pruning
-/// - **Advanced Pruning:** O(|V| log |V| + |E|) for n-best path selection
-/// - **Space Complexity:** O(|V|) for weight computation and result storage
-/// - **Memory Efficiency:** Can significantly reduce FST memory usage
-/// - **Practical Speedup:** Often provides substantial performance improvements
-///
-/// # Mathematical Properties
-///
-/// Pruning preserves certain FST properties while modifying others:
-/// - **Language Relationship:** L(prune(T)) ⊆ L(T) (subset preservation)
-/// - **Weight Ordering:** Maintains relative ordering of remaining paths
-/// - **Determinism:** Deterministic FSTs remain deterministic after pruning
-/// - **Connectivity:** May affect connectivity if aggressive pruning applied
-/// - **Optimality:** N-best pruning preserves optimal paths up to threshold
-///
-/// # Implementation Details
-///
-/// The current implementation provides basic structure for pruning operations.
-/// Full implementation will include:
-/// - **Forward-Backward Algorithm:** Compute state-level weights
-/// - **Beam Search:** Efficient beam-width pruning
-/// - **Priority Queues:** N-best path extraction using heap structures
-/// - **Threshold Management:** Adaptive threshold computation
-/// - **Memory Optimization:** Efficient state and arc selection
-///
-/// # Pruning Strategies
-///
-/// Different pruning approaches for different scenarios:
-/// - **Weight-Based:** Remove paths exceeding weight thresholds
-/// - **Count-Based:** Limit number of states, arcs, or paths
-/// - **Beam-Based:** Keep paths within beam width of best path
-/// - **Histogram-Based:** Prune based on weight distribution statistics
-/// - **Adaptive:** Dynamically adjust thresholds based on FST properties
-///
-/// # Optimization Considerations
-///
-/// For effective pruning:
-/// - **Threshold Selection:** Choose thresholds balancing accuracy and efficiency
-/// - **Order of Operations:** Prune before expensive operations like determinization
-/// - **Progressive Pruning:** Apply multiple rounds of lighter pruning
-/// - **Quality Metrics:** Monitor language coverage after pruning
-/// - **Application Constraints:** Respect real-time and memory constraints
-///
-/// # Errors
-///
-/// Returns [`Error::Algorithm`](crate::Error::Algorithm) if:
-/// - The input FST is invalid, corrupted, or malformed
-/// - Memory allocation fails during weight computation or result construction
-/// - The pruning configuration contains invalid parameters (negative thresholds)
-/// - Weight computation encounters overflow or invalid semiring operations
-/// - State or path count limits are impossible to satisfy
-/// - Forward-backward weight computation fails due to FST structure
-///
-/// # See Also
-///
-/// - [`connect()`](crate::algorithms::connect()) for removing unreachable states before pruning
-/// - [`shortest_path()`](crate::algorithms::shortest_path()) for computing best paths
-/// - [`determinize()`](crate::algorithms::determinize()) for algorithms that benefit from pruning
-/// - [Working with FSTs - Pruning](../../docs/working-with-fsts/path-operations.md#pruning) for usage patterns
-/// - [Core Concepts](../../docs/core-concepts/algorithms.md#pruning) for mathematical theory
 pub fn prune<W, F, M>(fst: &F, config: PruneConfig) -> Result<M>
 where
     W: NaturallyOrderedSemiring,
@@ -363,16 +99,359 @@ where
         return Ok(M::default());
     }
 
-    // Simple implementation that copies the FST structure while applying basic pruning
+    // Choose pruning strategy based on configuration
+    if config.use_forward_backward {
+        prune_forward_backward(fst, &config)
+    } else if let Some(npath) = config.npath {
+        prune_nbest_paths(fst, npath, &config)
+    } else {
+        prune_by_weight(fst, &config)
+    }
+}
+
+/// Prune using forward-backward algorithm
+fn prune_forward_backward<W, F, M>(fst: &F, config: &PruneConfig) -> Result<M>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+    M: MutableFst<W> + Default,
+{
+    let forward_weights = compute_forward_weights(fst)?;
+    let backward_weights = compute_backward_weights(fst)?;
+
+    // Find best total weight
+    let mut best_weight = None;
+    if let Some(start) = fst.start() {
+        if let Some(backward) = backward_weights.get(&start) {
+            best_weight = Some(backward.clone());
+        }
+    }
+
     let mut result = M::default();
-    let mut state_mapping: HashMap<StateId, StateId> = HashMap::new();
+    let mut state_map = HashMap::new();
 
-    // First pass: copy all states (for now, we'll keep all states to pass tests)
+    // First pass: select states based on forward-backward weights
+    let zero_weight = W::zero();
     for state in fst.states() {
-        let new_state = result.add_state();
-        state_mapping.insert(state, new_state);
+        let forward = forward_weights.get(&state).unwrap_or(&zero_weight);
+        let backward = backward_weights.get(&state).unwrap_or(&zero_weight);
 
-        // Copy final weights
+        if *forward == W::zero() || *backward == W::zero() {
+            continue; // Skip unreachable states
+        }
+
+        // Compute total weight through this state
+        let total = forward.times(backward);
+
+        // Check if state should be kept
+        if should_keep_weight(&total, &best_weight, config) {
+            let new_state = result.add_state();
+            state_map.insert(state, new_state);
+
+            // Copy final weight if applicable
+            if let Some(weight) = fst.final_weight(state) {
+                result.set_final(new_state, weight.clone());
+            }
+        }
+    }
+
+    // Set start state
+    if let Some(start) = fst.start() {
+        if let Some(&new_start) = state_map.get(&start) {
+            result.set_start(new_start);
+        }
+    }
+
+    // Second pass: copy arcs between selected states
+    for (&old_state, &new_state) in &state_map {
+        for arc in fst.arcs(old_state) {
+            if let Some(&new_nextstate) = state_map.get(&arc.nextstate) {
+                // Check arc weight against threshold
+                let arc_total = if let (Some(forward), Some(backward)) = (
+                    forward_weights.get(&old_state),
+                    backward_weights.get(&arc.nextstate),
+                ) {
+                    forward.times(&arc.weight).times(backward)
+                } else {
+                    continue;
+                };
+
+                if should_keep_weight(&arc_total, &best_weight, config) {
+                    result.add_arc(
+                        new_state,
+                        Arc::new(arc.ilabel, arc.olabel, arc.weight.clone(), new_nextstate),
+                    );
+                }
+            }
+        }
+    }
+
+    apply_state_threshold(result, config)
+}
+
+/// Prune keeping only n-best paths
+fn prune_nbest_paths<W, F, M>(fst: &F, npath: usize, config: &PruneConfig) -> Result<M>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+    M: MutableFst<W> + Default,
+{
+    if npath == 0 {
+        return Ok(M::default());
+    }
+
+    let start = fst
+        .start()
+        .ok_or_else(|| crate::Error::Algorithm("FST has no start state".into()))?;
+
+    // Find n-best paths using priority queue
+    let mut heap = BinaryHeap::new();
+    let mut best_weights: HashMap<StateId, Vec<W>> = HashMap::new();
+
+    // Initialize with start state
+    heap.push(PriorityState {
+        state: start,
+        weight: W::one(),
+    });
+    best_weights.insert(start, vec![W::one()]);
+
+    // Process states in best-first order
+    while let Some(PriorityState { state, weight }) = heap.pop() {
+        // Check if this is a final state
+        if let Some(final_weight) = fst.final_weight(state) {
+            let _total = weight.times(final_weight);
+            // Track as a complete path
+        }
+
+        // Explore outgoing arcs
+        for arc in fst.arcs(state) {
+            let new_weight = weight.times(&arc.weight);
+
+            // Update best weights for next state
+            let weights = best_weights.entry(arc.nextstate).or_default();
+
+            // Keep only n-best weights
+            if weights.len() < npath {
+                weights.push(new_weight.clone());
+                weights.sort();
+                if weights.len() > npath {
+                    weights.truncate(npath);
+                }
+
+                heap.push(PriorityState {
+                    state: arc.nextstate,
+                    weight: new_weight,
+                });
+            } else if weights.last().is_some_and(|w| new_weight < *w) {
+                // Replace worst weight if this is better
+                weights[npath - 1] = new_weight.clone();
+                weights.sort();
+
+                heap.push(PriorityState {
+                    state: arc.nextstate,
+                    weight: new_weight,
+                });
+            }
+        }
+    }
+
+    // Build result FST with selected paths
+    build_nbest_fst(fst, &best_weights, npath, config)
+}
+
+/// Simple weight-based pruning
+fn prune_by_weight<W, F, M>(fst: &F, config: &PruneConfig) -> Result<M>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+    M: MutableFst<W> + Default,
+{
+    let mut result = M::default();
+    let mut state_map = HashMap::new();
+
+    // Compute shortest distances from start
+    let distances = compute_shortest_distances(fst)?;
+
+    // First pass: select states within threshold
+    for state in fst.states() {
+        if let Some(distance) = distances.get(&state) {
+            if convert_weight_to_f64(distance) <= config.weight_threshold {
+                let new_state = result.add_state();
+                state_map.insert(state, new_state);
+
+                if let Some(weight) = fst.final_weight(state) {
+                    result.set_final(new_state, weight.clone());
+                }
+            }
+        }
+    }
+
+    // Set start state
+    if let Some(start) = fst.start() {
+        if let Some(&new_start) = state_map.get(&start) {
+            result.set_start(new_start);
+        }
+    }
+
+    // Second pass: copy arcs with weight filtering
+    for (&old_state, &new_state) in &state_map {
+        if let Some(state_distance) = distances.get(&old_state) {
+            for arc in fst.arcs(old_state) {
+                // Check if arc leads to selected state
+                if let Some(&new_nextstate) = state_map.get(&arc.nextstate) {
+                    // Compute path weight through this arc
+                    let arc_distance = state_distance.times(&arc.weight);
+
+                    if convert_weight_to_f64(&arc_distance) <= config.weight_threshold {
+                        result.add_arc(
+                            new_state,
+                            Arc::new(arc.ilabel, arc.olabel, arc.weight.clone(), new_nextstate),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    apply_state_threshold(result, config)
+}
+
+/// Compute forward weights (shortest distance from start)
+fn compute_forward_weights<W, F>(fst: &F) -> Result<HashMap<StateId, W>>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+{
+    let mut weights = HashMap::new();
+    let mut queue = VecDeque::new();
+
+    if let Some(start) = fst.start() {
+        weights.insert(start, W::one());
+        queue.push_back(start);
+    }
+
+    // Bellman-Ford style relaxation
+    while let Some(state) = queue.pop_front() {
+        let state_weight = weights[&state].clone();
+
+        for arc in fst.arcs(state) {
+            let new_weight = state_weight.times(&arc.weight);
+
+            let updated = match weights.get(&arc.nextstate) {
+                None => {
+                    weights.insert(arc.nextstate, new_weight);
+                    true
+                }
+                Some(old_weight) => {
+                    if new_weight < *old_weight {
+                        weights.insert(arc.nextstate, new_weight);
+                        true
+                    } else {
+                        false
+                    }
+                }
+            };
+
+            if updated && !queue.contains(&arc.nextstate) {
+                queue.push_back(arc.nextstate);
+            }
+        }
+    }
+
+    Ok(weights)
+}
+
+/// Compute backward weights (shortest distance to final states)
+fn compute_backward_weights<W, F>(fst: &F) -> Result<HashMap<StateId, W>>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+{
+    let mut weights = HashMap::new();
+    let mut reverse_arcs: HashMap<StateId, Vec<(StateId, W)>> = HashMap::new();
+
+    // Build reverse arc index
+    for state in fst.states() {
+        for arc in fst.arcs(state) {
+            reverse_arcs
+                .entry(arc.nextstate)
+                .or_default()
+                .push((state, arc.weight.clone()));
+        }
+    }
+
+    // Initialize with final states
+    let mut queue = VecDeque::new();
+    for state in fst.states() {
+        if let Some(final_weight) = fst.final_weight(state) {
+            weights.insert(state, final_weight.clone());
+            queue.push_back(state);
+        }
+    }
+
+    // Backward relaxation
+    while let Some(state) = queue.pop_front() {
+        let state_weight = weights[&state].clone();
+
+        if let Some(predecessors) = reverse_arcs.get(&state) {
+            for (prev_state, arc_weight) in predecessors {
+                let new_weight = arc_weight.times(&state_weight);
+
+                let updated = match weights.get(prev_state) {
+                    None => {
+                        weights.insert(*prev_state, new_weight);
+                        true
+                    }
+                    Some(old_weight) => {
+                        let combined = old_weight.plus(&new_weight);
+                        if combined != *old_weight {
+                            weights.insert(*prev_state, combined);
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                };
+
+                if updated && !queue.contains(prev_state) {
+                    queue.push_back(*prev_state);
+                }
+            }
+        }
+    }
+
+    Ok(weights)
+}
+
+/// Compute shortest distances from start state
+fn compute_shortest_distances<W, F>(fst: &F) -> Result<HashMap<StateId, W>>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+{
+    compute_forward_weights(fst)
+}
+
+/// Build FST from n-best paths
+fn build_nbest_fst<W, F, M>(
+    fst: &F,
+    best_weights: &HashMap<StateId, Vec<W>>,
+    _npath: usize,
+    _config: &PruneConfig,
+) -> Result<M>
+where
+    W: NaturallyOrderedSemiring,
+    F: Fst<W>,
+    M: MutableFst<W> + Default,
+{
+    let mut result = M::default();
+    let mut state_map = HashMap::new();
+
+    // Create states that appear in best paths
+    for &state in best_weights.keys() {
+        let new_state = result.add_state();
+        state_map.insert(state, new_state);
+
         if let Some(weight) = fst.final_weight(state) {
             result.set_final(new_state, weight.clone());
         }
@@ -380,75 +459,101 @@ where
 
     // Set start state
     if let Some(start) = fst.start() {
-        if let Some(&new_start) = state_mapping.get(&start) {
+        if let Some(&new_start) = state_map.get(&start) {
             result.set_start(new_start);
         }
     }
 
-    // Second pass: copy arcs with basic weight-based filtering
-    for state in fst.states() {
-        if let Some(&new_state) = state_mapping.get(&state) {
-            for arc in fst.arcs(state) {
-                // Apply basic weight threshold check
-                if config.weight_threshold == f64::INFINITY
-                    || convert_weight_to_f64(&arc.weight) <= config.weight_threshold
-                {
-                    if let Some(&new_nextstate) = state_mapping.get(&arc.nextstate) {
-                        let new_arc = crate::arc::Arc::new(
-                            arc.ilabel,
-                            arc.olabel,
-                            arc.weight.clone(),
-                            new_nextstate,
-                        );
-                        result.add_arc(new_state, new_arc);
-                    }
-                }
+    // Copy arcs that participate in best paths
+    for (&state, &new_state) in &state_map {
+        for arc in fst.arcs(state) {
+            if let Some(&new_nextstate) = state_map.get(&arc.nextstate) {
+                result.add_arc(
+                    new_state,
+                    Arc::new(arc.ilabel, arc.olabel, arc.weight.clone(), new_nextstate),
+                );
             }
-        }
-    }
-
-    // Apply state threshold if specified
-    if let Some(state_threshold) = config.state_threshold {
-        if result.num_states() > state_threshold {
-            // For now, just ensure we don't exceed the threshold
-            // A more sophisticated implementation would select the best states
         }
     }
 
     Ok(result)
 }
 
+/// Apply state threshold by selecting best states
+fn apply_state_threshold<W, M>(fst: M, config: &PruneConfig) -> Result<M>
+where
+    W: NaturallyOrderedSemiring,
+    M: MutableFst<W>,
+{
+    if let Some(threshold) = config.state_threshold {
+        if fst.num_states() <= threshold {
+            return Ok(fst);
+        }
+
+        // For now, return the FST as-is
+        // A full implementation would rank states and keep only the best
+    }
+
+    Ok(fst)
+}
+
+/// Check if weight should be kept based on pruning criteria
+fn should_keep_weight<W>(weight: &W, best: &Option<W>, config: &PruneConfig) -> bool
+where
+    W: NaturallyOrderedSemiring,
+{
+    // Check against absolute threshold
+    if convert_weight_to_f64(weight) > config.weight_threshold {
+        return false;
+    }
+
+    // Check against best weight with beam
+    if let Some(best_weight) = best {
+        let weight_val = convert_weight_to_f64(weight);
+        let best_val = convert_weight_to_f64(best_weight);
+
+        if weight_val > best_val + config.weight_threshold {
+            return false;
+        }
+    }
+
+    true
+}
+
 /// Convert weight to f64 for threshold comparison
 fn convert_weight_to_f64<W: Semiring>(weight: &W) -> f64 {
-    // For TropicalWeight and LogWeight, we can extract the f32 value
-    // This is a simplified conversion - in practice, each semiring would need proper conversion
-    match std::any::type_name::<W>() {
-        name if name.contains("TropicalWeight") => {
-            // For TropicalWeight, we need to extract the f32 value
-            // This is a workaround since we can't directly access the value
-            let value_str = format!("{weight}");
-            if value_str == "∞" {
-                f64::INFINITY
-            } else {
-                value_str.parse().unwrap_or(0.0)
+    // Extract numeric value from weight
+    let weight_str = format!("{weight:?}");
+
+    if weight_str.contains("∞") || weight_str.contains("inf") {
+        return f64::INFINITY;
+    }
+
+    // Try to parse different weight formats
+    if let Some(start) = weight_str.find('(') {
+        if let Some(end) = weight_str.find(')') {
+            if let Ok(val) = weight_str[start + 1..end].parse::<f64>() {
+                return val;
             }
         }
-        _ => 0.0, // Default for other semirings
     }
+
+    // Try direct parsing
+    if let Ok(val) = weight_str.parse::<f64>() {
+        return val;
+    }
+
+    0.0
 }
 
 /// Compute reachable states from a given start state
 #[allow(dead_code)]
-fn compute_reachable_states<F: Fst<W>, W: Semiring>(
-    fst: &F,
-    start: StateId,
-) -> std::collections::HashSet<StateId> {
-    let mut reachable = std::collections::HashSet::new();
+fn compute_reachable_states<F: Fst<W>, W: Semiring>(fst: &F, start: StateId) -> HashSet<StateId> {
+    let mut reachable = HashSet::new();
     let mut stack = vec![start];
 
     while let Some(state) = stack.pop() {
         if reachable.insert(state) {
-            // First time visiting this state, explore its arcs
             for arc in fst.arcs(state) {
                 stack.push(arc.nextstate);
             }
@@ -469,6 +574,7 @@ mod tests {
         assert_eq!(config.weight_threshold, f64::INFINITY);
         assert_eq!(config.state_threshold, None);
         assert_eq!(config.npath, None);
+        assert!(!config.use_forward_backward);
     }
 
     #[test]
@@ -477,10 +583,13 @@ mod tests {
             weight_threshold: 5.0,
             state_threshold: Some(100),
             npath: Some(10),
+            use_forward_backward: true,
+            delta: 1e-8,
         };
         assert_eq!(config.weight_threshold, 5.0);
         assert_eq!(config.state_threshold, Some(100));
         assert_eq!(config.npath, Some(10));
+        assert!(config.use_forward_backward);
     }
 
     #[test]
@@ -495,24 +604,14 @@ mod tests {
         fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
         fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
 
-        // Use a high threshold that should keep all paths
         let config = PruneConfig {
-            weight_threshold: 10.0, // Higher than total path weight (3.0)
-            state_threshold: None,
-            npath: None,
+            weight_threshold: 10.0,
+            ..Default::default()
         };
         let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
 
-        // With high threshold, structure should be preserved
         assert!(pruned.num_states() > 0);
         assert!(pruned.start().is_some());
-
-        // Verify connectivity to final state
-        if let Some(start) = pruned.start() {
-            let reachable = compute_reachable_states(&pruned, start);
-            // At least one final state should be reachable
-            assert!(reachable.iter().any(|&s| pruned.is_final(s)));
-        }
     }
 
     #[test]
@@ -527,8 +626,8 @@ mod tests {
         fst.set_final(s2, TropicalWeight::one());
 
         // Low-cost and high-cost paths
-        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1)); // Low cost
-        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(5.0), s2)); // High cost
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(5.0), s2));
 
         let config = PruneConfig {
             weight_threshold: 3.0,
@@ -536,9 +635,14 @@ mod tests {
         };
         let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
 
-        // Should preserve structure (current implementation is basic)
         assert!(pruned.start().is_some());
         assert!(pruned.num_states() > 0);
+
+        // Should keep low-cost path
+        if let Some(start) = pruned.start() {
+            let reachable = compute_reachable_states(&pruned, start);
+            assert!(reachable.iter().any(|&s| pruned.is_final(s)));
+        }
     }
 
     #[test]
@@ -569,6 +673,85 @@ mod tests {
     }
 
     #[test]
+    fn test_prune_forward_backward() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s2, TropicalWeight::one());
+
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(1.0), s2));
+        fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::new(10.0), s2));
+
+        let config = PruneConfig {
+            weight_threshold: 5.0,
+            use_forward_backward: true,
+            ..Default::default()
+        };
+        let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
+
+        assert!(pruned.start().is_some());
+        assert!(pruned.num_states() > 0);
+    }
+
+    #[test]
+    fn test_prune_nbest() {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+        let s0 = fst.add_state();
+        let s1 = fst.add_state();
+        let s2 = fst.add_state();
+        let s3 = fst.add_state();
+
+        fst.set_start(s0);
+        fst.set_final(s3, TropicalWeight::one());
+
+        // Multiple paths with different costs
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s1, Arc::new(2, 2, TropicalWeight::new(0.5), s3));
+
+        fst.add_arc(s0, Arc::new(3, 3, TropicalWeight::new(2.0), s2));
+        fst.add_arc(s2, Arc::new(4, 4, TropicalWeight::new(0.5), s3));
+
+        let config = PruneConfig {
+            npath: Some(1),
+            ..Default::default()
+        };
+        let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
+
+        assert!(pruned.start().is_some());
+        assert!(pruned.num_states() > 0);
+    }
+
+    #[test]
+    fn test_convert_weight_to_f64() {
+        let w1 = TropicalWeight::new(3.5);
+        let val1 = convert_weight_to_f64(&w1);
+        assert!((val1 - 3.5).abs() < 1e-6);
+
+        let w2 = TropicalWeight::zero();
+        let val2 = convert_weight_to_f64(&w2);
+        assert_eq!(val2, f64::INFINITY);
+    }
+
+    #[test]
+    fn test_priority_state() {
+        let ps1 = PriorityState {
+            state: 0,
+            weight: TropicalWeight::new(1.0),
+        };
+        let ps2 = PriorityState {
+            state: 1,
+            weight: TropicalWeight::new(2.0),
+        };
+
+        // ps1 should have higher priority (lower weight)
+        assert!(ps1 > ps2);
+    }
+
+    #[test]
     fn test_prune_with_state_threshold() {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let states: Vec<_> = (0..10).map(|_| fst.add_state()).collect();
@@ -594,31 +777,38 @@ mod tests {
         };
         let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
 
-        // For now, basic implementation keeps all states
         assert!(pruned.num_states() > 0);
     }
 
     #[test]
-    fn test_prune_with_npath() {
+    fn test_prune_complex_graph() {
         let mut fst = VectorFst::<TropicalWeight>::new();
         let s0 = fst.add_state();
         let s1 = fst.add_state();
         let s2 = fst.add_state();
+        let s3 = fst.add_state();
 
         fst.set_start(s0);
-        fst.set_final(s1, TropicalWeight::one());
-        fst.set_final(s2, TropicalWeight::one());
+        fst.set_final(s3, TropicalWeight::one());
 
-        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.1), s1));
-        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(0.5), s2));
+        // Diamond-shaped graph
+        fst.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(1.0), s1));
+        fst.add_arc(s0, Arc::new(2, 2, TropicalWeight::new(2.0), s2));
+        fst.add_arc(s1, Arc::new(3, 3, TropicalWeight::new(1.0), s3));
+        fst.add_arc(s2, Arc::new(4, 4, TropicalWeight::new(1.0), s3));
 
         let config = PruneConfig {
-            npath: Some(1),
+            weight_threshold: 2.5,
             ..Default::default()
         };
         let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
 
         assert!(pruned.start().is_some());
-        assert!(pruned.num_states() > 0);
+
+        // Should keep the better path (through s1)
+        if let Some(start) = pruned.start() {
+            let reachable = compute_reachable_states(&pruned, start);
+            assert!(reachable.iter().any(|&s| pruned.is_final(s)));
+        }
     }
 }

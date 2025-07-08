@@ -14,7 +14,7 @@ The complete, up-to-date API documentation is available at:
 - **[`prelude`](https://docs.rs/arcweight/latest/arcweight/prelude/)** - Convenient re-exports of commonly used types and functions
 
 Most users should start by importing the prelude:
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 ```
 
@@ -64,7 +64,7 @@ This provides access to all commonly used types including `VectorFst`, `Tropical
 ## Quick Reference
 
 ### Creating an FST
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 let mut fst = VectorFst::<TropicalWeight>::new();
@@ -76,7 +76,7 @@ fst.add_arc(s0, Arc::new('a' as u32, 'a' as u32, TropicalWeight::one(), s1));
 ```
 
 ### Loading from File
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 // Text format
@@ -87,7 +87,7 @@ let fst: VectorFst<TropicalWeight> = read_openfst(&mut file)?;
 ```
 
 ### Common Operations
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 // Composition

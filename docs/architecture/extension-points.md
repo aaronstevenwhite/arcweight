@@ -8,7 +8,7 @@ ArcWeight is designed to be extensible. This document describes the main extensi
 
 The most common extension is implementing custom semirings for specific problem domains:
 
-```rust
+```rust,ignore
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 struct CustomWeight {
     value: f32,
@@ -43,7 +43,7 @@ impl Semiring for CustomWeight {
 
 For advanced semirings, implement additional traits:
 
-```rust
+```rust,ignore
 // For semirings that support division
 impl DivisibleSemiring for CustomWeight {
     fn divide(&self, other: &Self) -> Option<Self> {
@@ -81,7 +81,7 @@ impl StarSemiring for CustomWeight {
 
 Create custom FST implementations for specialized storage strategies:
 
-```rust
+```rust,ignore
 struct MyCustomFst<W: Semiring> {
     // Custom storage strategy
     compressed_data: Vec<u8>,
@@ -113,7 +113,7 @@ impl<W: Semiring> Fst<W> for MyCustomFst<W> {
 
 ### Custom Arc Iterators
 
-```rust
+```rust,ignore
 struct MyArcIterator<'a, W: Semiring> {
     fst: &'a MyCustomFst<W>,
     state: StateId,
@@ -140,61 +140,26 @@ impl<'a, W: Semiring> ArcIterator<W> for MyArcIterator<'a, W> {
 
 ### Custom Composition Filters
 
-Extend composition behavior with custom filters:
+The `ComposeFilter` trait exists in the codebase and allows extending composition behavior:
 
-```rust
+```rust,ignore
 pub trait ComposeFilter<W: Semiring> {
-    fn filter(&mut self, state1: StateId, state2: StateId, arc1: &Arc<W>, arc2: &Arc<W>) -> bool;
-}
-
-// Custom composition behavior
-struct MyComposeFilter {
-    max_weight: f32,
-}
-
-impl<W: Semiring> ComposeFilter<W> for MyComposeFilter 
-where
-    W::Value: Into<f32>,
-{
-    fn filter(&mut self, _state1: StateId, _state2: StateId, arc1: &Arc<W>, arc2: &Arc<W>) -> bool {
-        // Custom filtering logic
-        let weight1: f32 = arc1.weight.value().into();
-        let weight2: f32 = arc2.weight.value().into();
-        weight1 + weight2 <= self.max_weight
-    }
+    // Filter composition of arc pairs
+    // Implementation details depend on specific filter type
 }
 ```
 
-### Custom Distance Functions
+Several built-in filters are provided:
+- `SequenceFilter` - Standard composition filter
+- `EpsilonFilter` - Handles epsilon transitions
+- `NoEpsilonFilter` - Optimized for epsilon-free FSTs
 
-Implement custom distance metrics for shortest path algorithms:
-
-```rust
-pub trait DistanceFunction<W: Semiring> {
-    fn distance(&self, from: StateId, to: StateId, weight: &W) -> f64;
-}
-
-struct GeographicDistance {
-    coordinates: HashMap<StateId, (f64, f64)>,
-}
-
-impl<W: Semiring> DistanceFunction<W> for GeographicDistance {
-    fn distance(&self, from: StateId, to: StateId, weight: &W) -> f64 {
-        if let (Some(&(x1, y1)), Some(&(x2, y2))) = 
-            (self.coordinates.get(&from), self.coordinates.get(&to)) {
-            ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()
-        } else {
-            f64::INFINITY
-        }
-    }
-}
-```
 
 ## Custom Compactors
 
 Implement compression strategies for `CompactFst`:
 
-```rust
+```rust,ignore
 pub trait Compactor<W: Semiring>: Debug + Send + Sync + 'static {
     type Element: Clone + Debug + Send + Sync;
     
@@ -240,81 +205,22 @@ where
 
 ## I/O Format Extensions
 
-Add support for custom serialization formats:
+ArcWeight provides several built-in I/O formats in the `io` module:
+- Text format (AT&T FSM format)
+- Binary format (with serde feature)
+- OpenFST compatibility format
 
-```rust
-pub trait FstFormat<W: Semiring> {
-    fn read<R: Read, F: MutableFst<W>>(reader: R) -> Result<F>;
-    fn write<W: Write, F: Fst<W>>(fst: &F, writer: W) -> Result<()>;
-}
-
-// Custom binary format
-struct MyBinaryFormat;
-
-impl<W: Semiring + Serialize + for<'de> Deserialize<'de>> FstFormat<W> for MyBinaryFormat {
-    fn read<R: Read, F: MutableFst<W>>(mut reader: R) -> Result<F> {
-        // Custom deserialization logic
-        let mut buffer = Vec::new();
-        reader.read_to_end(&mut buffer)?;
-        
-        let mut fst = F::default();
-        // Decode from buffer into fst
-        
-        Ok(fst)
-    }
-    
-    fn write<W: Write, F: Fst<W>>(fst: &F, mut writer: W) -> Result<()> {
-        // Custom serialization logic
-        let serialized = serialize_custom(fst)?;
-        writer.write_all(&serialized)?;
-        Ok(())
-    }
-}
-```
+Custom formats can be implemented by creating new read/write functions following the patterns in the `io` module.
 
 ## Property Extensions
 
-Add custom FST properties for optimization:
-
-```rust
-bitflags! {
-    pub struct CustomProperties: u64 {
-        const PHONOLOGICALLY_ORDERED = 1 << 32;
-        const MORPHOLOGICALLY_SORTED = 1 << 33;
-        const GEOGRAPHICALLY_INDEXED = 1 << 34;
-    }
-}
-
-pub trait PropertyComputer<W: Semiring> {
-    fn compute_properties<F: Fst<W>>(fst: &F) -> CustomProperties;
-}
-
-struct LinguisticPropertyComputer;
-
-impl<W: Semiring> PropertyComputer<W> for LinguisticPropertyComputer {
-    fn compute_properties<F: Fst<W>>(fst: &F) -> CustomProperties {
-        let mut props = CustomProperties::empty();
-        
-        // Check for phonological ordering
-        if is_phonologically_ordered(fst) {
-            props |= CustomProperties::PHONOLOGICALLY_ORDERED;
-        }
-        
-        // Check for morphological sorting
-        if is_morphologically_sorted(fst) {
-            props |= CustomProperties::MORPHOLOGICALLY_SORTED;
-        }
-        
-        props
-    }
-}
-```
+The existing property system in `properties/mod.rs` uses bitflags to track FST characteristics. While custom properties are not directly extensible, the existing system provides comprehensive tracking of FST properties for optimization.
 
 ## Symbol Table Extensions
 
 Extend symbol tables with custom functionality:
 
-```rust
+```rust,ignore
 pub trait SymbolMapper {
     fn map_symbol(&self, symbol: &str) -> Option<Label>;
     fn reverse_map(&self, label: Label) -> Option<&str>;
@@ -336,44 +242,15 @@ impl SymbolMapper for PhonemeMapper {
 }
 ```
 
-## Future Extension Points
+## Potential Future Extensions
 
-### Machine Learning Integration
+The trait-based architecture of ArcWeight makes it well-suited for future extensions such as:
+- Integration with machine learning frameworks
+- Advanced compression strategies
+- Domain-specific optimizations
+- Custom algorithm implementations
 
-```rust
-// Future: Differentiable FST operations
-pub trait DifferentiableFst<W: DifferentiableSemiring> {
-    fn forward(&self, input: &[Label]) -> (W, GradientTape);
-    fn backward(&self, gradient: &GradientTape) -> ParameterGradients;
-}
-```
-
-### Quantum Computing Preparation
-
-```rust
-// Future: Quantum FST simulation
-pub trait QuantumSemiring: Semiring {
-    type AmplitudeType: ComplexNumber;
-    
-    fn superposition(&self, other: &Self, amplitude: Self::AmplitudeType) -> Self;
-    fn measure(&self) -> (Self, f64);  // Returns collapsed state and probability
-}
-```
-
-### Advanced Compression
-
-```rust
-// Future: Neural compression for FSTs
-pub struct NeuralCompactor<W: Semiring> {
-    encoder: NeuralNetwork,
-    decoder: NeuralNetwork,
-    _phantom: PhantomData<W>,
-}
-
-impl<W: Semiring> Compactor<W> for NeuralCompactor<W> {
-    // Learn optimal compression from data
-}
-```
+These extensions would follow the existing patterns established in the codebase.
 
 ## Extension Guidelines
 
@@ -400,7 +277,7 @@ impl<W: Semiring> Compactor<W> for NeuralCompactor<W> {
 
 ### 4. Provide Clear Documentation
 
-```rust
+```rust,ignore
 /// Custom semiring for geographic distances
 /// 
 /// This semiring uses the tropical structure (min, +) but with

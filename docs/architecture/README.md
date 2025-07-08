@@ -24,7 +24,6 @@ This section provides a comprehensive overview of ArcWeight's internal architect
 - **[Design Patterns](design-patterns.md)** - Common patterns and best practices
 - **[Algorithm Architecture](algorithm-architecture.md)** - Algorithm organization and patterns
 - **[Memory Management](memory-management.md)** - Ownership patterns and optimization
-- **[Performance](performance.md)** - Optimization strategies and techniques
 - **[Extension Points](extension-points.md)** - How to extend and customize ArcWeight
 
 ## Quick Navigation
@@ -36,7 +35,7 @@ This section provides a comprehensive overview of ArcWeight's internal architect
 
 ### For Advanced Users
 1. [FST Implementations](fst-implementations.md) - Choose the right FST type
-2. [Performance](performance.md) - Optimization strategies
+2. [Algorithm Architecture](algorithm-architecture.md) - Algorithm design patterns
 3. [Extension Points](extension-points.md) - Custom implementations
 
 ### For Library Developers

@@ -141,6 +141,9 @@ jobs:
         unzip mdbook-linkcheck.zip -d bin
         chmod +x bin/mdbook-linkcheck
 
+    - name: Install mdbook-bib
+      run: cargo install mdbook-bib
+
     - name: Build mdBook documentation
       run: mdbook build
 

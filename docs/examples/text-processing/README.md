@@ -11,21 +11,21 @@ These examples demonstrate fundamental text processing algorithms using FSTs, fo
 **Concepts:** Dynamic programming, cost matrices, string similarity  
 ```bash
 cargo run --example edit_distance
-```
+```text
 
 ### [String Alignment](string_alignment.md)  
 **Complexity:** Intermediate  
 **Concepts:** Path extraction, alignment visualization, multiple optimality  
 ```bash
 cargo run --example string_alignment
-```
+```text
 
 ### [Spell Checking](spell_checking.md)
 **Complexity:** Advanced  
 **Concepts:** Composition, shortest path, error modeling  
 ```bash
 cargo run --example spell_checking
-```
+```text
 
 ## Learning Path
 

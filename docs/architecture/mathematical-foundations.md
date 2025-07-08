@@ -63,50 +63,40 @@ The architecture ensures mathematical correctness through several mechanisms:
 
 ### Semiring Axioms Enforcement
 
-```rust
-// The type system ensures semiring properties
-impl<W: Semiring> VectorFst<W> {
-    pub fn compute_path_weight(&self, path: &[Arc<W>]) -> W {
-        path.iter()
-            .map(|arc| &arc.weight)
-            .fold(W::one(), |acc, w| acc.times(w))  // Multiplication along path
-    }
-}
+The type system ensures semiring properties through trait bounds:
+
+```rust,ignore
+// Example: Path weight computation follows semiring multiplication
+// Weight multiplication along a path: w1 ⊗ w2 ⊗ ... ⊗ wn
+let total_weight = arc_weights.iter()
+    .fold(W::one(), |acc, w| acc.times(w));
 ```
 
 ### Algorithm Requirements
 
-```rust
-// Algorithms specify mathematical requirements
-pub fn shortest_path<F, W>(fst: &F) -> Result<VectorFst<W>>
+Algorithms specify their mathematical requirements through trait bounds:
+
+```rust,ignore
+// shortest_path requires a naturally ordered semiring
+pub fn shortest_path<F, W, M>(fst: &F, config: ShortestPathConfig) -> Result<M>
 where
     F: Fst<W>,
-    W: NaturallyOrderedSemiring,  // Must support ordering for shortest path
-{
-    // Implementation relies on semiring ordering properties
-}
+    W: NaturallyOrderedSemiring,  // Must support ordering
+    M: MutableFst<W> + Default,
 ```
 
-### Property-Based Optimization
+### Property-Based Design
 
-```rust
-pub fn optimize_composition<F1, F2, W>(fst1: &F1, fst2: &F2) -> Result<VectorFst<W>>
-where
-    F1: Fst<W>,
-    F2: Fst<W>,
-    W: Semiring,
-{
-    let props1 = fst1.properties();
-    let props2 = fst2.properties();
-    
-    if props1.has_property(PropertyFlags::NO_EPSILONS) && 
-       props2.has_property(PropertyFlags::NO_EPSILONS) {
-        // Use optimized epsilon-free composition
-        compose_no_epsilon(fst1, fst2)
-    } else {
-        // Use general composition algorithm
-        compose_general(fst1, fst2)
-    }
+The property system enables mathematical optimizations:
+
+```rust,ignore
+// Properties track FST characteristics
+let props = fst.properties();
+if props.contains(PropertyFlags::ACYCLIC) {
+    // Can use topological algorithms
+}
+if props.contains(PropertyFlags::DETERMINISTIC) {
+    // Single path per input string
 }
 ```
 

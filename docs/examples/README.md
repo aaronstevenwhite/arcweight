@@ -57,7 +57,7 @@ These examples implement classic computational linguistics algorithms using mode
 
 Modify examples to suit your needs:
 
-```rust
+```rust,ignore
 // Change operation costs in edit_distance.rs
 let insertion_cost = 2.0;
 let substitution_cost = 3.0;

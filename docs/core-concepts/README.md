@@ -1,6 +1,6 @@
 # Core Concepts
 
-This section provides a mathematically rigorous introduction to Weighted Finite State Transducers (WFSTs) and semirings as implemented in ArcWeight. We assume familiarity with basic automata theory and focus on formal definitions, implementation details, and practical applications. All content has been carefully organized to eliminate redundancy while preserving comprehensive coverage.
+This section provides a mathematically rigorous introduction to Weighted Finite State Transducers (WFSTs) and semirings as implemented in ArcWeight. Building upon the foundational work in finite-state methods {{#cite mohri1997finite}} {{#cite kuich1986semirings}}, we assume familiarity with basic automata theory and focus on formal definitions, implementation details, and practical applications.
 
 ## Table of Contents
 
@@ -25,10 +25,10 @@ This documentation provides comprehensive coverage of the theoretical and practi
 - **Symbol Management**: Best practices for large-scale symbol handling
 
 ### Real-World Applications
-- **Natural Language Processing**: Machine translation, speech recognition, morphological analysis
+- **Natural Language Processing**: Machine translation {{#cite kumar2003weighted}}, speech recognition {{#cite mohri2002weighted}}, morphological analysis {{#cite beesley2003finite}}
 - **Computational Biology**: Sequence alignment, motif discovery, phylogenetic analysis
 - **Signal Processing**: Temporal pattern recognition, time-series analysis
-- **Information Extraction**: Named entity recognition, text normalization
+- **Information Extraction**: Named entity recognition, text normalization {{#cite karttunen2001applications}}
 
 ## See Also
 
@@ -36,10 +36,12 @@ This documentation provides comprehensive coverage of the theoretical and practi
 - **[Working with FSTs](../working-with-fsts/)** - Core FST manipulation algorithms
 - **[Examples](../examples/README.md)** - Real-world WFST applications
 
-## References
+## Theoretical Foundations
 
-- Elgot, C.C. & Mezei, J.E. (1965). On relations defined by generalized finite automata. *IBM Journal of Research and Development*, 9:47-65
-- Kuich, W. & Salomaa, A. (1986). *Semirings, Automata, Languages*. Springer-Verlag
-- Mohri, M. (2002). Semiring frameworks and algorithms for shortest-distance problems. *Journal of Automata, Languages and Combinatorics*, 7(3):321-350
-- Allauzen, C., Riley, M., Schalkwyk, J., Skut, W., & Mohri, M. (2007). OpenFst: A general and efficient weighted finite-state transducer library. *CIAA 2007*, LNCS vol 4783, Springer
-- Beesley, K.R. & Karttunen, L. (2003). *Finite State Morphology*. CSLI Publications
+The mathematical framework of weighted finite-state transducers rests on several key theoretical contributions:
+
+- **Rational Relations**: {{#cite elgot1965relations}} established the mathematical foundations of relations defined by finite automata
+- **Semiring Theory**: {{#cite kuich1986semirings}} provided the algebraic framework for weighted computation
+- **WFST Algorithms**: {{#cite mohri2002semiring}} developed the algorithmic toolkit for shortest-distance problems
+- **Practical Implementation**: {{#cite allauzen2007openfst}} demonstrated efficient implementation strategies
+- **Morphological Applications**: {{#cite beesley2003finite}} showed the power of finite-state methods in computational linguistics

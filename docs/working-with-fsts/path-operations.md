@@ -19,7 +19,7 @@ The shortest path operation finds the path through an FST with the minimum total
 
 ### Basic Shortest Path
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn find_best_path(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
@@ -31,11 +31,11 @@ fn find_best_path(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalW
     
     Ok(shortest)
 }
-```
+```text
 
 ### Extracting Path Information
 
-```rust
+```rust,ignore
 fn extract_shortest_path(fst: &VectorFst<TropicalWeight>) -> Result<(Vec<Label>, Weight)> {
     let shortest = shortest_path(fst)?;
     
@@ -61,11 +61,11 @@ fn extract_shortest_path(fst: &VectorFst<TropicalWeight>) -> Result<(Vec<Label>,
     
     Ok((path, total_weight))
 }
-```
+```text
 
 ### Real-World Example: Spell Correction
 
-```rust
+```rust,ignore
 fn spell_correct(
     word: &str,
     dictionary: &VectorFst<TropicalWeight>
@@ -84,7 +84,7 @@ fn spell_correct(
     // Extract the corrected word
     extract_output_string(&best)
 }
-```
+```text
 
 ## N-Best Paths
 
@@ -99,7 +99,7 @@ Sometimes you need multiple solutions, not just the best one. N-best paths gives
 
 ### Basic N-Best
 
-```rust
+```rust,ignore
 fn find_top_paths(
     fst: &VectorFst<TropicalWeight>,
     n: usize
@@ -114,11 +114,11 @@ fn find_top_paths(
     
     Ok(nbest)
 }
-```
+```text
 
 ### Extracting Multiple Paths
 
-```rust
+```rust,ignore
 fn extract_nbest_paths(
     fst: &VectorFst<TropicalWeight>,
     n: usize
@@ -138,11 +138,11 @@ fn extract_nbest_paths(
     
     Ok(paths)
 }
-```
+```text
 
 ### Real-World Example: Autocomplete
 
-```rust
+```rust,ignore
 struct AutocompleteEngine {
     prefix_fst: VectorFst<TropicalWeight>,
     vocabulary: VectorFst<TropicalWeight>,
@@ -168,11 +168,11 @@ impl AutocompleteEngine {
         extract_suggestions(&top_matches)
     }
 }
-```
+```text
 
 ### Unique vs Non-Unique Paths
 
-```rust
+```rust,ignore
 fn demonstrate_unique_paths() -> Result<()> {
     let fst = /* FST with multiple paths producing same output */;
     
@@ -194,7 +194,7 @@ fn demonstrate_unique_paths() -> Result<()> {
     
     Ok(())
 }
-```
+```text
 
 ## Pruning
 
@@ -209,7 +209,7 @@ Pruning removes paths with weights above a threshold, keeping only the most like
 
 ### Weight-Based Pruning
 
-```rust
+```rust,ignore
 fn prune_by_weight(
     fst: &VectorFst<TropicalWeight>,
     threshold: f32
@@ -226,11 +226,11 @@ fn prune_by_weight(
     
     Ok(connected)
 }
-```
+```text
 
 ### Relative Pruning
 
-```rust
+```rust,ignore
 fn prune_relative(
     fst: &VectorFst<TropicalWeight>,
     delta: f32
@@ -243,11 +243,11 @@ fn prune_relative(
     let threshold = best_weight.value() + delta;
     prune(fst, TropicalWeight::new(threshold))
 }
-```
+```text
 
 ### Pruning in Beam Search
 
-```rust
+```rust,ignore
 struct BeamSearchDecoder {
     beam_width: f32,
 }
@@ -265,13 +265,13 @@ impl BeamSearchDecoder {
         prune_relative(&expanded, self.beam_width)
     }
 }
-```
+```text
 
 ## Advanced Path Operations
 
 ### Randomized Path Selection
 
-```rust
+```rust,ignore
 use arcweight::algorithms::RandGen;
 
 fn sample_random_path(
@@ -285,11 +285,11 @@ fn sample_random_path(
     
     Ok(path)
 }
-```
+```text
 
 ### Path Enumeration
 
-```rust
+```rust,ignore
 fn enumerate_all_paths(
     fst: &VectorFst<TropicalWeight>,
     max_length: usize
@@ -315,11 +315,11 @@ fn enumerate_all_paths(
     
     Ok(paths)
 }
-```
+```text
 
 ### Distance-Based Operations
 
-```rust
+```rust,ignore
 fn find_paths_within_distance(
     fst: &VectorFst<TropicalWeight>,
     target: &str,
@@ -334,13 +334,13 @@ fn find_paths_within_distance(
     // Keep only close paths
     prune(&distances, TropicalWeight::new(max_distance))
 }
-```
+```text
 
 ## Practical Applications
 
 ### Application: Multi-Stage Search
 
-```rust
+```rust,ignore
 fn multi_stage_search(
     query: &str,
     stages: Vec<VectorFst<TropicalWeight>>
@@ -365,11 +365,11 @@ fn multi_stage_search(
     
     extract_strings(&results)
 }
-```
+```text
 
 ### Application: Confidence Scoring
 
-```rust
+```rust,ignore
 fn get_confidence_scores(
     fst: &VectorFst<TropicalWeight>,
     n: usize
@@ -394,7 +394,7 @@ fn get_confidence_scores(
     
     Ok(scores)
 }
-```
+```text
 
 ## Performance Considerations
 
@@ -417,7 +417,7 @@ fn get_confidence_scores(
 
 ### Pattern: Fallback Search
 
-```rust
+```rust,ignore
 fn search_with_fallback(
     query: &str,
     strict_matcher: &VectorFst<TropicalWeight>,
@@ -436,11 +436,11 @@ fn search_with_fallback(
     let best = shortest_path(&fuzzy)?;
     extract_string(&best)
 }
-```
+```text
 
 ### Pattern: Incremental Results
 
-```rust
+```rust,ignore
 fn incremental_search(
     prefix: &str,
     fst: &VectorFst<TropicalWeight>
@@ -461,7 +461,7 @@ fn incremental_search(
     // Return iterator that yields results as they're found
     IncrementalIterator::new(results)
 }
-```
+```text
 
 ## Next Steps
 

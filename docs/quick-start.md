@@ -1,12 +1,11 @@
 # Quick Start Guide
 
-**Build your first FST in 20 minutes!** From zero to working transducer with hands-on, practical examples that give immediate results.
+This guide demonstrates the construction of weighted finite state transducers (WFSTs) and essential operations through practical examples.
 
 This guide walks you through creating your first weighted finite state transducer (WFST) and performing essential operations. By the end, you'll understand FST fundamentals and be ready for real-world applications.
 
-> **Learning Style**: Hands-on with immediate results  
-> **For Theory**: See [Core Concepts](core-concepts/)  
-> **For Overview**: See [Main Documentation](README.md)
+**For theoretical background**: See [Core Concepts](core-concepts/)  
+**For documentation overview**: See [Main Documentation](README.md)
 
 ## Prerequisites
 
@@ -16,28 +15,28 @@ This guide walks you through creating your first weighted finite state transduce
 
 ## What You'll Learn
 
-By the end of this guide, you'll master:
+Topics covered:
 
-| Skill | What You'll Build | Time |
-|-------|------------------|------|
-| **FST Construction** | States, arcs, and basic structures | 5 min |
-| **Weight Types** | Different semiring applications | 5 min |
-| **Operations** | Composition, union, shortest path | 3 min |
-| **Symbol Tables** | Readable, maintainable code | 2 min |
-| **Real Applications** | Working spell checker foundation | 5 min |
+| Topic | Description |
+|-------|-------------|
+| **FST Construction** | States, arcs, and basic structures |
+| **Weight Types** | Different semiring applications |
+| **Operations** | Composition, union, shortest path |
+| **Symbol Tables** | Readable, maintainable code |
+| **Applications** | Spell checker implementation |
 
-## Your First FST: "Hello World"
+## First FST Example
 
-Let's start with the simplest possible FST - one that accepts the string "hello":
+The following example constructs an FST that accepts the string "hello":
 
 ### Step 1: Create Your First FST
 
 Replace `src/main.rs` with:
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Creating your first FST...");
     
     // Create a new FST with tropical weights (cost-based optimization)
@@ -67,7 +66,7 @@ fn main() -> Result<()> {
     // Count total arcs across all states
     let total_arcs: usize = fst.states().map(|s| fst.num_arcs(s)).sum();
     
-    println!("✅ FST created successfully!");
+    println!("FST created successfully");
     println!("   States: {}", fst.num_states());
     println!("   Arcs: {}", total_arcs);
     println!("   Start state: {:?}", fst.start());
@@ -102,9 +101,9 @@ cargo run
 ```
 
 Expected output:
-```
+```text
 Creating your first FST...
-✅ FST created successfully!
+FST created successfully
    States: 6
    Arcs: 5
    Start state: Some(0)
@@ -118,13 +117,11 @@ State 4: 'o':'o' -> 5
 State 5: [FINAL: 0]
 ```
 
-**Congratulations!** You've created your first FST that recognizes the word "hello".
+This FST recognizes the word "hello".
 
 ## Understanding FST Components
 
-Master the building blocks that make FSTs powerful: **States** • **Arcs** • **Weights**
-
-Now that you've seen an FST in action, let's understand the fundamental building blocks:
+The fundamental components of FSTs are states, arcs, and weights:
 
 ### States
 
@@ -159,16 +156,16 @@ Weights define how costs combine in FST operations. ArcWeight supports several t
 - **ProbabilityWeight**: For probabilistic operations
 - **BooleanWeight**: Simple accept/reject logic
 
-> **Learn more semirings**: See [Core Concepts](core-concepts/) for mathematical details and [Working with FSTs](working-with-fsts/) for practical examples.
+See [Core Concepts](core-concepts/) for mathematical details and [Working with FSTs](working-with-fsts/) for practical examples.
 
 ## Basic FST Operations
 
 FSTs become powerful when you combine them. Composition is one of the most important operations. Composition chains two FSTs - the output of the first becomes input to the second:
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
-fn composition_example() -> Result<()> {
+fn composition_example() -> Result<(), Box<dyn std::error::Error>> {
     // FST 1: "a" -> "b"
     let mut fst1 = VectorFst::<TropicalWeight>::new();
     let s0 = fst1.add_state();
@@ -193,28 +190,28 @@ fn composition_example() -> Result<()> {
 }
 ```
 
-> **Learn more operations**: See [Working with FSTs](working-with-fsts/) for union, shortest path, minimization, and advanced techniques.
+See [Working with FSTs](working-with-fsts/) for union, shortest path, minimization, and additional operations.
 
 ## Symbol Tables (Optional)
 
 For readable code, use symbol tables to map strings to numeric IDs:
 
-```rust
+```rust,ignore
 let mut syms = SymbolTable::new();
 let hello_id = syms.add_symbol("hello");
 // Use hello_id in FST construction instead of 'h' as u32
 ```
 
-> **Learn more**: See [Working with FSTs](working-with-fsts/) for detailed symbol table usage.
+See [Working with FSTs](working-with-fsts/) for detailed symbol table usage.
 
 ## Practical Application: Simple Spell Checker
 
-Let's build something useful: a simple spell checker that suggests corrections.
+The following example demonstrates a basic spell checker implementation:
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
-fn build_spell_checker() -> Result<()> {
+fn build_spell_checker() -> Result<(), Box<dyn std::error::Error>> {
     println!("Building a spell checker...");
     
     // Create dictionary FST
@@ -260,7 +257,7 @@ fn build_spell_checker() -> Result<()> {
     // 2. Compose edit distance FST with dictionary  
     // 3. Find shortest paths to get correction suggestions
     
-    println!("✅ Spell checker foundation complete!");
+    println!("Spell checker foundation complete");
     
     Ok(())
 }
@@ -272,16 +269,16 @@ fn main() -> Result<()> {
 
 ## Next Steps
 
-**Choose your learning path:**
+**Additional resources:**
 
-- **📖 [Examples](examples/README.md)** - Practical applications and use cases
-- **🛠️ [Working with FSTs](working-with-fsts/)** - Complete operations guide  
-- **📐 [Core Concepts](core-concepts/)** - Mathematical foundations
-- **🔧 [Try examples](examples/)**: `cargo run --example edit_distance`
+- **[Examples](examples/README.md)** - Practical applications and use cases
+- **[Working with FSTs](working-with-fsts/)** - Complete operations guide  
+- **[Core Concepts](core-concepts/)** - Mathematical foundations
+- **Example execution**: `cargo run --example edit_distance`
 
 ## Quick Reference
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;  // Essential import
 
 // Basic FST pattern

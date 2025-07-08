@@ -16,30 +16,31 @@ Clean separation of concerns allows easy extension of the library with new semir
 
 ## Core Design Principles
 
-### 1. **Type Safety Through Traits**
+### Type Safety Through Traits
 
 ArcWeight uses Rust's trait system to ensure correctness at compile time:
 
-```rust
+```rust,ignore
 // Algorithms specify exact requirements
 // API Reference: https://docs.rs/arcweight/latest/arcweight/algorithms/fn.shortest_path.html
-pub fn shortest_path<F, W>(fst: &F, config: ShortestPathConfig) -> Result<VectorFst<W>>
+pub fn shortest_path<F, W, M>(fst: &F, config: ShortestPathConfig) -> Result<M>
 where
     F: Fst<W>,                      // Must be an FST
     W: NaturallyOrderedSemiring,    // Must support ordering for shortest path
+    M: MutableFst<W> + Default,     // Output FST type
 ```
 
-### 2. **Zero-Cost Abstractions**
+### Zero-Cost Abstractions
 
 Generic programming enables compile-time specialization without runtime overhead:
 
-```rust
+```rust,ignore
 // Compiles to optimal code for each semiring type
 let tropical_fst = VectorFst::<TropicalWeight>::new();
 let boolean_fst = VectorFst::<BooleanWeight>::new();
 ```
 
-### 3. **Separation of Concerns**
+### Separation of Concerns
 
 Clear boundaries between different architectural layers:
 - **Data structures** separate from **algorithms**

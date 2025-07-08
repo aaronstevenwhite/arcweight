@@ -14,7 +14,7 @@ The key insight is using FST output labels to encode different operation types (
 
 ```bash
 cargo run --example string_alignment
-```
+```text
 
 ## What You'll Learn
 
@@ -32,10 +32,10 @@ cargo run --example string_alignment
 Given two strings S and T, an alignment is a way of writing them one above the other, possibly with gaps (represented by dashes), such that every character appears exactly once, no column contains two gaps, and reading left-to-right preserves the original strings (ignoring gaps).
 
 For example, aligning "KITTEN" and "SITTING":
-```
+```text
 K I T T E - N
 S I T T I N G
-```
+```text
 
 This alignment shows K → S (substitution), I → I (match), T → T (match), T → T (match), E → I (substitution), - → N (insertion), and N → G (substitution).
 
@@ -47,16 +47,16 @@ An optimal alignment minimizes the total cost of operations. The cost depends on
 
 An alignment A between strings S(1..m) and T(1..n) can be represented as a sequence of edit operations:
 
-```
+```text
 A = (op₁, op₂, ..., opₖ)
-```
+```text
 
 Where each operation opᵢ is one of Match(i,j) where S(i) = T(j), Substitute(i,j) where S(i) → T(j), Insert(j) where ε → T(j), or Delete(i) where S(i) → ε.
 
 The cost of an alignment is:
-```
+```text
 cost(A) = Σ cost(opᵢ)
-```
+```text
 
 ## Implementation
 
@@ -64,13 +64,13 @@ cost(A) = Σ cost(opᵢ)
 
 The key insight is encoding operation types in the FST's output labels. We use a special encoding scheme:
 
-```rust
+```rust,ignore
 // Operation encoding in output labels:
 // 1000 + char_value: Match
 // 2000 + char_value: Substitution (target character)
 // 3000 + char_value: Insertion 
 // 4000 + char_value: Deletion
-```
+```text
 
 This allows us to distinguish between different ways of producing the same character. Output label 1097 represents Match 'a' (97 is ASCII for 'a'). Output label 2097 represents Substitute something to 'a'. Output label 3097 represents Insert 'a'.
 
@@ -78,7 +78,7 @@ This allows us to distinguish between different ways of producing the same chara
 
 The alignment FST extends the edit distance FST with encoded operations:
 
-```rust
+```rust,ignore
 fn build_alignment_fst(target: &str, max_edits: usize, costs: Costs) -> VectorFst {
     let mut fst = VectorFst::new();
     let target_chars: Vec<char> = target.chars().collect();
@@ -115,13 +115,13 @@ fn build_alignment_fst(target: &str, max_edits: usize, costs: Costs) -> VectorFs
         }
     }
 }
-```
+```text
 
 ### Extracting Alignments
 
 After composition, we traverse the FST to extract alignment paths:
 
-```rust
+```rust,ignore
 fn extract_alignment(fst: &VectorFst) -> Vec<Alignment> {
     let mut alignments = Vec::new();
     
@@ -142,7 +142,7 @@ fn extract_alignment(fst: &VectorFst) -> Vec<Alignment> {
     
     alignments
 }
-```
+```text
 
 ## FST Implementation
 
@@ -150,17 +150,17 @@ fn extract_alignment(fst: &VectorFst) -> Vec<Alignment> {
 
 The most common visualization shows three lines:
 
-```
+```text
 Source:    K I T T E - N
 Alignment: * | | | * + *
 Target:    S I T T I N G
-```
+```text
 
 Where `|` indicates a match, `*` indicates a substitution, `+` indicates an insertion, and `-` indicates a deletion.
 
 ### Implementation
 
-```rust
+```rust,ignore
 fn visualize(alignment: &Alignment) -> String {
     let mut source_line = String::new();
     let mut align_line = String::new();
@@ -191,17 +191,17 @@ fn visualize(alignment: &Alignment) -> String {
         }
     }
 }
-```
+```text
 
 ## Running the Example
 
 ```bash
 cargo run --example string_alignment
-```
+```text
 
 ### Sample Output
 
-```
+```text
 String Alignment Example
 ========================
 
@@ -253,7 +253,7 @@ Alignment statistics:
   Substitutions: 2
   Insertions/Deletions: 0
   Similarity: 75.0%
-```
+```text
 
 ## Understanding Multiple Optimal Alignments
 
@@ -264,19 +264,19 @@ One fascinating aspect of string alignment is that multiple different alignments
 There are two ways to transform "abc" to "aec" with cost 2:
 
 **Option 1: Direct substitution**
-```
+```text
 a b c
 | * |
 a e c
-```
+```text
 Operations: Match 'a', Substitute 'b'→'e', Match 'c'
 
 **Option 2: Delete and insert**
-```
+```text
 a - b c
 | + - |
 a e - c
-```
+```text
 Operations: Match 'a', Insert 'e', Delete 'b', Match 'c'
 
 Both have the same cost with unit weights, but might differ with custom costs.
@@ -291,7 +291,7 @@ When multiple alignments exist, we might prefer fewer gaps (minimize insertions/
 
 DNA and protein alignment requires specialized scoring:
 
-```rust
+```rust,ignore
 struct BiologicalScoring {
     match_score: f32,      // Positive score for matches
     mismatch_cost: f32,    // Substitution penalty
@@ -306,7 +306,7 @@ let scoring = BiologicalScoring {
     gap_open: 5.0,         
     gap_extend: 0.5,       
 };
-```
+```text
 
 Key considerations include conservation (some positions are more important than others), gap penalties (affine gap costs with open + extend are biologically realistic), and substitution matrices (PAM/BLOSUM matrices for amino acids).
 
@@ -314,7 +314,7 @@ Key considerations include conservation (some positions are more important than 
 
 For version control systems:
 
-```rust
+```rust,ignore
 fn code_diff_alignment(old_code: &str, new_code: &str) -> DiffAlignment {
     // Tokenize by lines instead of characters
     let old_lines = old_code.lines().collect();
@@ -332,13 +332,13 @@ fn code_diff_alignment(old_code: &str, new_code: &str) -> DiffAlignment {
         }
     }
 }
-```
+```text
 
 ### 3. Phonetic Alignment
 
 For speech processing and pronunciation:
 
-```rust
+```rust,ignore
 // Align phoneme sequences
 let pronunciation1 = vec!["K", "IH", "T", "AH", "N"];  // 'kitten'
 let pronunciation2 = vec!["S", "IH", "T", "IH", "NG"]; // 'sitting'
@@ -352,13 +352,13 @@ fn phonetic_distance(p1: &str, p2: &str) -> f32 {
         _ => 1.0,                         // Default
     }
 }
-```
+```text
 
 ### 4. Musical Sequence Alignment
 
 For comparing melodies or chord progressions:
 
-```rust
+```rust,ignore
 struct Note {
     pitch: u8,      // MIDI note number
     duration: f32,  // In beats
@@ -378,7 +378,7 @@ fn melodic_alignment(melody1: &[Note], melody2: &[Note]) -> MusicAlignment {
     
     compute_weighted_alignment(melody1, melody2, subst_cost)
 }
-```
+```text
 
 ## Performance Optimization
 
@@ -386,7 +386,7 @@ fn melodic_alignment(melody1: &[Note], melody2: &[Note]) -> MusicAlignment {
 
 For similar sequences, restrict edits to a diagonal band:
 
-```rust
+```rust,ignore
 fn banded_alignment(s1: &str, s2: &str, bandwidth: usize) -> Alignment {
     // Only consider states within bandwidth of the main diagonal
     let n = s1.len();
@@ -400,7 +400,7 @@ fn banded_alignment(s1: &str, s2: &str, bandwidth: usize) -> Alignment {
         }
     }
 }
-```
+```text
 
 This reduces complexity from O(nm) to O(n×bandwidth).
 
@@ -408,18 +408,18 @@ This reduces complexity from O(nm) to O(n×bandwidth).
 
 For very different sequences, use sparse state representation:
 
-```rust
+```rust,ignore
 struct SparseAlignmentFST {
     states: HashMap<(usize, usize), StateId>,  // (position, edits) -> state
     threshold: f32,  // Prune states with cost > threshold
 }
-```
+```text
 
 ### 3. Incremental Alignment
 
 For real-time applications (e.g., collaborative editing):
 
-```rust
+```rust,ignore
 struct IncrementalAligner {
     previous_alignment: Alignment,
     source_changes: Vec<TextEdit>,
@@ -434,7 +434,7 @@ impl IncrementalAligner {
         self.merge_local_alignment(local_alignment)
     }
 }
-```
+```text
 
 ## Extending the Algorithm
 
@@ -442,7 +442,7 @@ impl IncrementalAligner {
 
 Biological sequences often use affine gap penalties where opening a gap costs more than extending it:
 
-```rust
+```rust,ignore
 struct AffineGapFST {
     states: Vec<Vec<Vec<StateId>>>,  // [position][edits][gap_state]
     gap_open: f32,
@@ -453,13 +453,13 @@ struct AffineGapFST {
 // - Match state (can start any operation)
 // - Insertion state (can only extend insertions)
 // - Deletion state (can only extend deletions)
-```
+```text
 
 ### 2. Local Alignment
 
 Find the best matching substring rather than full sequences:
 
-```rust
+```rust,ignore
 fn local_alignment(s1: &str, s2: &str) -> LocalAlignment {
     // Allow free insertions/deletions at start/end
     let mut fst = build_alignment_fst(s2, ...);
@@ -476,13 +476,13 @@ fn local_alignment(s1: &str, s2: &str) -> LocalAlignment {
         fst.set_final(state, TropicalWeight::one());
     }
 }
-```
+```text
 
 ### 3. Constrained Alignment
 
 Enforce certain positions to align:
 
-```rust
+```rust,ignore
 struct ConstrainedAlignment {
     anchors: Vec<(usize, usize)>,  // (source_pos, target_pos) pairs
 }
@@ -494,7 +494,7 @@ fn build_constrained_fst(target: &str, anchors: &[(usize, usize)]) -> VectorFst 
         enforce_anchor(fst, s_pos, t_pos);
     }
 }
-```
+```text
 
 ## Common Pitfalls and Solutions
 
@@ -503,7 +503,7 @@ fn build_constrained_fst(target: &str, anchors: &[(usize, usize)]) -> VectorFst 
 **Problem**: FST size grows with sequence length squared.
 
 **Solution**: Use checkpointing:
-```rust
+```rust,ignore
 fn checkpoint_alignment(s1: &str, s2: &str, checkpoint_interval: usize) {
     // Divide into segments and align separately
     let segments = chunk_sequences(s1, s2, checkpoint_interval);
@@ -512,29 +512,29 @@ fn checkpoint_alignment(s1: &str, s2: &str, checkpoint_interval: usize) {
     });
     merge_alignments(partial_alignments)
 }
-```
+```text
 
 ### 2. Numerical Precision
 
 **Problem**: Floating-point errors accumulate in long alignments.
 
 **Solution**: Use log-space computation or exact arithmetic:
-```rust
+```rust,ignore
 // Use LogWeight instead of TropicalWeight for better precision
 type LogFst = VectorFst<LogWeight>;
-```
+```text
 
 ### 3. Handling Unicode
 
 **Problem**: Multi-byte characters and combining marks.
 
 **Solution**: Use grapheme clusters:
-```rust
+```rust,ignore
 use unicode_segmentation::UnicodeSegmentation;
 
 let graphemes: Vec<&str> = text.graphemes(true).collect();
 // Align graphemes instead of chars
-```
+```text
 
 ## Best Practices
 
@@ -542,7 +542,7 @@ let graphemes: Vec<&str> = text.graphemes(true).collect();
 
 Different applications need different scoring schemes:
 
-```rust
+```rust,ignore
 enum AlignmentDomain {
     Text,        // Unit costs
     DNA,         // Match=0, Mismatch=1, Gap=2
@@ -557,13 +557,13 @@ fn get_scoring_scheme(domain: AlignmentDomain) -> ScoringScheme {
         // etc.
     }
 }
-```
+```text
 
 ### 2. Validate Input
 
 Always check sequence properties:
 
-```rust
+```rust,ignore
 fn validate_sequences(s1: &str, s2: &str) -> Result<()> {
     if s1.is_empty() || s2.is_empty() {
         return Err(anyhow!("Empty sequences not allowed"));
@@ -580,13 +580,13 @@ fn validate_sequences(s1: &str, s2: &str) -> Result<()> {
     
     Ok(())
 }
-```
+```text
 
 ### 3. Test Edge Cases
 
 Always test boundary conditions:
 
-```rust
+```rust,ignore
 #[cfg(test)]
 mod tests {
     #[test]
@@ -605,13 +605,13 @@ mod tests {
         }));
     }
 }
-```
+```text
 
 ## Applications
 
 ### 1. Spell Checker with Corrections
 
-```rust
+```rust,ignore
 fn spell_check_with_alignment(word: &str, dictionary: &[&str]) -> SpellCheckResult {
     let mut suggestions = Vec::new();
     
@@ -651,11 +651,11 @@ fn describe_corrections(alignment: &Alignment) -> String {
     
     description.join(", ")
 }
-```
+```text
 
 ### 2. Collaborative Editing
 
-```rust
+```rust,ignore
 struct CollaborativeDocument {
     base_text: String,
     user_versions: HashMap<UserId, String>,
@@ -681,7 +681,7 @@ impl CollaborativeDocument {
         MergeResult::Success
     }
 }
-```
+```text
 
 ## Related Examples
 

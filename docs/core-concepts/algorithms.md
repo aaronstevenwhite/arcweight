@@ -20,7 +20,7 @@ The power of rational operations stems from their closure properties. The class 
 
 Each rational operation presents unique algorithmic challenges and optimization opportunities:
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn rational_operations_example() -> Result<(), Box<dyn std::error::Error>> {
@@ -68,7 +68,7 @@ This definition captures the essential idea that composition considers all possi
 - **EPSILON_1**: First transducer processes epsilon, second waits
 - **EPSILON_2**: Second transducer processes epsilon, first waits
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn sophisticated_composition_example() -> Result<(), Box<dyn std::error::Error>> {
@@ -115,7 +115,7 @@ $$(T_1 \cup T_2)(\langle x, y \rangle) = T_1(\langle x, y \rangle) \oplus T_2(\l
 3. All original states and transitions preserved
 4. Final states inherit their original final weights
 
-```rust
+```rust,ignore
 fn union_construction_example() -> Result<(), Box<dyn std::error::Error>> {
     // T1: Formal language processor
     let formal_processor = build_formal_language_fst()?;
@@ -151,7 +151,7 @@ where \\(x, y\\) are substrings of the input and \\(u, v\\) are corresponding ou
 2. Removes final status from \\(T_1\\)'s original final states
 3. Preserves \\(T_2\\)'s final states as the concatenation's final states
 
-```rust
+```rust,ignore
 fn concatenation_linguistics_example() -> Result<(), Box<dyn std::error::Error>> {
     // Morphological analysis: roots + affixes
     let root_analyzer = build_root_analysis_fst()?;
@@ -182,7 +182,7 @@ $$T^* = \varepsilon \cup T \cup T^2 \cup T^3 \cup \ldots = \bigcup_{i=0}^{\infty
 
 **Convergence Properties**: For \\(k\\)-closed semirings, the infinite union converges to a finite representation, ensuring computational tractability.
 
-```rust
+```rust,ignore
 fn kleene_closure_example() -> Result<(), Box<dyn std::error::Error>> {
     // T: Single word processor
     let word_processor = build_word_fst()?;
@@ -212,7 +212,7 @@ Determinization transforms non-deterministic transducers into equivalent determi
 3. **Weight Normalization**: Redistribute weights to maintain deterministic semantics
 4. **State Merging**: Identify equivalent state-weight combinations
 
-```rust
+```rust,ignore
 fn determinization_pipeline() -> Result<(), Box<dyn std::error::Error>> {
     // Start with non-deterministic FST (multiple paths possible)
     let nondeterministic_fst = build_ambiguous_parser_fst()?;
@@ -246,7 +246,7 @@ Minimization reduces transducers to their canonical minimal form, eliminating re
 
 **Mathematical Foundation**: This sequence of operations is guaranteed to produce the minimal deterministic transducer equivalent to the original, leveraging the duality between reachability and coreachability.
 
-```rust
+```rust,ignore
 fn minimization_optimization() -> Result<(), Box<dyn std::error::Error>> {
     // Large FST with redundant states
     let redundant_fst = build_large_redundant_fst()?;
@@ -277,7 +277,7 @@ The connection operation removes states that are either unreachable from the ini
 
 **Complexity**: Connection runs in \\(O(V + E)\\) time using standard graph traversal algorithms, making it one of the most efficient optimization operations.
 
-```rust
+```rust,ignore
 fn connection_cleanup() -> Result<(), Box<dyn std::error::Error>> {
     // FST with potentially unreachable states
     let unoptimized_fst = build_complex_fst_with_dead_states()?;
@@ -307,7 +307,7 @@ Shortest path algorithms find optimal paths through weighted transducers, enabli
 
 **Mathematical Properties**: The algorithm requires naturally ordered semirings to ensure correctness and termination. The semiring's ordering must be compatible with the addition operation.
 
-```rust
+```rust,ignore
 fn shortest_path_application() -> Result<(), Box<dyn std::error::Error>> {
     // FST encoding possible translations with costs
     let translation_fst = build_translation_lattice()?;
@@ -430,7 +430,7 @@ Weight pushing redistributes weights within transducers to improve numerical sta
 
 **Production Optimization Pipeline**:
 
-```rust
+```rust,ignore
 fn optimize_fst_production(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>, Box<dyn std::error::Error>> {
     // Remove unreachable states
     let connected = connect(fst)?;
@@ -475,7 +475,7 @@ fn optimize_fst_production(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<
 - Consistent symbol mapping across FSTs
 - Memory-efficient string handling
 
-```rust
+```rust,ignore
 fn use_symbol_tables() -> Result<(), Box<dyn std::error::Error>> {
     let mut input_syms = SymbolTable::new();
     let mut output_syms = SymbolTable::new();

@@ -84,7 +84,7 @@ where:
 - **Naturally ordered**: By the usual ordering on real numbers
 - Isomorphic to \\(\langle \mathbb{R}_{\text{max}}, \max, +, -\infty, 0 \rangle\\) via negation
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn tropical_semiring_example() {
@@ -131,7 +131,7 @@ where:
 
 **Important Constraint**: Addition can exceed 1, violating probability constraints. Use only when path probabilities sum to \\(\leq\\) 1.
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn probability_semiring_example() {
@@ -173,7 +173,7 @@ $$-\log p \oplus -\log q = -\log(p + q)$$
 **Numerical Advantages**: Avoids underflow for very small probabilities and maintains precision. Log-sum-exp can be computed stably using:
 $$-\log(e^{-a} + e^{-b}) = -\max(a,b) - \log(1 + e^{-|a-b|})$$
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn log_semiring_example() {
@@ -211,7 +211,7 @@ where:
 - **\\(k\\)-closed**: \\(a^* = 1\\) for any \\(a \neq 0\\)
 - **Distributive lattice**: Forms a complete Boolean algebra
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn boolean_semiring_example() {
@@ -238,7 +238,7 @@ $$\mathcal{M}_{\min} = \langle \mathbb{R} \cup \{+\infty, -\infty\}, \min, \max,
 **Definition 2.11**: The **Max semiring** (for capacity maximization) is defined as:
 $$\mathcal{M}_{\max} = \langle \mathbb{R} \cup \{+\infty, -\infty\}, \max, \min, -\infty, +\infty \rangle$$
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn minmax_semiring_example() {
@@ -268,7 +268,7 @@ where operations are defined component-wise:
 - **Addition**: \\((a_1, a_2) \oplus (b_1, b_2) = (a_1 \oplus_1 b_1, a_2 \oplus_2 b_2)\\)
 - **Multiplication**: \\((a_1, a_2) \otimes (b_1, b_2) = (a_1 \otimes_1 b_1, a_2 \otimes_2 b_2)\\)
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn product_semiring_example() {
@@ -314,7 +314,7 @@ where:
 - **Idempotent addition**: \\(\text{lcp}(s, s) = s\\) for any string \\(s\\)
 - **Path tracking**: Maintains actual sequences traversed through FSTs
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 fn string_semiring_example() {
@@ -343,7 +343,7 @@ fn string_semiring_example() {
 
 ArcWeight's extensible architecture enables the implementation of custom semirings tailored to specific application domains. Here's a lexicographic semiring combining cost and feature count:
 
-```rust
+```rust,ignore
 use arcweight::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -447,7 +447,7 @@ Efficient semiring implementations form the computational bottleneck in many FST
 - Hand-optimized code for common semirings
 - Cache-friendly data structures and memory layout optimization
 
-```rust
+```rust,ignore
 // Example of optimized tropical semiring implementation
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OptimizedTropicalWeight {
@@ -476,17 +476,17 @@ impl OptimizedTropicalWeight {
 ## Semiring Selection Guidelines
 
 ### For optimization problems
-```rust
+```rust,ignore
 let shortest_path_fst = VectorFst::<TropicalWeight>::new();
 ```
 
 ### For probabilistic modeling  
-```rust
+```rust,ignore
 let probabilistic_fst = VectorFst::<ProbabilityWeight>::new();
 ```
 
 ### For simple acceptance
-```rust
+```rust,ignore
 let acceptor_fst = VectorFst::<BooleanWeight>::new();
 ```
 

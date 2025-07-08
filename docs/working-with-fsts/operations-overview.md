@@ -76,7 +76,7 @@ FST operations allow you to:
 
 Use this decision tree to quickly identify which operation you need:
 
-```
+```text
 📝 What are you trying to do?
 │
 ├─ 🔗 Combine FSTs?
@@ -100,13 +100,13 @@ Use this decision tree to quickly identify which operation you need:
    ├─ Possible outputs? → Output Projection
    ├─ Common elements? → Intersection
    └─ Unique elements? → Difference
-```
+```text
 
 ## Operation Flow
 
 Some operations work better in specific orders. Here's the recommended optimization pipeline:
 
-```
+```text
 Original FST
     ↓
 Connect (remove dead states)
@@ -118,7 +118,7 @@ Determinize (one path per input)
 Minimize (canonical form)
     ↓
 Optimized FST
-```
+```text
 
 ### Why This Order?
 
@@ -131,29 +131,29 @@ Optimized FST
 
 ### Building an NLP Pipeline
 
-```rust
+```rust,ignore
 // Tokenizer → Lowercase → Stemmer
 let pipeline = compose(&tokenizer, &lowercase)?;
 let pipeline = compose(&pipeline, &stemmer)?;
-```
+```text
 
 ### Creating a Spell Checker
 
-```rust
+```rust,ignore
 // Dictionary ∪ Common Misspellings
 let vocabulary = union(&dictionary, &common_errors)?;
 let spell_checker = compose(&edit_distance, &vocabulary)?;
-```
+```text
 
 ### Optimizing for Production
 
-```rust
+```rust,ignore
 // Full optimization pipeline
 let fst = connect(&fst)?;           // Remove dead states
 let fst = rm_epsilon(&fst)?;        // Remove epsilons
 let fst = determinize(&fst)?;       // Make deterministic
 let fst = minimize(&fst)?;          // Minimize size
-```
+```text
 
 ## Performance Considerations
 
@@ -178,54 +178,54 @@ let fst = minimize(&fst)?;          // Minimize size
 
 ### 1. Start Simple
 Build complex operations from simple, tested components:
-```rust
+```rust,ignore
 // Good: Test each component
 let lower = build_lowercase_fst()?;
 let norm = build_normalizer_fst()?;
 let combined = compose(&lower, &norm)?;
-```
+```text
 
 ### 2. Optimize Lazily
 Don't optimize until you need to:
-```rust
+```rust,ignore
 // Only optimize if FST is large or slow
 if fst.num_states() > 10000 {
     fst = optimize_fst(fst)?;
 }
-```
+```text
 
 ### 3. Monitor Size
 Track FST growth during composition:
-```rust
+```rust,ignore
 println!("States: {} → {}", 
     fst1.num_states() * fst2.num_states(),
     composed.num_states());
-```
+```text
 
 ## Common Mistakes to Avoid
 
 ### ❌ Over-optimization
-```rust
+```rust,ignore
 // Bad: Optimizing tiny FSTs wastes time
 let tiny_fst = /* 10 states */;
 let optimized = full_optimization_pipeline(tiny_fst)?; // Unnecessary!
-```
+```text
 
 ### ❌ Wrong Operation Order
-```rust
+```rust,ignore
 // Bad: Minimizing before determinizing
 let min = minimize(&fst)?;  // Error: needs deterministic input!
 let det = determinize(&min)?;
-```
+```text
 
 ### ❌ Ignoring Epsilon Transitions
-```rust
+```rust,ignore
 // Bad: Determinizing with epsilons
 let det = determinize(&fst_with_epsilons)?; // Suboptimal!
 // Good: Remove epsilons first
 let clean = rm_epsilon(&fst_with_epsilons)?;
 let det = determinize(&clean)?;
-```
+```text
 
 ## Next Steps
 

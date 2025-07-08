@@ -10,7 +10,7 @@ cargo run --example edit_distance
 
 # Explore the source code
 cat examples/edit_distance.rs
-```
+```text
 
 ## What You'll Learn
 
@@ -52,13 +52,13 @@ Replace one character with another
 
 For strings `s₁` of length `m` and `s₂` of length `n`, the edit distance `d(i,j)` is defined recursively:
 
-```
+```text
 d(i,j) = min {
     d(i-1,j) + deletion_cost,      // Delete from s₁
     d(i,j-1) + insertion_cost,     // Insert into s₁ 
     d(i-1,j-1) + subst_cost        // Substitute in s₁
 }
-```
+```text
 
 **Base Cases:**
 - `d(0,j) = j × insertion_cost` (insert j characters)
@@ -114,7 +114,7 @@ Let's explore each component and design decision in detail.
 
 ### Core Function: Building the Edit Distance FST
 
-```rust
+```rust,ignore
 fn build_edit_distance_fst(
     target: &str,                // String we're transforming TO
     k: usize,                    // Maximum allowed edits
@@ -125,7 +125,7 @@ fn build_edit_distance_fst(
     let mut fst = VectorFst::new();
     let target_chars: Vec<char> = target.chars().collect();
     let n = target_chars.len();
-```
+```text
 
 > **Function Purpose**: Creates an FST that can compute edit distance from any source string to the specified target string.
 
@@ -135,7 +135,7 @@ fn build_edit_distance_fst(
 
 Organize states in a systematic grid structure that mirrors dynamic programming tables.
 
-```rust
+```rust,ignore
 // Create lattice: states[i][d] = state after matching i chars with d edits
 let mut states = vec![vec![]; n + 1];
 for state_row in states.iter_mut() {
@@ -143,7 +143,7 @@ for state_row in states.iter_mut() {
         state_row.push(fst.add_state());
     }
 }
-```
+```text
 
 **Rows (i = 0 to n)**  
 Position in target string
@@ -157,14 +157,14 @@ Number of edits used
 
 ### Setting Start and Final States
 
-```rust
+```rust,ignore
 fst.set_start(states[0][0]);  // Start: 0 chars matched, 0 edits
 
 // Final states: reached end of target with ≤ k edits
 for d in 0..=k {
     fst.set_final(states[n][d], TropicalWeight::one());
 }
-```
+```text
 
 **Start State Logic**  
 Begin at position `(0,0)`
@@ -192,7 +192,7 @@ Each edit operation translates to a specific FST arc pattern with distinct input
 
 When characters match, advance in both strings without incrementing the edit count.
 
-```rust
+```rust,ignore
 // Advance both strings when characters match
 fst.add_arc(
     current_state,
@@ -203,7 +203,7 @@ fst.add_arc(
         states[i + 1][d],        // Next position, same edit count
     ),
 );
-```
+```text
 
 | Aspect | Value | Meaning |
 |--------|-------|---------|
@@ -218,7 +218,7 @@ fst.add_arc(
 
 Deletion means we skip a character in the target string without consuming input.
 
-```rust
+```rust,ignore
 // Skip character in target (epsilon input)
 fst.add_arc(
     current_state,
@@ -229,7 +229,7 @@ fst.add_arc(
         states[i + 1][d + 1],           // Advance target, increment edits
     ),
 );
-```
+```text
 
 | Aspect | Value | Meaning |
 |--------|-------|---------|
@@ -248,7 +248,7 @@ These operations handle characters from the source string that need processing.
 
 **Insertion Operation**
 
-```rust
+```rust,ignore
 // Insert character (consume from source without producing output)
 fst.add_arc(
     current_state,
@@ -259,13 +259,13 @@ fst.add_arc(
         states[i][d + 1],               // Same target position, increment edits
     ),
 );
-```
+```text
 
 **Logic**: Consume source character, produce nothing, stay at same target position.
 
 **Substitution Operation**
 
-```rust
+```rust,ignore
 // Substitute character (only if different from target)
 if c != target_chars[i] {
     fst.add_arc(
@@ -278,7 +278,7 @@ if c != target_chars[i] {
         ),
     );
 }
-```
+```text
 
 **Logic**: Transform one character into another, advance both positions.
 
@@ -293,7 +293,7 @@ if c != target_chars[i] {
 
 Real power emerges when combining simple FSTs to solve complex problems.
 
-```rust
+```rust,ignore
 fn compute_edit_distance(source: &str, target: &str, ...) -> Result<f32> {
     // 1. Build edit distance transducer for target
     let edit_fst = build_edit_distance_fst(target, max_edits, ...);
@@ -310,7 +310,7 @@ fn compute_edit_distance(source: &str, target: &str, ...) -> Result<f32> {
     // 5. Extract minimum cost
     // ... traverse shortest path to find final cost ...
 }
-```
+```text
 
 ### Step-by-Step Composition Process
 
@@ -342,29 +342,29 @@ When you run the example, you'll see these transformations in action:
 
 ### Standard Levenshtein Distance (all operations cost 1.0)
 
-```
+```text
   'kitten' → 'sitting': 3  ✅
   'saturday' → 'sunday': 3  ✅  
   'hello' → 'hallo': 1  ✅
   'abc' → 'abc': 0  ✅ (perfect match)
   'abc' → 'def': 3  ✅
-```
+```text
 
 ### Custom Weights (insert=0.5, delete=2.0, substitute=1.0)
 
-```
+```text
   'kitten' → 'sitting': 2.5  📉 (cheaper insertions)
   'saturday' → 'sunday': 3  ➡️
   'hello' → 'hallo': 1  ➡️
-```
+```text
 
 ### Expensive Substitutions (insert=1.0, delete=1.0, substitute=3.0)
 
-```
+```text
   'kitten' → 'sitting': 5  📈 (avoids substitutions)
   'saturday' → 'sunday': 8  📈
   'hello' → 'hallo': 2  📈 (delete+insert cheaper than substitute)
-```
+```text
 
 ## Understanding the Results
 
@@ -410,7 +410,7 @@ Understanding edit distance through FSTs opens up numerous practical use cases.
 
 Use edit distance to find spelling corrections with intelligent cost modeling.
 
-```rust
+```rust,ignore
 // Find words within edit distance 2 of user input
 let typo = "helo";
 let dictionary = vec!["hello", "help", "held", "hero", "helm", "hell"];
@@ -432,21 +432,21 @@ for word in dictionary {
         println!("Suggestion: {} (distance: {})", word, distance);
     }
 }
-```
+```text
 
 **Output:**
-```
+```text
 Suggestion: hello (distance: 1)  // Missing 'l'
 Suggestion: help (distance: 1)   // 'o' → 'p'
 Suggestion: held (distance: 2)   // 'o' → 'd'
 Suggestion: hero (distance: 2)   // 'l' → 'r'
-```
+```text
 
 Enhancement ideas include weighting common typos lower (teh → the), considering phonetic similarity (nite → night), and using frequency data to rank suggestions.
 
 ### 2. Approximate String Matching
 
-```rust
+```rust,ignore
 // Find database entries similar to query
 let query = "John Smith";
 let database = vec!["Jon Smith", "John Smyth", "Jane Smith"];
@@ -458,11 +458,11 @@ for entry in database {
         println!("Match: {} (distance: {})", entry, similarity);
     }
 }
-```
+```text
 
 ### 3. DNA Sequence Alignment
 
-```rust
+```rust,ignore
 // Compare genetic sequences with biological costs
 let seq1 = "ACGTACGT";
 let seq2 = "ACTTACGT";
@@ -473,7 +473,7 @@ let deletion_cost = 2.0;    // Gap penalty
 let substitution_cost = 1.0; // Point mutation
 
 let alignment_cost = compute_edit_distance(seq1, seq2, insertion_cost, deletion_cost, substitution_cost)?;
-```
+```text
 
 ## Advanced Concepts
 
@@ -484,7 +484,7 @@ The FST creates `(n+1) × (k+1)` states where `n` equals target string length an
 ### Extending the Algorithm
 
 **Character-specific costs:**
-```rust
+```rust,ignore
 fn char_specific_cost(from: char, to: char) -> f32 {
     match (from, to) {
         // Vowel substitutions are cheaper
@@ -495,13 +495,13 @@ fn char_specific_cost(from: char, to: char) -> f32 {
         _ => 1.0,
     }
 }
-```
+```text
 
 **Phonetic similarity:**
-```rust
+```rust,ignore
 // Use Soundex or metaphone distance for phonetic matching
 let phonetic_weight = if sounds_similar(from_char, to_char) { 0.5 } else { 1.0 };
-```
+```text
 
 ### Performance Considerations
 

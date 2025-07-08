@@ -1,8 +1,6 @@
 # Working with FSTs
 
-**Master FST operations through practical, hands-on examples**
-
-*Transform • Optimize • Analyze*
+**FST operations guide with practical examples**
 
 This comprehensive guide teaches you how to work with FST operations in ArcWeight. While the [Quick Start](../quick-start.md) gives you a fast introduction to basic FST concepts, this guide provides deep coverage of all operations you'll need for production applications.
 
@@ -10,10 +8,10 @@ This comprehensive guide teaches you how to work with FST operations in ArcWeigh
 
 | Quick Start | Working with FSTs |
 |-------------|-------------------|
-| **15-minute introduction** | **Comprehensive operation reference** |
+| **Introduction to basics** | **Comprehensive operation reference** |
 | First FST, basic concepts | All FST operations in depth |
 | Single example workflow | Multiple real-world patterns |
-| Get started quickly | Master production techniques |
+| Get started quickly | Production techniques |
 
 **When to use this guide:**
 - You've completed the Quick Start and want to go deeper
@@ -134,4 +132,4 @@ This guide's operations power many applications:
 
 ---
 
-**Ready to master FST operations?** → Start with [Operations Overview](operations-overview.md)
+**Next step** → Start with [Operations Overview](operations-overview.md)

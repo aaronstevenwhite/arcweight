@@ -1,281 +1,242 @@
 # Design Patterns and Best Practices
 
-## Builder Pattern for Complex FSTs
+## Core Design Patterns in ArcWeight
 
-ArcWeight encourages the builder pattern for constructing complex FSTs:
+### Trait-Based Architecture
 
-```rust
-pub struct FstBuilder<W: Semiring> {
-    fst: VectorFst<W>,
-    symbol_table: Option<SymbolTable>,
+The foundation of ArcWeight is its trait system, which provides flexibility and type safety:
+
+```rust,ignore
+// Core FST trait hierarchy
+pub trait Fst<W: Semiring>: Debug + Send + Sync {
+    // Read-only operations
 }
 
-impl<W: Semiring> FstBuilder<W> {
-    pub fn new() -> Self {
-        Self {
-            fst: VectorFst::new(),
-            symbol_table: None,
-        }
-    }
-    
-    pub fn with_symbol_table(mut self, table: SymbolTable) -> Self {
-        self.symbol_table = Some(table);
-        self
-    }
-    
-    pub fn add_word(&mut self, word: &str, weight: W) -> Result<()> {
-        // Complex word addition logic
-    }
-    
-    pub fn build(self) -> VectorFst<W> {
-        self.fst
-    }
+pub trait MutableFst<W: Semiring>: Fst<W> {
+    // Mutable operations
+}
+
+pub trait ExpandedFst<W: Semiring>: Fst<W> {
+    // Direct arc access
 }
 ```
 
-## Strategy Pattern for Algorithms
+This hierarchy allows algorithms to work with the minimal interface they require.
 
-Many algorithms use the strategy pattern to allow customization:
+### Generic Programming
 
-```rust
-// Different composition strategies
-pub trait ComposeFilter<W: Semiring> {
-    fn filter(&mut self, 
-              state1: StateId, state2: StateId, 
-              arc1: &Arc<W>, arc2: &Arc<W>) -> bool;
-}
+Algorithms are generic over FST and semiring types:
 
-pub struct NoEpsilonFilter;
-pub struct EpsilonFilter;
-pub struct SequenceFilter;
-
-// Algorithm accepts any strategy
-// API Reference: https://docs.rs/arcweight/latest/arcweight/algorithms/fn.compose.html
-pub fn compose<W, F1, F2, Filter>(
-    fst1: &F1, 
-    fst2: &F2, 
-    filter: Filter
-) -> Result<VectorFst<W>>
+```rust,ignore
+pub fn compose<W, F1, F2, M>(
+    fst1: &F1,
+    fst2: &F2,
+    filter: impl ComposeFilter<W>,
+) -> Result<M>
 where
-    Filter: ComposeFilter<W>,
+    W: Semiring,
+    F1: Fst<W>,
+    F2: Fst<W>,
+    M: MutableFst<W> + Default,
 ```
 
-## Factory Pattern for FST Types
+This enables code reuse across different FST implementations and weight types.
 
-```rust
-pub trait FstFactory<W: Semiring> {
-    type Fst: MutableFst<W>;
-    
-    fn create() -> Self::Fst;
-    fn create_with_capacity(states: usize, arcs: usize) -> Self::Fst;
+### Iterator Pattern
+
+ArcWeight uses iterators extensively for efficient arc traversal:
+
+```rust,ignore
+// Arc iteration without allocating collections
+for arc in fst.arcs(state) {
+    // Process arc
 }
 
-pub struct VectorFstFactory;
-impl<W: Semiring> FstFactory<W> for VectorFstFactory {
-    type Fst = VectorFst<W>;
-    
-    fn create() -> Self::Fst {
-        VectorFst::new()
-    }
-}
-```
-
-## Iterator Pattern for Memory Efficiency
-
-ArcWeight extensively uses iterators to avoid unnecessary allocations:
-
-```rust
-// Lazy evaluation - no intermediate collections
-let total_weight: f32 = fst
-    .states()
-    .flat_map(|state| fst.arcs(state))
-    .map(|arc| arc.weight.value())
+// Functional style with iterator chains
+let total_arcs: usize = fst.states()
+    .map(|s| fst.num_arcs(s))
     .sum();
 ```
 
-## Adapter Pattern for Legacy Compatibility
+### Property-Based Optimization
 
-```rust
-pub struct OpenFstAdapter<F> {
-    inner: F,
-}
+The property system enables optimizations based on FST characteristics:
 
-impl<F, W> Fst<W> for OpenFstAdapter<F> 
-where 
-    F: OpenFstTrait<W>,
-    W: Semiring,
-{
-    // Adapt OpenFST interface to ArcWeight interface
+```rust,ignore
+let props = fst.properties();
+if props.contains(PropertyFlags::ACYCLIC) {
+    // Use optimized algorithm for acyclic FSTs
 }
 ```
 
-## Composition Architecture
+## Algorithm Design Patterns
 
-**API Reference**: [`algorithms::compose`](https://docs.rs/arcweight/latest/arcweight/algorithms/compose/)
+### State Queue Pattern
 
-The composition algorithm demonstrates sophisticated design:
+Many algorithms process states using a queue:
 
-```rust
-pub struct CompositionState {
-    state1: StateId,
-    state2: StateId,
-    filter_state: FilterState,
+```rust,ignore
+let mut queue = VecDeque::new();
+let mut visited = HashSet::new();
+
+if let Some(start) = fst.start() {
+    queue.push_back(start);
+    visited.insert(start);
 }
 
-pub struct CompositionCache {
-    state_map: HashMap<CompositionState, StateId>,
-    queue: VecDeque<CompositionState>,
-}
-
-// Lazy composition with on-demand state creation
-pub fn compose_lazy<W, F1, F2>(
-    fst1: &F1, 
-    fst2: &F2
-) -> LazyFstImpl<W> {
-    LazyFstImpl::new(move |state| {
-        let (s1, s2) = decode_composed_state(state);
-        compute_arcs_for_composed_state(s1, s2, fst1, fst2)
-    })
-}
-```
-
-## Error Recovery and Robustness
-
-```rust
-pub struct RobustFstBuilder<W: Semiring> {
-    fst: VectorFst<W>,
-    validation_mode: ValidationMode,
-    error_recovery: ErrorRecoveryStrategy,
-}
-
-pub enum ValidationMode {
-    Strict,        // Fail on any invalid operation
-    Permissive,    // Try to recover from errors
-    Silent,        // Ignore minor issues
-}
-
-impl<W: Semiring> RobustFstBuilder<W> {
-    pub fn add_arc_safe(&mut self, 
-                       state: StateId, 
-                       arc: Arc<W>) -> Result<()> {
-        match self.validation_mode {
-            ValidationMode::Strict => {
-                self.validate_arc(&arc)?;
-                self.fst.add_arc(state, arc);
-            }
-            ValidationMode::Permissive => {
-                if let Err(e) = self.validate_arc(&arc) {
-                    self.error_recovery.handle_error(e)?;
-                    // Try to add a corrected version
-                    let corrected_arc = self.correct_arc(arc)?;
-                    self.fst.add_arc(state, corrected_arc);
-                } else {
-                    self.fst.add_arc(state, arc);
-                }
-            }
-            ValidationMode::Silent => {
-                // Best effort - ignore errors
-                self.fst.add_arc(state, arc);
-            }
+while let Some(state) = queue.pop_front() {
+    // Process state
+    for arc in fst.arcs(state) {
+        if visited.insert(arc.nextstate) {
+            queue.push_back(arc.nextstate);
         }
-        Ok(())
     }
 }
+```
+
+### Result FST Construction
+
+Algorithms typically build result FSTs incrementally:
+
+```rust,ignore
+let mut result = M::default();
+let mut state_map = HashMap::new();
+
+// Map states from input to output
+let new_state = result.add_state();
+state_map.insert(old_state, new_state);
+```
+
+### Configuration Structs
+
+Complex algorithms use configuration structs for flexibility:
+
+```rust,ignore
+#[derive(Debug, Clone, Default)]
+pub struct ShortestPathConfig {
+    pub nshortest: usize,
+    pub unique: bool,
+    pub weight_threshold: Option<f64>,
+    pub state_threshold: Option<usize>,
+}
+```
+
+## Memory Management Patterns
+
+### Reference Semantics
+
+FSTs are passed by reference to avoid unnecessary copying:
+
+```rust,ignore
+pub fn minimize<F, W, M>(fst: &F) -> Result<M>
+where
+    F: Fst<W>,
+    W: DivisibleSemiring,
+    M: MutableFst<W> + Default,
+```
+
+### Lazy Evaluation
+
+The `LazyFstImpl` pattern enables on-demand computation:
+
+```rust,ignore
+// States and arcs computed only when accessed
+let lazy_fst = LazyFstImpl::new(state_fn);
 ```
 
 ## Best Practices
 
-### 1. Use Type Safety
+### 1. Use Appropriate Trait Bounds
 
-Always prefer compile-time guarantees over runtime checks:
+Only require the traits you actually need:
 
-```rust
-// Good: Type system enforces constraints
-fn shortest_path<F, W>(fst: &F) -> Result<VectorFst<W>>
-where
-    F: Fst<W>,
-    W: NaturallyOrderedSemiring,  // Compiler enforces ordering requirement
-{
-    // Implementation can assume ordering exists
+```rust,ignore
+// Good: Minimal requirements
+fn count_states<W: Semiring>(fst: &impl Fst<W>) -> usize {
+    fst.num_states()
 }
 
-// Avoid: Runtime checking of properties
-fn shortest_path_unchecked<F, W>(fst: &F) -> Result<VectorFst<W>>
-where
-    F: Fst<W>,
-    W: Semiring,
-{
-    if !W::properties().is_naturally_ordered() {
-        return Err(Error::InvalidOperation("Semiring must be naturally ordered".to_string()));
-    }
-    // Implementation
+// Avoid: Over-constraining
+fn count_states<W: Semiring>(fst: &impl MutableFst<W>) -> usize {
+    fst.num_states()  // Doesn't need mutability
 }
 ```
 
-### 2. Leverage Properties
+### 2. Leverage Type Safety
 
-Use FST properties for optimization:
+Use the type system to enforce correctness:
 
-```rust
-pub fn optimize_fst<W, F>(fst: &F) -> Result<VectorFst<W>>
+```rust,ignore
+// Weight type ensures valid operations
+pub fn shortest_path<F, W, M>(fst: &F, config: ShortestPathConfig) -> Result<M>
 where
     F: Fst<W>,
-    W: Semiring,
-{
-    let props = fst.properties();
+    W: NaturallyOrderedSemiring,  // Type system enforces ordering
+    M: MutableFst<W> + Default,
+```
+
+### 3. Follow Rust Idioms
+
+- Use `Result<T>` for fallible operations
+- Implement standard traits (`Debug`, `Clone`, etc.)
+- Use iterators instead of explicit loops when appropriate
+- Prefer composition over inheritance
+
+### 4. Document Mathematical Properties
+
+When implementing semirings or algorithms, document the mathematical properties:
+
+```rust,ignore
+/// Tropical semiring (min, +, ∞, 0)
+/// 
+/// # Mathematical Properties
+/// - Addition: min(a, b)
+/// - Multiplication: a + b
+/// - Zero: ∞ (positive infinity)
+/// - One: 0.0
+```
+
+### 5. Error Handling
+
+Use descriptive error types and provide context:
+
+```rust,ignore
+pub enum Error {
+    #[error("Invalid FST operation: {0}")]
+    InvalidOperation(String),
     
-    if props.has_property(PropertyFlags::NO_EPSILONS) {
-        // Skip epsilon removal
-        minimize(fst)
-    } else {
-        minimize(&remove_epsilons(fst)?)
-    }
+    #[error("Algorithm error: {0}")]
+    Algorithm(String),
 }
 ```
 
-### 3. Prefer Immutable Operations
+## Composition Patterns
 
-Design algorithms to avoid mutation when possible:
+The composition algorithm demonstrates several patterns:
 
-```rust
-// Good: Returns new FST
-pub fn reverse<F, W>(fst: &F) -> Result<VectorFst<W>>
-where
-    F: Fst<W>,
-    W: Semiring,
-{
-    let mut result = VectorFst::new();
-    // Build reversed FST
-    Ok(result)
-}
+### Filter Strategy Pattern
 
-// Avoid: Mutates input
-pub fn reverse_in_place<F>(fst: &mut F) -> Result<()>
-where
-    F: MutableFst<W>,
-{
-    // Modifies fst directly
-}
+Different composition behaviors through filter implementations:
+
+```rust,ignore
+// Built-in filters
+pub struct SequenceFilter;
+pub struct EpsilonFilter;
+pub struct NoEpsilonFilter;
+
+// Each implements ComposeFilter trait with different logic
 ```
 
-### 4. Use Iterator Chains
+### State Encoding
 
-Leverage Rust's iterator system for efficient processing:
+Composed states are encoded/decoded for efficient storage:
 
-```rust
-// Efficient: No intermediate allocations
-let final_states: Vec<StateId> = fst
-    .states()
-    .filter(|&state| fst.final_weight(state).is_some())
-    .collect();
+```rust,ignore
+// Encode two state IDs into one
+fn encode_states(s1: StateId, s2: StateId) -> StateId;
 
-// Less efficient: Multiple passes
-let mut final_states = Vec::new();
-for state in fst.states() {
-    if fst.final_weight(state).is_some() {
-        final_states.push(state);
-    }
-}
+// Decode back to original states
+fn decode_states(encoded: StateId) -> (StateId, StateId);
 ```
 
-These patterns ensure ArcWeight code is maintainable, efficient, and follows Rust best practices.
+These patterns ensure ArcWeight code is efficient, maintainable, and follows Rust best practices while maintaining mathematical correctness.

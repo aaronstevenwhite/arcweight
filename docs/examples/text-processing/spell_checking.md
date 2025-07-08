@@ -14,7 +14,7 @@ The system combines three key components: FST-based dictionary storage using tri
 
 ```bash
 cargo run --example spell_checking
-```
+```text
 
 ## What You'll Learn
 
@@ -56,7 +56,7 @@ Several key concepts underlie FST-based spell checking implementations that brid
 Edit distance (Levenshtein distance) quantifies string differences by counting the minimum number of single-character edits needed to transform one string into another. The three allowed operations are insertion (add a character, fixing missing letters), deletion (remove a character, fixing extra letters), and substitution (replace a character, fixing wrong letters).
 
 **Real-world examples with explanations:**
-```
+```text
 "helo" → "hello": 1 edit
   - Missing second 'l', insert it at position 3
   - This is why "hello" appears as a suggestion
@@ -72,7 +72,7 @@ Edit distance (Levenshtein distance) quantifies string differences by counting t
 "chekc" → "check": 1 edit
   - Another transpose: final 'k' and 'c' swapped
   - FST finds this as 1 substitution
-```
+```text
 
 Edit distance works for spell checking because most typos are single-character errors (80%+ of misspellings). Edit distance 1 covers missing letters, extra letters, wrong letters, and adjacent transpositions. Edit distance 2 covers combinations of above and non-adjacent transpositions. Beyond distance 2, suggestions become less relevant.
 
@@ -80,7 +80,7 @@ Edit distance works for spell checking because most typos are single-character e
 
 A trie (prefix tree) is a good data structure for dictionaries because it shares common prefixes between words. When encoded as an FST, we get both space efficiency and composability:
 
-```rust
+```rust,ignore
 fn build_dictionary_fst(words: &[&str]) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -120,12 +120,12 @@ fn build_dictionary_fst(words: &[&str]) -> VectorFst<TropicalWeight> {
 
     fst
 }
-```
+```text
 
 Tries excel for dictionaries for several reasons. Prefix sharing allows words like "test", "testing", "tester" to share the prefix "test", where traditional approaches store each word separately (4+7+6 = 17 characters) while trie approaches store "test" once, then branch (4+3+2 = 9 characters). Fast lookup operates in O(m) time where m is word length, independent of dictionary size. Natural FST structure means each path from start to final state represents a valid word. Composability allows composition with other FSTs (like edit distance) efficiently.
 
 **Example trie structure for `["cat", "cats", "car", "card"]`:**
-```
+```text
      start
        |
       'c'
@@ -139,7 +139,7 @@ Tries excel for dictionaries for several reasons. Prefix sharing allows words li
   's'     'd'
    |       |
 (final) (final)
-```
+```text
 
 ## Implementation
 
@@ -151,7 +151,7 @@ The edit distance FST is a transducer that accepts any string within k edits of 
 
 The edit distance FST creates a lattice structure that encodes all possible edit sequences:
 
-```rust
+```rust,ignore
 fn build_edit_distance_fst(target: &str, k: usize) -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let target_chars: Vec<char> = target.chars().collect();
@@ -186,7 +186,7 @@ fn build_edit_distance_fst(target: &str, k: usize) -> VectorFst<TropicalWeight> 
 
     fst
 }
-```
+```text
 
 Key insights about the state space: State `states[i][j]` means we've processed i characters of the target using j edits. We only create states where edits ≤ k, saving memory. Any state at position n (end of target) is final, with weight = edit distance. Each path through the FST represents a specific edit sequence.
 
@@ -198,7 +198,7 @@ Each type of transition encodes a different edit operation. Understanding these 
 
 When the input character matches the target character, we advance without using an edit:
 
-```rust
+```rust,ignore
 fn add_match_transitions(
     fst: &mut VectorFst<TropicalWeight>,
     states: &[Vec<u32>],
@@ -220,7 +220,7 @@ fn add_match_transitions(
         }
     }
 }
-```
+```text
 
 For target "cat" and input "cat": at state (0,0) we see 'c' and match, moving to state (1,0); at state (1,0) we see 'a' and match, moving to state (2,0); at state (2,0) we see 't' and match, moving to state (3,0); state (3,0) is final with weight 0 (no edits needed).
 
@@ -228,7 +228,7 @@ For target "cat" and input "cat": at state (0,0) we see 'c' and match, moving to
 
 Substitutions handle wrong characters by accepting any character different from the target:
 
-```rust
+```rust,ignore
 fn add_substitution_transitions(
     fst: &mut VectorFst<TropicalWeight>, 
     states: &[Vec<u32>],
@@ -254,12 +254,12 @@ fn add_substitution_transitions(
         }
     }
 }
-```
+```text
 
 For target "cat" and input "bat": at state (0,0) we see 'b' (not 'c') and substitute, moving to state (1,1) with cost 1; at state (1,1) we see 'a' and match, moving to state (2,1); at state (2,1) we see 't' and match, moving to state (3,1); state (3,1) is final with total weight 1 (one substitution).
 
 **Deletion Transitions (cost 1):**
-```rust
+```rust,ignore
 fn add_deletion_transitions(
     fst: &mut VectorFst<TropicalWeight>,
     states: &[Vec<u32>],
@@ -278,10 +278,10 @@ fn add_deletion_transitions(
         }
     }
 }
-```
+```text
 
 **Insertion Transitions (cost 1):**
-```rust
+```rust,ignore
 fn add_insertion_transitions(
     fst: &mut VectorFst<TropicalWeight>,
     states: &[Vec<u32>],
@@ -303,7 +303,7 @@ fn add_insertion_transitions(
         }
     }
 }
-```
+```text
 
 ### Spelling Correction Discovery
 
@@ -311,7 +311,7 @@ fn add_insertion_transitions(
 
 Find spelling corrections by composing dictionary and edit distance FSTs:
 
-```rust
+```rust,ignore
 fn find_spelling_corrections(
     dict_fst: &VectorFst<TropicalWeight>,
     target: &str,
@@ -340,13 +340,13 @@ fn find_spelling_corrections(
     results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
     Ok(results)
 }
-```
+```text
 
 ### Path Extraction
 
 Extract word candidates from the composed FST:
 
-```rust
+```rust,ignore
 fn extract_paths(
     fst: &VectorFst<TropicalWeight>,
     state: u32,
@@ -382,7 +382,7 @@ fn extract_paths(
 
     visited.remove(&state);
 }
-```
+```text
 
 ## Running the Example
 
@@ -390,11 +390,11 @@ fn extract_paths(
 
 ```bash
 cargo run --example spell_checking
-```
+```text
 
 ### Sample Output
 
-```
+```text
 Spell Checking Example
 ======================
 
@@ -425,7 +425,7 @@ Words within edit distance 1 of 'help':
   held (distance: 1)
   helm (distance: 1)
   heap (distance: 1)
-```
+```text
 
 ## Extending the System
 
@@ -439,7 +439,7 @@ Beyond basic spell checking, these extensions make the system suitable for real-
 
 Different edit operations can have different costs:
 
-```rust
+```rust,ignore
 struct EditCosts {
     insertion: f32,
     deletion: f32,
@@ -463,13 +463,13 @@ impl EditCosts {
         }
     }
 }
-```
+```text
 
 ### Context-Sensitive Costs
 
 Adjust costs based on character context:
 
-```rust
+```rust,ignore
 fn get_substitution_cost(from: char, to: char) -> f32 {
     match (from, to) {
         // Common typos (lower cost)
@@ -488,13 +488,13 @@ fn keyboard_distance(c1: char, c2: char) -> f32 {
     
     ((pos1.0 - pos2.0).powi(2) + (pos1.1 - pos2.1).powi(2)).sqrt()
 }
-```
+```text
 
 ### Frequency-Based Ranking
 
 Incorporate word frequency for better ranking:
 
-```rust
+```rust,ignore
 struct FrequencyAwareSpellChecker {
     dictionary_fst: VectorFst<TropicalWeight>,
     word_frequencies: HashMap<String, f32>,
@@ -527,7 +527,7 @@ impl FrequencyAwareSpellChecker {
         ranked_corrections
     }
 }
-```
+```text
 
 ## Applications
 
@@ -535,7 +535,7 @@ impl FrequencyAwareSpellChecker {
 
 Implement interactive spell checking:
 
-```rust
+```rust,ignore
 struct RealTimeSpellChecker {
     spell_checker: SpellChecker,
     cache: LruCache<String, Vec<String>>,
@@ -568,13 +568,13 @@ impl RealTimeSpellChecker {
         }
     }
 }
-```
+```text
 
 ### Document Processing
 
 Process entire documents for spell checking:
 
-```rust
+```rust,ignore
 fn spell_check_document(
     text: &str,
     spell_checker: &SpellChecker,
@@ -603,13 +603,13 @@ fn spell_check_document(
         statistics,
     }
 }
-```
+```text
 
 ### Search Query Correction
 
 Improve search experience with spell correction:
 
-```rust
+```rust,ignore
 fn correct_search_query(
     query: &str,
     search_index: &SearchIndex,
@@ -644,7 +644,7 @@ fn correct_search_query(
         has_corrections: any_corrections,
     }
 }
-```
+```text
 
 ## Performance Optimization
 
@@ -652,7 +652,7 @@ fn correct_search_query(
 
 For large dictionaries, use memory-efficient representations:
 
-```rust
+```rust,ignore
 struct CompactDictionary {
     trie: MinimalPerfectHashTrie,
     compressed_suffixes: Vec<u8>,
@@ -674,13 +674,13 @@ impl CompactDictionary {
         self.trie.is_final(state)
     }
 }
-```
+```text
 
 ### Parallel Processing
 
 Process multiple corrections in parallel:
 
-```rust
+```rust,ignore
 use rayon::prelude::*;
 
 fn batch_spell_check(
@@ -698,13 +698,13 @@ fn batch_spell_check(
         })
         .collect()
 }
-```
+```text
 
 ### Incremental Correction
 
 For typing applications, use incremental processing:
 
-```rust
+```rust,ignore
 struct IncrementalCorrector {
     base_corrector: WordCorrector,
     partial_word: String,
@@ -734,7 +734,7 @@ impl IncrementalCorrector {
         &self.cached_suggestions
     }
 }
-```
+```text
 
 ## Quality Metrics
 
@@ -742,7 +742,7 @@ impl IncrementalCorrector {
 
 Measure spell checker performance:
 
-```rust
+```rust,ignore
 struct SpellCheckerEvaluator {
     test_set: Vec<SpellCheckTestCase>,
 }
@@ -781,13 +781,13 @@ impl SpellCheckerEvaluator {
         }
     }
 }
-```
+```text
 
 ### Error Analysis
 
 Analyze correction system performance:
 
-```rust
+```rust,ignore
 fn analyze_correction_errors(
     test_cases: &[SpellCheckTestCase],
     corrector: &WordCorrector,
@@ -821,7 +821,7 @@ fn analyze_correction_errors(
         missed_corrections,
     }
 }
-```
+```text
 
 ## Advanced Features
 
@@ -829,7 +829,7 @@ fn analyze_correction_errors(
 
 Integrate neural language models:
 
-```rust
+```rust,ignore
 struct NeuralSpellChecker {
     base_corrector: WordCorrector,
     language_model: TransformerModel,
@@ -865,13 +865,13 @@ impl NeuralSpellChecker {
         contextual_corrections
     }
 }
-```
+```text
 
 ### Multilingual Support
 
 Support multiple languages simultaneously:
 
-```rust
+```rust,ignore
 struct MultilingualSpellChecker {
     correctors: HashMap<Language, WordCorrector>,
     language_detector: LanguageDetector,
@@ -899,13 +899,13 @@ impl MultilingualSpellChecker {
         MultilingualCorrections { corrections }
     }
 }
-```
+```text
 
 ### Adaptive Learning
 
 Learn from user corrections:
 
-```rust
+```rust,ignore
 struct AdaptiveSpellChecker {
     base_corrector: WordCorrector,
     user_dictionary: HashSet<String>,
@@ -952,7 +952,7 @@ impl AdaptiveSpellChecker {
         weighted_suggestions.into_iter().map(|(word, _)| word).collect()
     }
 }
-```
+```text
 
 ### Try These Extensions
 
@@ -971,7 +971,7 @@ This spell checking example connects with other examples in the collection. **[E
 
 Modern text editors use sophisticated spell checking:
 
-```rust
+```rust,ignore
 struct EditorSpellChecker {
     corrector: WordCorrector,
     language_specific_correctors: HashMap<ProgrammingLanguage, WordCorrector>,
@@ -998,13 +998,13 @@ impl EditorSpellChecker {
         errors
     }
 }
-```
+```text
 
 ### Email and Messaging
 
 Email clients integrate spell checking:
 
-```rust
+```rust,ignore
 struct EmailSpellChecker {
     corrector: WordCorrector,
     auto_correct_enabled: bool,
@@ -1036,7 +1036,7 @@ impl EmailSpellChecker {
         }
     }
 }
-```
+```text
 
 ---
 

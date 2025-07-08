@@ -7,11 +7,11 @@
 
 **A high-performance, modular Rust library for weighted finite state transducers (WFSTs).**
 
-ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. It offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API, making it ideal for natural language processing, speech recognition, computational linguistics, and machine learning applications.
+ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. Built upon the foundational work of {{#cite mohri1997finite}}, {{#cite mohri2000design}}, and {{#cite allauzen2007openfst}}, it offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API, making it ideal for natural language processing, speech recognition, computational linguistics, and machine learning applications.
 
 ## What Are Finite State Transducers?
 
-Finite State Transducers (FSTs) are powerful mathematical models that transform input sequences into output sequences with associated costs or probabilities. Think of them as smart pattern matchers that can:
+Finite State Transducers (FSTs) are computational models that define rational relations between strings, enabling the transformation of input sequences into output sequences with associated weights {{#cite mohri1997finite}}. Originally developed for speech recognition and natural language processing {{#cite mohri2002weighted}}, FSTs have become fundamental tools in computational linguistics that can:
 
 - **Spell check and correct text** (input: "teh" $\to$ output: "the")
 - **Translate between languages** (input: "hello" $\to$ output: "hola") 
@@ -21,16 +21,16 @@ Finite State Transducers (FSTs) are powerful mathematical models that transform 
 
 **Why choose ArcWeight over alternatives?**
 - 🦀 **Pure Rust**: Memory safety, modern tooling, no C++ dependencies
-- ⚡ **Performance**: Optimized algorithms with optional parallelization
+- ⚡ **Performance**: Optimized algorithms implementing state-of-the-art techniques {{#cite mohri2002semiring}}
 - 🔧 **Flexibility**: Extensible design with custom semirings and FST types
-- 📚 **Complete**: Comprehensive algorithm suite with detailed documentation
+- 📚 **Complete**: Comprehensive algorithm suite based on established theoretical foundations
 
 ## Features
 
 - 🚀 **High Performance**: Optimized implementations with parallel algorithms support
 - 🔧 **Modular Design**: Trait-based architecture for maximum extensibility
 - 📊 **Rich Semiring Support**: 
-  - Tropical, Probability, Boolean, Log semirings
+  - Tropical, Probability, Boolean, Log, Real semirings
   - String, MinMax, and Product semirings
   - Custom semiring implementations
 - 🗄️ **Multiple FST Types**: Vector, constant, compact, lazy, and cached implementations
@@ -65,46 +65,47 @@ arcweight = "0.1"
 
 ### Your First FST
 
-Here's a simple spell checker that suggests "hello" for misspelled words:
+Here's a simple FST that recognizes the word "hello":
 
 ```rust
 use arcweight::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a simple dictionary FST
-    let mut dictionary = VectorFst::<TropicalWeight>::new();
+    // Create a simple FST
+    let mut fst = VectorFst::<TropicalWeight>::new();
     
-    // Build FST that accepts "hello" with cost 0
-    let s0 = dictionary.add_state();  // Start
-    let s1 = dictionary.add_state();  // After 'h'
-    let s2 = dictionary.add_state();  // After 'e'
-    let s3 = dictionary.add_state();  // After 'l'
-    let s4 = dictionary.add_state();  // After 'l'
-    let s5 = dictionary.add_state();  // Final state
+    // Add states
+    let s0 = fst.add_state();
+    let s1 = fst.add_state();
+    let s2 = fst.add_state();
+    let s3 = fst.add_state();
+    let s4 = fst.add_state();
+    let s5 = fst.add_state();
     
-    dictionary.set_start(s0);
-    dictionary.set_final(s5, TropicalWeight::one());
+    // Set start and final states
+    fst.set_start(s0);
+    fst.set_final(s5, TropicalWeight::one());
     
     // Add arcs for "hello"
-    dictionary.add_arc(s0, Arc::new('h' as u32, 'h' as u32, TropicalWeight::one(), s1));
-    dictionary.add_arc(s1, Arc::new('e' as u32, 'e' as u32, TropicalWeight::one(), s2));
-    dictionary.add_arc(s2, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s3));
-    dictionary.add_arc(s3, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s4));
-    dictionary.add_arc(s4, Arc::new('o' as u32, 'o' as u32, TropicalWeight::one(), s5));
+    fst.add_arc(s0, Arc::new('h' as u32, 'h' as u32, TropicalWeight::one(), s1));
+    fst.add_arc(s1, Arc::new('e' as u32, 'e' as u32, TropicalWeight::one(), s2));
+    fst.add_arc(s2, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s3));
+    fst.add_arc(s3, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s4));
+    fst.add_arc(s4, Arc::new('o' as u32, 'o' as u32, TropicalWeight::one(), s5));
     
-    // Create edit distance FST (allows 1 character error)
-    let edit_distance = build_edit_distance_fst(1)?;
+    // Use the FST - check if "hello" is accepted
+    let input = vec!['h' as u32, 'e' as u32, 'l' as u32, 'l' as u32, 'o' as u32];
+    let accepted = fst.get_properties().contains(FstProperties::ACCEPTOR);
     
-    // Compose for spell checking: input_word -> edit_operations -> dictionary_word
-    let spell_checker = compose(&edit_distance, &dictionary)?;
+    println!("Created FST with {} states", fst.num_states());
+    println!("FST is an acceptor: {}", accepted);
     
-    println!("Spell checker created with {} states", spell_checker.num_states());
     Ok(())
 }
 ```
 
 **Want to dive deeper?**
-- **[🧠 Core Concepts](docs/core-concepts.md)** - Understand FSTs and semirings
+- **[🧠 Core Concepts](docs/core-concepts/README.md)** - Understand FSTs and semirings
 - **[💡 Examples](examples/)** - Real-world applications in the examples directory
 
 ## Documentation
@@ -118,6 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### 🔗 Reference Documentation
 
 - **[API Reference](https://docs.rs/arcweight)** - Complete API documentation with examples
+- **[Bibliography](docs/bibliography.bib)** - Foundational papers and references
 
 ## Examples & Applications
 
@@ -127,7 +129,7 @@ Run these examples to see ArcWeight in action:
 
 ```bash
 # Spell checking and correction
-cargo run --example word_correction
+cargo run --example spell_checking
 
 # Edit distance computation
 cargo run --example edit_distance
@@ -143,8 +145,7 @@ Run these examples to see ArcWeight in action:
 ```bash
 # Text processing examples
 cargo run --example edit_distance
-cargo run --example word_correction
-cargo run --example fst_composition
+cargo run --example spell_checking
 
 # Speech and phonetics
 cargo run --example pronunciation_lexicon

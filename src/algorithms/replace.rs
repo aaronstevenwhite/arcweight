@@ -458,15 +458,13 @@ where
     for (label, fst) in rules {
         if fst.num_states() == 0 {
             return Err(crate::Error::Algorithm(format!(
-                "Rule for label {} has no states",
-                label
+                "Rule for label {label} has no states"
             )));
         }
 
         if fst.start().is_none() {
             return Err(crate::Error::Algorithm(format!(
-                "Rule for label {} has no start state",
-                label
+                "Rule for label {label} has no start state"
             )));
         }
 
@@ -478,8 +476,7 @@ where
 
         if reachable.len() != fst.num_states() {
             return Err(crate::Error::Algorithm(format!(
-                "Rule for label {} has unreachable states",
-                label
+                "Rule for label {label} has unreachable states"
             )));
         }
     }

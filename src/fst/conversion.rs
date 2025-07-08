@@ -759,8 +759,7 @@ mod tests {
             assert_eq!(
                 orig_arcs.len(),
                 conv_arcs.len(),
-                "Arc count mismatch for state {}",
-                state_id
+                "Arc count mismatch for state {state_id}"
             );
 
             // Just verify we have the right number of arcs and basic properties

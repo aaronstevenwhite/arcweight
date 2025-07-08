@@ -303,7 +303,10 @@ pub use prefetch::prefetch_cache_line;
 mod tropical_simd {
     use super::*;
     use crate::semiring::TropicalWeight;
-    use std::arch::x86_64::*;
+    use std::arch::x86_64::{
+        _mm_add_ps, _mm_loadu_ps, _mm_max_ps, _mm_min_ps, _mm_prefetch, _mm_set1_ps, _mm_storeu_ps,
+        _MM_HINT_T0,
+    };
 
     impl SimdOps<TropicalWeight> for TropicalWeight {
         fn simd_plus(
@@ -434,8 +437,8 @@ mod tropical_simd {
                 }
 
                 // Handle remaining elements
-                for i in simd_len..len {
-                    min_val = min_val.min(*weights[i].value());
+                for weight in weights.iter().skip(simd_len) {
+                    min_val = min_val.min(*weight.value());
                 }
 
                 TropicalWeight::new(min_val)
@@ -474,8 +477,8 @@ mod tropical_simd {
                 }
 
                 // Handle remaining elements
-                for i in simd_len..len {
-                    max_val = max_val.max(*weights[i].value());
+                for weight in weights.iter().skip(simd_len) {
+                    max_val = max_val.max(*weight.value());
                 }
 
                 TropicalWeight::new(max_val)

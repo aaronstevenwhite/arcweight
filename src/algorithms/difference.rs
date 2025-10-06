@@ -21,8 +21,8 @@ use std::collections::{HashMap, HashSet};
 ///
 /// - **Mathematical Operation:** A₁ - A₂ = A₁ ∩ complement(A₂) where both are acceptors
 /// - **Implementation Strategy:** Composition with complement acceptor construction
-/// - **Time Complexity:** O(|V₁| × |V₂| × |E₁| × |E₂|) worst case for composition
-/// - **Space Complexity:** O(|V₁| × |V₂|) for state cross product
+/// - **Time Complexity:** O(2^|V₂|) worst case for determinization, then O(|V₁| × |V₂'|) for intersection where V₂' is complement size
+/// - **Space Complexity:** O(|V₁| × |V₂'|) for state cross product after determinization
 /// - **Language Relationship:** L(A₁ - A₂) = L(A₁) - L(A₂) = {w : w ∈ L(A₁) and w ∉ L(A₂)}
 /// - **Semiring Requirements:** Requires `DivisibleSemiring + Ord` for determinization
 ///
@@ -203,11 +203,11 @@ use std::collections::{HashMap, HashSet};
 ///
 /// # Performance Characteristics
 ///
-/// - **Time Complexity:** O(|V₁| × |V₂| × |E₁| × |E₂|) worst case
-/// - **Space Complexity:** O(|V₁| × |V₂| + |Σ|) for state space and alphabet
-/// - **Complement Cost:** Additional overhead for complement construction
+/// - **Time Complexity:** O(2^|V₂|) worst case due to determinization in complement construction
+/// - **Space Complexity:** O(|V₁| × |V₂'| + |Σ|) where V₂' is determinized complement size
+/// - **Complement Cost:** Exponential in worst case, often polynomial in practice
 /// - **Composition Efficiency:** Depends on automata determinism and structure
-/// - **Practical Performance:** Often better than worst case for sparse automata
+/// - **Practical Performance:** Much better than worst case for deterministic or sparse automata
 ///
 /// # Mathematical Properties
 ///

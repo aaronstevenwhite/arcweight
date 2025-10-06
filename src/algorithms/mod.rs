@@ -1,8 +1,8 @@
 //! FST algorithms module
 //!
-//! This module provides a comprehensive collection of algorithms for manipulating
-//! and analyzing weighted finite state transducers (FSTs). The algorithms are
-//! organized into several categories:
+//! This module provides algorithms for manipulating and analyzing weighted
+//! finite state transducers (FSTs). The algorithms are organized into several
+//! categories:
 //!
 //! ## Core Operations
 //!

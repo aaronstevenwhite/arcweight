@@ -135,7 +135,7 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 ///
 /// # Custom Filters
 ///
-/// Use custom composition filters for advanced epsilon handling or
+/// Use custom composition filters for specialized epsilon handling or
 /// special matching criteria:
 ///
 /// ```rust

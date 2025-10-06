@@ -7,7 +7,7 @@ use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId};
 use crate::semiring::Semiring;
 use crate::{Error, Result};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Remove non-accessible and non-coaccessible states from an FST
 ///
@@ -18,9 +18,9 @@ use std::collections::HashSet;
 /// # Algorithm Details
 ///
 /// - **Accessibility Analysis:** Forward search from start state using DFS
-/// - **Coaccessibility Analysis:** Backward search from final states using DFS  
+/// - **Coaccessibility Analysis:** Backward search from final states using reverse arc index
 /// - **Time Complexity:** O(|V| + |E|) for both forward and backward traversals
-/// - **Space Complexity:** O(|V|) for state tracking and result construction
+/// - **Space Complexity:** O(|V| + |E|) for state tracking, reverse index, and result construction
 /// - **Language Preservation:** L(connect(T)) = L(T) (language unchanged)
 ///
 /// # Mathematical Foundation
@@ -225,11 +225,11 @@ use std::collections::HashSet;
 ///
 /// # Performance Characteristics
 ///
-/// - **Time Complexity:** O(|V| + |E|) for both forward and backward searches
-/// - **Space Complexity:** O(|V|) for state sets and mappings
-/// - **Memory Efficiency:** Only allocates space for useful states in result
+/// - **Time Complexity:** O(|V| + |E|) for both forward and backward graph traversals
+/// - **Space Complexity:** O(|V| + |E|) for state sets, reverse arc index, and mappings
+/// - **Memory Efficiency:** Reverse index uses O(|E|) space for optimal time complexity
 /// - **State Reduction:** Can significantly reduce FST size for sparse graphs
-/// - **Cache Friendly:** Sequential traversal patterns improve memory locality
+/// - **Cache Friendly:** Sequential access patterns in both forward and backward traversals
 ///
 /// # Mathematical Properties
 ///
@@ -242,14 +242,17 @@ use std::collections::HashSet;
 ///
 /// # Implementation Details
 ///
-/// The algorithm uses two-phase reachability analysis:
-/// 1. **Forward Phase:** DFS from start state to find all accessible states
-/// 2. **Backward Phase:** DFS from final states to find all coaccessible states
-/// 3. **Intersection:** Keep only states appearing in both sets
-/// 4. **Reconstruction:** Build new FST preserving all original relationships
+/// The algorithm uses optimized two-phase reachability analysis:
+/// 1. **Forward Phase:** DFS from start state to find all accessible states in O(|V| + |E|)
+/// 2. **Reverse Index Construction:** Build predecessor mapping for efficient backward search in O(|V| + |E|)
+/// 3. **Backward Phase:** DFS from final states using reverse index to find coaccessible states in O(|V| + |E|)
+/// 4. **Intersection:** Keep only states appearing in both sets
+/// 5. **Reconstruction:** Build new FST preserving all original relationships
 ///
-/// The backward search examines all states to find predecessors, making it
-/// O(|V| × |E|) in the worst case, but typically much faster in practice.
+/// The backward search uses a reverse arc index (`HashMap<StateId, Vec<StateId>>`) that maps each
+/// state to its predecessors. This index is built in O(|E|) time by examining each arc once, then
+/// enables O(1) predecessor lookup during the backward traversal, achieving overall O(|V| + |E|)
+/// complexity. The trade-off is O(|E|) additional space for the reverse index.
 ///
 /// # Optimization Opportunities
 ///
@@ -354,24 +357,32 @@ fn find_accessible_states<W: Semiring, F: Fst<W>>(fst: &F, start: StateId) -> Ha
 }
 
 fn find_coaccessible_states<W: Semiring, F: Fst<W>>(fst: &F) -> HashSet<StateId> {
+    // Build reverse arc index mapping each state to its predecessors: O(|V| + |E|)
+    let mut predecessors: HashMap<StateId, Vec<StateId>> = HashMap::new();
+    for state in fst.states() {
+        for arc in fst.arcs(state) {
+            predecessors.entry(arc.nextstate).or_default().push(state);
+        }
+    }
+
     let mut coaccessible = HashSet::new();
     let mut stack = Vec::new();
 
-    // start from all final states
+    // Start from all final states: O(|V|)
     for state in fst.states() {
         if fst.is_final(state) {
             stack.push(state);
         }
     }
 
-    // backward search
+    // Backward search using reverse index: O(|V| + |E|)
     while let Some(state) = stack.pop() {
         if coaccessible.insert(state) {
-            // find states with arcs to this state
-            for s in fst.states() {
-                for arc in fst.arcs(s) {
-                    if arc.nextstate == state && !coaccessible.contains(&s) {
-                        stack.push(s);
+            // Process all predecessor states from reverse index
+            if let Some(preds) = predecessors.get(&state) {
+                for &pred in preds {
+                    if !coaccessible.contains(&pred) {
+                        stack.push(pred);
                     }
                 }
             }

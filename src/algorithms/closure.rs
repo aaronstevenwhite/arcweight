@@ -241,9 +241,9 @@ use crate::Result;
 ///
 /// - [`closure_plus`] for Kleene plus operation (T+) excluding empty string
 /// - [`crate::algorithms::concat()`] for sequential FST combination
-/// - [`crate::algorithms::union()`] for parallel FST combination  
+/// - [`crate::algorithms::union()`] for parallel FST combination
 /// - [`remove_epsilons()`](crate::algorithms::remove_epsilons()) for epsilon removal
-/// - [Working with FSTs - Closure](../../docs/working-with-fsts/advanced-topics.md#closure-operations) for usage patterns
+/// - [Working with FSTs: Closure Operations](../../docs/working-with-fsts/advanced-topics.md#closure-operations) for usage patterns
 /// - [Core Concepts](../../docs/core-concepts/algorithms.md#closure) for mathematical theory
 pub fn closure<W, F, M>(fst: &F) -> Result<M>
 where
@@ -438,7 +438,7 @@ where
 /// - [`closure`] for Kleene star operation (T*) including empty string
 /// - [`crate::algorithms::concat()`] for sequential FST combination
 /// - [`crate::algorithms::union()`] for parallel FST combination
-/// - [Working with FSTs - Closure](../../docs/working-with-fsts/advanced-topics.md#closure-operations) for usage patterns
+/// - [Working with FSTs: Closure Operations](../../docs/working-with-fsts/advanced-topics.md#closure-operations) for usage patterns
 /// - [Core Concepts](../../docs/core-concepts/algorithms.md#closure) for mathematical theory
 pub fn closure_plus<W, F, M>(fst: &F) -> Result<M>
 where

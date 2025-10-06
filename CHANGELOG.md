@@ -64,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive benchmark suite
 - Property-based testing with proptest
 - Strict clippy configuration
-- MSRV enforcement (1.75.0)
+- MSRV enforcement (1.85.0)
 - Cross-platform CI/CD
 
 ### Infrastructure
@@ -82,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory-efficient FST representations
 
 ### Compatibility
-- Rust 1.75.0 or later (MSRV)
+- Rust 1.85.0 or later (MSRV)
 - Cross-platform support (Linux, macOS, Windows)
 - OpenFST file format compatibility
 - No unsafe code in public APIs

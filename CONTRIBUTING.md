@@ -26,7 +26,7 @@ Thank you for your interest in contributing to ArcWeight! This guide provides ev
 
 ## Prerequisites
 
-- Rust 1.75+ (MSRV defined in `clippy.toml`)
+- Rust 1.85+ (MSRV defined in `clippy.toml`)
 - Standard Rust toolchain (`cargo`, `rustfmt`, `clippy`)
 
 ## Essential Commands

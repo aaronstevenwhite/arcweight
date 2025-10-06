@@ -59,7 +59,7 @@ arcweight = "0.1"
 ```
 
 **System Requirements:**
-- Rust 1.75.0 or later
+- Rust 1.85.0 or later
 - 64-bit architecture (x86_64 or aarch64)
 
 ### Your First FST

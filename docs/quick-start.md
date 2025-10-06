@@ -6,7 +6,7 @@ Prerequisites: [Core Concepts](core-concepts/) | [Installation](installation.md)
 
 ## Requirements
 
-- Rust 1.75.0 or later
+- Rust 1.85.0 or later
 - ArcWeight dependency in Cargo.toml
 - Basic Rust knowledge
 

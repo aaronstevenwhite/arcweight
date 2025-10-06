@@ -35,4 +35,4 @@ allow-unwrap-in-tests = true
 
 # FST-specific allowances for performance-critical code
 avoid-breaking-exported-api = true
-msrv = "1.75.0"
+msrv = "1.85.0"

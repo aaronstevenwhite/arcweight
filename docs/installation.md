@@ -6,7 +6,7 @@ Prerequisites: [Core Concepts](core-concepts/) | [Quick Start](quick-start.md)
 
 ## System Requirements
 
-- Rust 1.75.0 or later
+- Rust 1.85.0 or later
 - Standard Rust toolchain (cargo, rustc)
 - Supported platforms: Linux, macOS, Windows (x86_64, aarch64)
 
@@ -129,7 +129,7 @@ cargo run --example edit_distance
 
 ### Rust Version Error
 
-Error: package 'arcweight' cannot be built because it requires rustc 1.75.0 or newer
+Error: package 'arcweight' cannot be built because it requires rustc 1.85.0 or newer
 
 Solution: `rustup update`
 

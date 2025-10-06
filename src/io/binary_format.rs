@@ -229,7 +229,8 @@ mod inner {
         weight: &W,
     ) -> Result<()> {
         // this would need specialization per weight type
-        let bytes = bincode::serialize(weight).map_err(|e| Error::Serialization(e.to_string()))?;
+        let bytes = bincode::serde::encode_to_vec(weight, bincode::config::legacy())
+            .map_err(|e| Error::Serialization(e.to_string()))?;
         writer.write_u32::<LittleEndian>(bytes.len() as u32)?;
         writer.write_all(&bytes)?;
         Ok(())
@@ -239,7 +240,9 @@ mod inner {
         let len = reader.read_u32::<LittleEndian>()? as usize;
         let mut bytes = vec![0u8; len];
         reader.read_exact(&mut bytes)?;
-        bincode::deserialize(&bytes).map_err(|e| Error::Serialization(e.to_string()))
+        let (weight, _) = bincode::serde::decode_from_slice(&bytes, bincode::config::legacy())
+            .map_err(|e| Error::Serialization(e.to_string()))?;
+        Ok(weight)
     }
 }
 

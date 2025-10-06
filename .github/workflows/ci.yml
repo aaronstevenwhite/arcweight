@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable, 1.75.0]  # MSRV testing
+        rust: [stable, 1.85.0]  # MSRV testing
         include:
           # Test additional configurations on Ubuntu only
           - os: ubuntu-latest
@@ -27,13 +27,13 @@ jobs:
         exclude:
           # Skip MSRV testing on Windows/macOS to reduce CI time
           - os: windows-latest
-            rust: 1.75.0
+            rust: 1.85.0
           - os: macos-latest
-            rust: 1.75.0
+            rust: 1.85.0
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@master
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -152,10 +152,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install MSRV toolchain
-      uses: dtolnay/rust-toolchain@1.75.0
+      uses: dtolnay/rust-toolchain@1.85.0
 
     - name: Configure Rust cache
       uses: Swatinem/rust-cache@v2
@@ -168,7 +168,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install cargo-audit
       run: cargo install cargo-audit
@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable

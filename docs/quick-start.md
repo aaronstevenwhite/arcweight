@@ -1,91 +1,64 @@
-# Quick Start Guide
+# Quick Start
 
-This guide demonstrates the construction of weighted finite state transducers (WFSTs) and essential operations through practical examples.
+This guide provides an introduction to constructing weighted finite state transducers (WFSTs) using the ArcWeight library.
 
-This guide walks you through creating your first weighted finite state transducer (WFST) and performing essential operations. By the end, you'll understand FST fundamentals and be ready for real-world applications.
+Prerequisites: [Core Concepts](core-concepts/) | [Installation](installation.md)
 
-**For theoretical background**: See [Core Concepts](core-concepts/)  
-**For documentation overview**: See [Main Documentation](README.md)
+## Requirements
 
-## Prerequisites
+- Rust 1.75.0 or later
+- ArcWeight dependency in Cargo.toml
+- Basic Rust knowledge
 
-- Rust 1.75.0+ installed ([Installation Guide](installation.md))
-- ArcWeight added to your project
-- Basic familiarity with Rust syntax
+## Overview
 
-## What You'll Learn
+This guide covers:
+- FST construction (states, arcs, weights)
+- Semiring weight types
+- Basic operations (composition, minimization)
+- Symbol tables
+- Example: dictionary-based spell checking
 
-Topics covered:
+## Basic FST Construction
 
-| Topic | Description |
-|-------|-------------|
-| **FST Construction** | States, arcs, and basic structures |
-| **Weight Types** | Different semiring applications |
-| **Operations** | Composition, union, shortest path |
-| **Symbol Tables** | Readable, maintainable code |
-| **Applications** | Spell checker implementation |
-
-## First FST Example
-
-The following example constructs an FST that accepts the string "hello":
-
-### Step 1: Create Your First FST
-
-Replace `src/main.rs` with:
+The following example demonstrates FST construction by implementing an acceptor for the string "hello":
 
 ```rust,ignore
 use arcweight::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Creating your first FST...");
-    
-    // Create a new FST with tropical weights (cost-based optimization)
+    // Create FST with tropical semiring
     let mut fst = VectorFst::<TropicalWeight>::new();
     
-    // Add states for each character in "hello" + start state
-    let s0 = fst.add_state();  // Start state
-    let s1 = fst.add_state();  // After 'h'
-    let s2 = fst.add_state();  // After 'e'
-    let s3 = fst.add_state();  // After 'l'
-    let s4 = fst.add_state();  // After 'l'
-    let s5 = fst.add_state();  // After 'o' (final)
+    // Add states
+    let s0 = fst.add_state();
+    let s1 = fst.add_state();
+    let s2 = fst.add_state();
+    let s3 = fst.add_state();
+    let s4 = fst.add_state();
+    let s5 = fst.add_state();
     
-    // Configure start and final states
+    // Set start and final states
     fst.set_start(s0);
-    fst.set_final(s5, TropicalWeight::one()); // Weight 0.0 = no cost
+    fst.set_final(s5, TropicalWeight::one());
     
-    // Add arcs for each character transition
-    // Arc::new(input_label, output_label, weight, next_state)
+    // Add transitions
     fst.add_arc(s0, Arc::new('h' as u32, 'h' as u32, TropicalWeight::one(), s1));
     fst.add_arc(s1, Arc::new('e' as u32, 'e' as u32, TropicalWeight::one(), s2));
     fst.add_arc(s2, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s3));
     fst.add_arc(s3, Arc::new('l' as u32, 'l' as u32, TropicalWeight::one(), s4));
     fst.add_arc(s4, Arc::new('o' as u32, 'o' as u32, TropicalWeight::one(), s5));
     
-    // Print FST statistics
-    // Count total arcs across all states
-    let total_arcs: usize = fst.states().map(|s| fst.num_arcs(s)).sum();
-    
-    println!("FST created successfully");
-    println!("   States: {}", fst.num_states());
-    println!("   Arcs: {}", total_arcs);
-    println!("   Start state: {:?}", fst.start());
-    
-    // Examine the structure
-    println!("\\nFST Structure:");
+    // Display structure
     for state in fst.states() {
         print!("State {}: ", state);
-        
-        // Show arcs from this state
         for arc in fst.arcs(state) {
-            let input_char = char::from_u32(arc.ilabel).unwrap_or('?');
-            let output_char = char::from_u32(arc.olabel).unwrap_or('?');
-            print!("'{}':'{}' -> {} ", input_char, output_char, arc.nextstate);
+            let input = char::from_u32(arc.ilabel).unwrap_or('?');
+            let output = char::from_u32(arc.olabel).unwrap_or('?');
+            print!("{}:{} -> {} ", input, output, arc.nextstate);
         }
-        
-        // Show if this is a final state
         if let Some(weight) = fst.final_weight(state) {
-            print!("[FINAL: {}]", weight.value());
+            print!("[Final: {}]", weight.value());
         }
         println!();
     }
@@ -94,200 +67,161 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Run it:
-
-```bash
-cargo run
-```
-
-Expected output:
+Output:
 ```text
-Creating your first FST...
-FST created successfully
-   States: 6
-   Arcs: 5
-   Start state: Some(0)
-
-FST Structure:
-State 0: 'h':'h' -> 1 
-State 1: 'e':'e' -> 2 
-State 2: 'l':'l' -> 3 
-State 3: 'l':'l' -> 4 
-State 4: 'o':'o' -> 5 
-State 5: [FINAL: 0]
+State 0: h:h -> 1 
+State 1: e:e -> 2 
+State 2: l:l -> 3 
+State 3: l:l -> 4 
+State 4: o:o -> 5 
+State 5: [Final: 0]
 ```
 
-This FST recognizes the word "hello".
-
-## Understanding FST Components
-
-The fundamental components of FSTs are states, arcs, and weights:
+## FST Components
 
 ### States
-
-States are the **nodes** in your FST - they track progress through the input:
-- **Start**: Where processing begins (one per FST)
-- **Final**: Where processing successfully ends (one or more)
-- **Intermediate**: Handle transformations between start and final
+- Start state: Initial state (unique)
+- Final states: Accepting states with associated weights
+- Intermediate states: Non-final states
 
 ### Arcs
-
-Arcs are the **edges** connecting states that define transformations:
-- **Input Label**: Symbol consumed from input
-- **Output Label**: Symbol produced to output  
-- **Weight**: Cost or probability of this transition
-- **Target State**: Next state to move to
+Each arc contains:
+- Input label (ilabel): Input symbol
+- Output label (olabel): Output symbol  
+- Weight: Transition cost/probability
+- Next state: Target state ID
 
 ### Weights
+Weights are elements of a semiring algebraic structure. See [Core Concepts](core-concepts/) for theoretical details.
 
-Weights define how costs combine using **semiring math** - see the detailed weight types section below.
 
+## Semiring Weight Types
 
-## Weight Types (Semirings)
+ArcWeight implements several semiring types:
 
-Weights define how costs combine in FST operations. ArcWeight supports several types:
+### TropicalWeight
+- ⊕ (addition): min(a, b)
+- ⊗ (multiplication): a + b
+- Zero: ∞
+- One: 0
+- Applications: Shortest path algorithms, edit distance
 
-**TropicalWeight** - Most common for optimization:
-- **Addition**: `min(a, b)` - choose cheapest path
-- **Multiplication**: `a + b` - accumulate costs
-- **Perfect for**: shortest paths, edit distance, spell checking
+### ProbabilityWeight
+- ⊕: a + b
+- ⊗: a × b
+- Zero: 0
+- One: 1
+- Applications: Probabilistic models
 
-**Other semirings**:
-- **ProbabilityWeight**: For probabilistic operations
-- **BooleanWeight**: Simple accept/reject logic
+### BooleanWeight
+- ⊕: a ∨ b
+- ⊗: a ∧ b
+- Zero: false
+- One: true
+- Applications: Unweighted automata
 
-See [Core Concepts](core-concepts/) for mathematical details and [Working with FSTs](working-with-fsts/) for practical examples.
+## FST Operations
 
-## Basic FST Operations
-
-FSTs become powerful when you combine them. Composition is one of the most important operations. Composition chains two FSTs - the output of the first becomes input to the second:
+### Composition
+Composition (∘) combines two transducers where the output alphabet of the first matches the input alphabet of the second:
 
 ```rust,ignore
-use arcweight::prelude::*;
+// T1: a → b
+let mut t1 = VectorFst::<TropicalWeight>::new();
+let s0 = t1.add_state();
+let s1 = t1.add_state();
+t1.set_start(s0);
+t1.set_final(s1, TropicalWeight::one());
+t1.add_arc(s0, Arc::new('a' as u32, 'b' as u32, TropicalWeight::one(), s1));
 
-fn composition_example() -> Result<(), Box<dyn std::error::Error>> {
-    // FST 1: "a" -> "b"
-    let mut fst1 = VectorFst::<TropicalWeight>::new();
-    let s0 = fst1.add_state();
-    let s1 = fst1.add_state();
-    fst1.set_start(s0);
-    fst1.set_final(s1, TropicalWeight::one());
-    fst1.add_arc(s0, Arc::new('a' as u32, 'b' as u32, TropicalWeight::one(), s1));
-    
-    // FST 2: "b" -> "c"  
-    let mut fst2 = VectorFst::<TropicalWeight>::new();
-    let s0 = fst2.add_state();
-    let s1 = fst2.add_state();
-    fst2.set_start(s0);
-    fst2.set_final(s1, TropicalWeight::one());
-    fst2.add_arc(s0, Arc::new('b' as u32, 'c' as u32, TropicalWeight::one(), s1));
-    
-    // Compose: "a" -> "b" -> "c" becomes "a" -> "c"
-    let composed: VectorFst<TropicalWeight> = compose_default(&fst1, &fst2)?;
-    
-    println!("Composed FST: 'a' -> 'c' directly");
-    Ok(())
-}
+// T2: b → c  
+let mut t2 = VectorFst::<TropicalWeight>::new();
+let s0 = t2.add_state();
+let s1 = t2.add_state();
+t2.set_start(s0);
+t2.set_final(s1, TropicalWeight::one());
+t2.add_arc(s0, Arc::new('b' as u32, 'c' as u32, TropicalWeight::one(), s1));
+
+// T1 ∘ T2: a → c
+let composed: VectorFst<TropicalWeight> = compose_default(&t1, &t2)?;
 ```
 
-See [Working with FSTs](working-with-fsts/) for union, shortest path, minimization, and additional operations.
+Additional operations include union, concatenation, closure, inversion, minimization, and determinization. See [Working with FSTs](working-with-fsts/) for details.
 
-## Symbol Tables (Optional)
+## Symbol Tables
 
-For readable code, use symbol tables to map strings to numeric IDs:
+Symbol tables provide bidirectional mappings between strings and integer labels:
 
 ```rust,ignore
 let mut syms = SymbolTable::new();
 let hello_id = syms.add_symbol("hello");
-// Use hello_id in FST construction instead of 'h' as u32
+let world_id = syms.add_symbol("world");
+
+// Use in FST construction
+fst.add_arc(s0, Arc::new(hello_id, world_id, weight, s1));
 ```
 
-See [Working with FSTs](working-with-fsts/) for detailed symbol table usage.
+## Example: Dictionary FST for Spell Checking
 
-## Practical Application: Simple Spell Checker
+This example constructs a trie-based dictionary FST:
 
-The following example demonstrates a basic spell checker implementation:
+```rust,ignore
+fn build_dictionary() -> Result<VectorFst<TropicalWeight>, Box<dyn std::error::Error>> {
+    let mut dict = VectorFst::<TropicalWeight>::new();
+    
+    // Build trie for: "cat", "car", "care"
+    let root = dict.add_state();
+    dict.set_start(root);
+    
+    // Common prefix "ca"
+    let c_state = dict.add_state();
+    let ca_state = dict.add_state();
+    dict.add_arc(root, Arc::new('c' as u32, 'c' as u32, TropicalWeight::one(), c_state));
+    dict.add_arc(c_state, Arc::new('a' as u32, 'a' as u32, TropicalWeight::one(), ca_state));
+    
+    // "cat"
+    let cat_final = dict.add_state();
+    dict.add_arc(ca_state, Arc::new('t' as u32, 't' as u32, TropicalWeight::one(), cat_final));
+    dict.set_final(cat_final, TropicalWeight::one());
+    
+    // "car"  
+    let car_final = dict.add_state();
+    dict.add_arc(ca_state, Arc::new('r' as u32, 'r' as u32, TropicalWeight::one(), car_final));
+    dict.set_final(car_final, TropicalWeight::one());
+    
+    // "care" (sharing 'r' transition with "car")
+    let care_final = dict.add_state();
+    dict.add_arc(car_final, Arc::new('e' as u32, 'e' as u32, TropicalWeight::one(), care_final));
+    dict.set_final(care_final, TropicalWeight::one());
+    
+    // Minimize for efficiency
+    minimize(&dict)
+}
+
+// Full spell checker would compose with edit distance transducer
+// to find corrections within edit distance k
+```  
+
+## Further Reading
+
+- [Working with FSTs](working-with-fsts/) — Complete operations reference
+- [Core Concepts](core-concepts/) — Theoretical foundations
+- [Examples](examples/) — Applied implementations
+
+## API Summary
 
 ```rust,ignore
 use arcweight::prelude::*;
 
-fn build_spell_checker() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Building a spell checker...");
-    
-    // Create dictionary FST
-    let mut dictionary = VectorFst::<TropicalWeight>::new();
-    
-    // Build trie structure for words: "cat", "car", "care"
-    let root = dictionary.add_state();
-    dictionary.set_start(root);
-    
-    // Shared "ca" prefix
-    let ca_state = dictionary.add_state();
-    dictionary.add_arc(root, Arc::new('c' as u32, 'c' as u32, TropicalWeight::one(), ca_state));
-    let after_ca = dictionary.add_state();
-    dictionary.add_arc(ca_state, Arc::new('a' as u32, 'a' as u32, TropicalWeight::one(), after_ca));
-    
-    // Branch for each word ending
-    // "cat"
-    let cat_final = dictionary.add_state();
-    dictionary.add_arc(after_ca, Arc::new('t' as u32, 't' as u32, TropicalWeight::one(), cat_final));
-    dictionary.set_final(cat_final, TropicalWeight::one());
-    
-    // "car"  
-    let car_final = dictionary.add_state();
-    dictionary.add_arc(after_ca, Arc::new('r' as u32, 'r' as u32, TropicalWeight::one(), car_final));
-    dictionary.set_final(car_final, TropicalWeight::one());
-    
-    // "care"
-    let care_mid = dictionary.add_state();
-    dictionary.add_arc(after_ca, Arc::new('r' as u32, 'r' as u32, TropicalWeight::one(), care_mid));
-    let care_final = dictionary.add_state();
-    dictionary.add_arc(care_mid, Arc::new('e' as u32, 'e' as u32, TropicalWeight::one(), care_final));
-    dictionary.set_final(care_final, TropicalWeight::one());
-    
-    println!("Dictionary created with {} states", dictionary.num_states());
-    println!("Accepts: 'cat', 'car', 'care'");
-    
-    // Optimize the FST
-    let minimized = minimize(&dictionary)?;
-    println!("Minimized to {} states", minimized.num_states());
-    
-    // In a real spell checker, you would:
-    // 1. Create an edit distance FST (allows character errors)
-    // 2. Compose edit distance FST with dictionary  
-    // 3. Find shortest paths to get correction suggestions
-    
-    println!("Spell checker foundation complete");
-    
-    Ok(())
-}
-
-fn main() -> Result<()> {
-    build_spell_checker()
-}
-```  
-
-## Next Steps
-
-**Additional resources:**
-
-- **[Examples](examples/README.md)** - Practical applications and use cases
-- **[Working with FSTs](working-with-fsts/)** - Complete operations guide  
-- **[Core Concepts](core-concepts/)** - Mathematical foundations
-- **Example execution**: `cargo run --example edit_distance`
-
-## Quick Reference
-
-```rust,ignore
-use arcweight::prelude::*;  // Essential import
-
-// Basic FST pattern
-let mut fst = VectorFst::<TropicalWeight>::new();
-let state = fst.add_state();
-fst.set_start(state);
-fst.set_final(state, TropicalWeight::one());
-fst.add_arc(from_state, Arc::new(input, output, weight, to_state));
+// FST construction
+let mut fst = VectorFst::<W>::new();
+let s = fst.add_state();
+fst.set_start(s);
+fst.set_final(s, weight);
+fst.add_arc(from, Arc::new(ilabel, olabel, weight, to));
 
 // Operations
-let result = compose_default(&fst1, &fst2)?;
+compose_default(&fst1, &fst2)
+minimize(&fst)
+determinize(&fst)
 ```

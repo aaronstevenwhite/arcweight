@@ -14,7 +14,7 @@ The key insight is using FST output labels to encode different operation types (
 
 ```bash
 cargo run --example string_alignment
-```text
+```
 
 ## What You'll Learn
 
@@ -70,7 +70,7 @@ The key insight is encoding operation types in the FST's output labels. We use a
 // 2000 + char_value: Substitution (target character)
 // 3000 + char_value: Insertion 
 // 4000 + char_value: Deletion
-```text
+```
 
 This allows us to distinguish between different ways of producing the same character. Output label 1097 represents Match 'a' (97 is ASCII for 'a'). Output label 2097 represents Substitute something to 'a'. Output label 3097 represents Insert 'a'.
 
@@ -115,7 +115,7 @@ fn build_alignment_fst(target: &str, max_edits: usize, costs: Costs) -> VectorFs
         }
     }
 }
-```text
+```
 
 ### Extracting Alignments
 
@@ -142,7 +142,7 @@ fn extract_alignment(fst: &VectorFst) -> Vec<Alignment> {
     
     alignments
 }
-```text
+```
 
 ## FST Implementation
 
@@ -191,13 +191,13 @@ fn visualize(alignment: &Alignment) -> String {
         }
     }
 }
-```text
+```
 
 ## Running the Example
 
 ```bash
 cargo run --example string_alignment
-```text
+```
 
 ### Sample Output
 
@@ -332,7 +332,7 @@ fn code_diff_alignment(old_code: &str, new_code: &str) -> DiffAlignment {
         }
     }
 }
-```text
+```
 
 ### 3. Phonetic Alignment
 
@@ -352,7 +352,7 @@ fn phonetic_distance(p1: &str, p2: &str) -> f32 {
         _ => 1.0,                         // Default
     }
 }
-```text
+```
 
 ### 4. Musical Sequence Alignment
 
@@ -378,7 +378,7 @@ fn melodic_alignment(melody1: &[Note], melody2: &[Note]) -> MusicAlignment {
     
     compute_weighted_alignment(melody1, melody2, subst_cost)
 }
-```text
+```
 
 ## Performance Optimization
 
@@ -400,7 +400,7 @@ fn banded_alignment(s1: &str, s2: &str, bandwidth: usize) -> Alignment {
         }
     }
 }
-```text
+```
 
 This reduces complexity from O(nm) to O(n×bandwidth).
 
@@ -413,7 +413,7 @@ struct SparseAlignmentFST {
     states: HashMap<(usize, usize), StateId>,  // (position, edits) -> state
     threshold: f32,  // Prune states with cost > threshold
 }
-```text
+```
 
 ### 3. Incremental Alignment
 
@@ -434,7 +434,7 @@ impl IncrementalAligner {
         self.merge_local_alignment(local_alignment)
     }
 }
-```text
+```
 
 ## Extending the Algorithm
 
@@ -476,7 +476,7 @@ fn local_alignment(s1: &str, s2: &str) -> LocalAlignment {
         fst.set_final(state, TropicalWeight::one());
     }
 }
-```text
+```
 
 ### 3. Constrained Alignment
 
@@ -494,7 +494,7 @@ fn build_constrained_fst(target: &str, anchors: &[(usize, usize)]) -> VectorFst 
         enforce_anchor(fst, s_pos, t_pos);
     }
 }
-```text
+```
 
 ## Common Pitfalls and Solutions
 
@@ -512,7 +512,7 @@ fn checkpoint_alignment(s1: &str, s2: &str, checkpoint_interval: usize) {
     });
     merge_alignments(partial_alignments)
 }
-```text
+```
 
 ### 2. Numerical Precision
 
@@ -522,7 +522,7 @@ fn checkpoint_alignment(s1: &str, s2: &str, checkpoint_interval: usize) {
 ```rust,ignore
 // Use LogWeight instead of TropicalWeight for better precision
 type LogFst = VectorFst<LogWeight>;
-```text
+```
 
 ### 3. Handling Unicode
 
@@ -534,7 +534,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 let graphemes: Vec<&str> = text.graphemes(true).collect();
 // Align graphemes instead of chars
-```text
+```
 
 ## Best Practices
 
@@ -557,7 +557,7 @@ fn get_scoring_scheme(domain: AlignmentDomain) -> ScoringScheme {
         // etc.
     }
 }
-```text
+```
 
 ### 2. Validate Input
 
@@ -580,7 +580,7 @@ fn validate_sequences(s1: &str, s2: &str) -> Result<()> {
     
     Ok(())
 }
-```text
+```
 
 ### 3. Test Edge Cases
 
@@ -605,7 +605,7 @@ mod tests {
         }));
     }
 }
-```text
+```
 
 ## Applications
 
@@ -651,7 +651,7 @@ fn describe_corrections(alignment: &Alignment) -> String {
     
     description.join(", ")
 }
-```text
+```
 
 ### 2. Collaborative Editing
 
@@ -681,7 +681,7 @@ impl CollaborativeDocument {
         MergeResult::Success
     }
 }
-```text
+```
 
 ## Related Examples
 

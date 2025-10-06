@@ -1,6 +1,6 @@
 # Core Concepts
 
-This section provides a mathematically rigorous introduction to Weighted Finite State Transducers (WFSTs) and semirings as implemented in ArcWeight. Building upon the foundational work in finite-state methods {{#cite mohri1997finite}} {{#cite kuich1986semirings}}, we assume familiarity with basic automata theory and focus on formal definitions, implementation details, and practical applications.
+This section provides a formal treatment of Weighted Finite State Transducers (WFSTs) and semirings as implemented in ArcWeight. Following the established theoretical foundations of finite-state methods {{#cite mohri1997finite}} {{#cite kuich1986semirings}}, we present formal definitions, implementation details, and practical considerations for computational linguists and engineers.
 
 ## Table of Contents
 
@@ -10,21 +10,21 @@ This section provides a mathematically rigorous introduction to Weighted Finite 
 
 ## Overview
 
-This documentation provides comprehensive coverage of the theoretical and practical aspects of weighted finite state transducers:
+This documentation covers theoretical foundations and practical implementation aspects of weighted finite state transducers:
 
 ### Theoretical Foundations
-- **Formal Definitions**: Precise mathematical definitions of FSTs, semirings, and rational relations
-- **Closure Properties**: Understanding which operations preserve rationality
-- **Complexity Analysis**: Time and space complexity for all core algorithms
-- **Correctness Proofs**: Mathematical guarantees for algorithmic implementations
+- **Formal Definitions**: Mathematical definitions of FSTs, semirings, and rational relations
+- **Closure Properties**: Operations that preserve rationality
+- **Complexity Analysis**: Time and space complexity of core algorithms
+- **Correctness**: Mathematical guarantees for algorithmic implementations
 
 ### Practical Implementation
-- **Semiring Selection**: Choosing appropriate algebraic structures for specific problems
-- **Optimization Strategies**: Determinization, minimization, and performance tuning
-- **Memory Management**: Efficient representations and lazy evaluation techniques
-- **Symbol Management**: Best practices for large-scale symbol handling
+- **Semiring Selection**: Appropriate algebraic structures for specific problems
+- **Optimization Strategies**: Determinization, minimization, and performance considerations
+- **Memory Management**: Efficient representations and lazy evaluation
+- **Symbol Management**: Practices for large-scale symbol handling
 
-### Real-World Applications
+### Applications
 - **Natural Language Processing**: Machine translation {{#cite kumar2003weighted}}, speech recognition {{#cite mohri2002weighted}}, morphological analysis {{#cite beesley2003finite}}
 - **Computational Biology**: Sequence alignment, motif discovery, phylogenetic analysis
 - **Signal Processing**: Temporal pattern recognition, time-series analysis
@@ -32,16 +32,16 @@ This documentation provides comprehensive coverage of the theoretical and practi
 
 ## See Also
 
-- **[API Reference](../api-reference.md)** - Complete function and type documentation
-- **[Working with FSTs](../working-with-fsts/)** - Core FST manipulation algorithms
-- **[Examples](../examples/README.md)** - Real-world WFST applications
+- **[API Reference](../api-reference.md)** — Function and type documentation
+- **[Working with FSTs](../working-with-fsts/)** — Core FST manipulation algorithms
+- **[Examples](../examples/README.md)** — WFST applications
 
 ## Theoretical Foundations
 
-The mathematical framework of weighted finite-state transducers rests on several key theoretical contributions:
+The mathematical framework of weighted finite-state transducers builds on established theoretical contributions:
 
-- **Rational Relations**: {{#cite elgot1965relations}} established the mathematical foundations of relations defined by finite automata
-- **Semiring Theory**: {{#cite kuich1986semirings}} provided the algebraic framework for weighted computation
-- **WFST Algorithms**: {{#cite mohri2002semiring}} developed the algorithmic toolkit for shortest-distance problems
+- **Rational Relations**: {{#cite elgot1965relations}} established mathematical foundations of relations defined by finite automata
+- **Semiring Theory**: {{#cite kuich1986semirings}} provided algebraic framework for weighted computation
+- **WFST Algorithms**: {{#cite mohri2002semiring}} developed algorithmic toolkit for shortest-distance problems
 - **Practical Implementation**: {{#cite allauzen2007openfst}} demonstrated efficient implementation strategies
-- **Morphological Applications**: {{#cite beesley2003finite}} showed the power of finite-state methods in computational linguistics
+- **Morphological Applications**: {{#cite beesley2003finite}} demonstrated finite-state methods in computational linguistics

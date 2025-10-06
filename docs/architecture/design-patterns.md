@@ -44,7 +44,7 @@ This enables code reuse across different FST implementations and weight types.
 
 ### Iterator Pattern
 
-ArcWeight uses iterators extensively for efficient arc traversal:
+ArcWeight uses iterators for efficient arc traversal:
 
 ```rust,ignore
 // Arc iteration without allocating collections

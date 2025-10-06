@@ -2,9 +2,7 @@
 
 **Analyze and extract FST components**
 
-*Project • Intersect • Difference*
-
-Structural operations let you analyze FSTs, extract their components, and perform set operations. These operations are essential for understanding what your FSTs accept and produce.
+Structural operations let you analyze FSTs, extract their components, and perform set operations. These operations are important for understanding what your FSTs accept and produce.
 
 ## Projection
 
@@ -24,42 +22,42 @@ use arcweight::prelude::*;
 
 fn extract_input_language(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Project onto input labels
-    let input_fsa = project(fst, ProjectType::Input)?;
+    let input_fsa = project_input(fst)?;
     
     // Result accepts same inputs, but output = input
     Ok(input_fsa)
 }
-```text
+```
 
 ### Output Projection
 
 ```rust,ignore
 fn extract_output_language(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Project onto output labels
-    let output_fsa = project(fst, ProjectType::Output)?;
+    let output_fsa = project_output(fst)?;
     
     // Result accepts original outputs as inputs
     Ok(output_fsa)
 }
-```text
+```
 
-### Practical Example: Vocabulary Extraction
+### Example: Vocabulary Extraction
 
 ```rust,ignore
 fn extract_vocabularies(
     translator: &VectorFst<TropicalWeight>
 ) -> Result<(HashSet<String>, HashSet<String>)> {
-    // Get source language vocabulary
-    let source_fsa = project(translator, ProjectType::Input)?;
+    // Get source language vocabulary (helper functions not shown)
+    let source_fsa = project_input(translator)?;
     let source_words = extract_accepted_strings(&source_fsa)?;
     
     // Get target language vocabulary  
-    let target_fsa = project(translator, ProjectType::Output)?;
+    let target_fsa = project_output(translator)?;
     let target_words = extract_accepted_strings(&target_fsa)?;
     
     Ok((source_words, target_words))
 }
-```text
+```
 
 ### Using Projection for Validation
 
@@ -69,7 +67,7 @@ fn validate_translation_coverage(
     required_vocabulary: &VectorFst<TropicalWeight>
 ) -> Result<bool> {
     // Extract what translator can handle
-    let input_language = project(translator, ProjectType::Input)?;
+    let input_language = project_input(translator)?;
     
     // Check if it covers required vocabulary
     let uncovered = difference(required_vocabulary, &input_language)?;
@@ -77,7 +75,7 @@ fn validate_translation_coverage(
     // If difference is empty, full coverage
     Ok(uncovered.num_states() == 0)
 }
-```text
+```
 
 ## Intersection
 
@@ -107,7 +105,7 @@ fn find_common_words(
     
     Ok(common)
 }
-```text
+```
 
 ### Intersection for Constraint Application
 
@@ -130,7 +128,7 @@ fn apply_constraints(
     
     Ok(result)
 }
-```text
+```
 
 ### Real-World Example: Password Validation
 
@@ -155,7 +153,7 @@ impl PasswordValidator {
         Ok(valid.num_states() > 0)
     }
 }
-```text
+```
 
 ## Difference
 
@@ -180,7 +178,7 @@ fn find_unique_words(
     
     Ok(unique)
 }
-```text
+```
 
 ### Difference for Filtering
 
@@ -197,7 +195,7 @@ fn filter_blocklist(
     
     Ok(cleaned)
 }
-```text
+```
 
 ### Real-World Example: Spell Checker Candidates
 
@@ -219,7 +217,7 @@ fn get_correction_candidates(
     // Extract suggestions
     extract_strings(&good_candidates)
 }
-```text
+```
 
 ## Advanced Structural Operations
 
@@ -244,7 +242,7 @@ fn extract_translation_pairs(
     
     Ok(pairs)
 }
-```text
+```
 
 ### Set Operations Pipeline
 
@@ -277,7 +275,7 @@ fn analyze_vocabulary_overlap(
         unique_words,
     })
 }
-```text
+```
 
 ### Language Comparison
 
@@ -305,7 +303,7 @@ fn compare_languages(
         total: count_paths(&union)?,
     })
 }
-```text
+```
 
 ## Practical Applications
 
@@ -339,7 +337,7 @@ fn debug_fst_coverage(
         rejected,
     })
 }
-```text
+```
 
 ### Language Model Analysis
 
@@ -365,7 +363,7 @@ fn analyze_language_model(
         hallucinated_words: extract_strings(&hallucinated)?,
     })
 }
-```text
+```
 
 ## Performance Considerations
 
@@ -394,7 +392,7 @@ fn early_termination_search(
     // Just check if start state has any valid paths
     has_any_path(&intersection)
 }
-```text
+```
 
 ## Common Patterns
 
@@ -419,7 +417,7 @@ fn multi_level_filter(
     
     Ok(result)
 }
-```text
+```
 
 ### Pattern: Incremental Vocabulary Building
 
@@ -444,7 +442,7 @@ impl VocabularyBuilder {
         Ok(())
     }
 }
-```text
+```
 
 ## Best Practices
 
@@ -469,7 +467,7 @@ fn safe_intersection(
     
     Ok(result)
 }
-```text
+```
 
 ### 2. Use Type-Safe Wrappers
 
@@ -483,7 +481,7 @@ fn project_safe(fst: &VectorFst<TropicalWeight>) -> (InputLanguage, OutputLangua
     
     (InputLanguage(input), OutputLanguage(output))
 }
-```text
+```
 
 ## Next Steps
 

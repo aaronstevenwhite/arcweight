@@ -1,18 +1,18 @@
 # Algorithm Architecture
 
-## Algorithm Organization
+## Design Philosophy
 
 **API Reference**: [`algorithms`](https://docs.rs/arcweight/latest/arcweight/algorithms/)
 
-The algorithms module is organized around several key principles:
+The algorithm architecture follows formal principles from automata theory and functional programming:
 
-**Functional Design**: All algorithms are pure functions that take input FSTs and return new FSTs, avoiding mutation of input data.
+**Functional Design**: Algorithms are mathematically pure functions f: FST → FST, ensuring referential transparency and preventing side effects on input data.
 
-**Generic Implementation**: Algorithms work with any FST type implementing the required traits, enabling code reuse across different storage strategies.
+**Generic Implementation**: Type-parameterized algorithms work with any FST implementation satisfying the required trait bounds, enabling code reuse across storage strategies.
 
-**Configuration-Driven**: Complex algorithms accept configuration structs to control behavior without requiring multiple function variants.
+**Configuration-Driven**: Complex algorithms accept configuration structures to parameterize behavior, following the strategy pattern.
 
-**Property-Aware**: Algorithms can optimize based on known FST properties, avoiding unnecessary computation when possible.
+**Property-Aware Optimization**: Algorithms leverage formal FST properties to select optimal computational strategies, reducing complexity when mathematical preconditions are satisfied.
 
 ## Common Patterns
 
@@ -54,7 +54,8 @@ where
 
 ### Core Operations
 
-**Composition** - Fundamental FST operation:
+**Composition** - Fundamental FST operation implementing the mathematical composition T₁ ∘ T₂:
+
 ```rust,ignore
 pub fn compose<W, F1, F2, Filter>(
     fst1: &F1,
@@ -68,7 +69,38 @@ where
     Filter: ComposeFilter<W>,
 ```
 
-**Union** - Combines multiple FSTs:
+**Pseudocode for Composition:**
+```text
+Algorithm: FST_COMPOSE(T₁, T₂)
+Input: FSTs T₁ = (Q₁, Σ, Δ₁, δ₁, λ₁, q₁⁰, F₁), 
+            T₂ = (Q₂, Σ, Δ₂, δ₂, λ₂, q₂⁰, F₂)
+Output: FST T = (Q, Σ, Δ₂, δ, λ, q⁰, F)
+
+1. Initialize result FST T with empty state set Q
+2. Create state mapping: state_map = ∅
+3. Initialize queue with start state pair (q₁⁰, q₂⁰)
+4. Add initial state to T: q⁰ = ADD_STATE(T)
+5. state_map[(q₁⁰, q₂⁰)] = q⁰
+
+6. While queue is not empty:
+   a. (s₁, s₂) = DEQUEUE(queue)
+   b. current_state = state_map[(s₁, s₂)]
+   
+   c. For each arc (i, o₁, w₁, t₁) ∈ δ₁(s₁):
+      d. For each arc (i', o₂, w₂, t₂) ∈ δ₂(s₂):
+         e. If FILTER_MATCH(i, o₁, i', o₂):
+            f. If (t₁, t₂) ∉ state_map:
+               g. new_state = ADD_STATE(T)
+               h. state_map[(t₁, t₂)] = new_state
+               i. ENQUEUE(queue, (t₁, t₂))
+            j. target = state_map[(t₁, t₂)]
+            k. ADD_ARC(T, current_state, (i, o₂, w₁ ⊗ w₂, target))
+
+7. Set final weights: F(state_map[(s₁, s₂)]) = F₁(s₁) ⊗ F₂(s₂)
+8. Return T
+```
+
+**Union** - Combines FSTs implementing T₁ ∪ T₂:
 ```rust,ignore
 pub fn union<W, F1, F2>(fst1: &F1, fst2: &F2) -> Result<VectorFst<W>>
 where
@@ -77,7 +109,7 @@ where
     F2: Fst<W>,
 ```
 
-**Concatenation** - Sequential composition:
+**Concatenation** - Sequential composition T₁ · T₂:
 ```rust,ignore
 pub fn concat<W, F1, F2>(fst1: &F1, fst2: &F2) -> Result<VectorFst<W>>
 where
@@ -88,7 +120,7 @@ where
 
 ### Optimization Operations
 
-**Minimization** - Reduces FST size while preserving semantics:
+**Minimization** - Reduces FST size while preserving language equivalence:
 ```rust,ignore
 pub fn minimize<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
@@ -96,7 +128,29 @@ where
     W: DivisibleSemiring,
 ```
 
-**Determinization** - Makes FST deterministic:
+**Pseudocode for Minimization (Hopcroft's Algorithm):**
+```text
+Algorithm: FST_MINIMIZE(T)
+Input: FST T = (Q, Σ, Δ, δ, λ, q⁰, F)
+Output: Minimal FST T' equivalent to T
+
+1. Initialize partition P = {Q_final, Q_non_final}
+2. Initialize work_list W = {(Q_final, a) | a ∈ Σ}
+
+3. While W is not empty:
+   a. Remove (S, a) from W
+   b. For each state t with arc (t, a, w, s) where s ∈ S:
+      c. Find partition class C containing t
+      d. Split C into C₁ = {states in C with arc to S} and C₂ = remainder
+      e. If |C₁| > 0 and |C₂| > 0:
+         f. Replace C with C₁ and C₂ in partition P
+         g. Add (C₁, b) and (C₂, b) to W for all b ∈ Σ
+
+4. Construct minimal FST T' with states corresponding to partition classes
+5. Return T'
+```
+
+**Determinization** - Converts non-deterministic FST to deterministic FST:
 ```rust,ignore
 pub fn determinize<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
@@ -104,7 +158,39 @@ where
     W: Semiring,
 ```
 
-**Epsilon Removal** - Eliminates epsilon transitions:
+**Pseudocode for Determinization (Subset Construction):**
+```text
+Algorithm: FST_DETERMINIZE(T)
+Input: FST T = (Q, Σ, Δ, δ, λ, q⁰, F)
+Output: Deterministic FST T' equivalent to T
+
+1. Initialize result FST T' with empty state set
+2. Create state mapping: state_map = ∅
+3. Initialize with ε-closure: S₀ = ε-CLOSURE({q⁰})
+4. Add initial state: q'⁰ = ADD_STATE(T')
+5. state_map[S₀] = q'⁰
+
+6. Initialize work_list with S₀
+7. While work_list is not empty:
+   a. Remove state set S from work_list
+   b. current_state = state_map[S]
+   
+   c. For each symbol a ∈ Σ:
+      d. T = ε-CLOSURE(δ(S, a))  // States reachable from S via a
+      e. If T ≠ ∅:
+         f. If T ∉ state_map:
+            g. new_state = ADD_STATE(T')
+            h. state_map[T] = new_state
+            i. Add T to work_list
+         j. target = state_map[T]
+         k. weight = ⊕{w | (s, a, w, t) ∈ δ, s ∈ S, t ∈ T}
+         l. ADD_ARC(T', current_state, (a, a, weight, target))
+
+8. Set final weights: F'(state_map[S]) = ⊕{F(s) | s ∈ S}
+9. Return T'
+```
+
+**Epsilon Removal** - Eliminates ε-transitions:
 ```rust,ignore
 pub fn remove_epsilons<F, W>(fst: &F) -> Result<VectorFst<W>>
 where
@@ -114,7 +200,7 @@ where
 
 ### Path Operations
 
-**Shortest Path** - Finds optimal paths:
+**Shortest Path** - Finds optimal paths using Dijkstra's algorithm:
 ```rust,ignore
 pub fn shortest_path<F, W>(
     fst: &F,
@@ -125,7 +211,35 @@ where
     W: NaturallyOrderedSemiring,
 ```
 
-**Random Generation** - Generates random paths:
+**Pseudocode for Shortest Path (Dijkstra's Algorithm):**
+```text
+Algorithm: FST_SHORTEST_PATH(T, config)
+Input: FST T = (Q, Σ, Δ, δ, λ, q⁰, F), configuration config
+Output: FST containing n-shortest paths
+
+1. Initialize priority queue PQ with (q⁰, 1̄)
+2. Initialize distance array: d[s] = 0̄ for all s ∈ Q
+3. Set d[q⁰] = 1̄
+4. Initialize result FST T' and state mapping
+
+5. While PQ is not empty and |paths found| < config.nshortest:
+   a. (current_state, distance) = EXTRACT_MIN(PQ)
+   b. If distance > d[current_state]: continue
+   
+   c. For each arc (i, o, w, target) ∈ δ(current_state):
+      d. new_distance = distance ⊗ w
+      e. If new_distance ⊕ d[target] ≠ d[target]:
+         f. d[target] = new_distance ⊕ d[target]
+         g. INSERT(PQ, (target, new_distance))
+         h. Add corresponding arc to T'
+   
+   i. If current_state ∈ F:
+      j. Add path to result with weight distance ⊗ F(current_state)
+
+6. Return T'
+```
+
+**Random Generation** - Generates random paths with uniform distribution:
 ```rust,ignore
 pub fn randgen<F, W>(
     fst: &F,
@@ -283,7 +397,7 @@ where
 
 ### Lazy Evaluation
 
-Some algorithms support lazy evaluation for better performance:
+Some algorithms support lazy evaluation:
 
 ```rust,ignore
 pub fn compose_lazy<F1, F2, W>(
@@ -305,7 +419,7 @@ where
 
 ### Memory Efficiency
 
-Algorithms are designed to minimize memory allocations:
+Algorithms minimize memory allocations:
 
 ```rust,ignore
 // Reuse existing state mappings

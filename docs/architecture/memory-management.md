@@ -2,7 +2,7 @@
 
 ## Overview
 
-ArcWeight's memory management strategy leverages Rust's ownership system to provide safe, efficient FST operations without manual memory management. This document describes the key memory patterns and strategies used throughout the library.
+ArcWeight's memory management strategy leverages Rust's ownership system to provide efficient FST operations without manual memory management. This document describes the key memory patterns and strategies used throughout the library.
 
 ## Ownership Patterns
 
@@ -253,4 +253,4 @@ Rust's ownership system provides:
 3. **No data races** - Send/Sync traits
 4. **No buffer overflows** - Bounds checking
 
-These guarantees come with zero runtime cost, making ArcWeight both safe and efficient.
+These guarantees come with zero runtime cost.

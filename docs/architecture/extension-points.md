@@ -136,24 +136,16 @@ impl<'a, W: Semiring> ArcIterator<W> for MyArcIterator<'a, W> {
 }
 ```
 
-## Algorithm Plugins
+## Algorithm Extensions
 
-### Custom Composition Filters
+### Composition Filters
 
-The `ComposeFilter` trait exists in the codebase and allows extending composition behavior:
-
-```rust,ignore
-pub trait ComposeFilter<W: Semiring> {
-    // Filter composition of arc pairs
-    // Implementation details depend on specific filter type
-}
-```
-
-Several built-in filters are provided:
+The composition algorithm supports custom filters through the compose operation. Several built-in filters are provided:
 - `SequenceFilter` - Standard composition filter
 - `EpsilonFilter` - Handles epsilon transitions
 - `NoEpsilonFilter` - Optimized for epsilon-free FSTs
 
+Custom filters can be implemented to modify composition behavior.
 
 ## Custom Compactors
 
@@ -242,16 +234,6 @@ impl SymbolMapper for PhonemeMapper {
 }
 ```
 
-## Potential Future Extensions
-
-The trait-based architecture of ArcWeight makes it well-suited for future extensions such as:
-- Integration with machine learning frameworks
-- Advanced compression strategies
-- Domain-specific optimizations
-- Custom algorithm implementations
-
-These extensions would follow the existing patterns established in the codebase.
-
 ## Extension Guidelines
 
 ### 1. Follow Trait Conventions
@@ -304,4 +286,4 @@ pub struct GeographicWeight {
 }
 ```
 
-This extension system allows ArcWeight to adapt to virtually any finite state transducer application while maintaining performance and correctness guarantees.
+This extension system allows ArcWeight to adapt to various finite state transducer applications while maintaining performance and correctness guarantees.

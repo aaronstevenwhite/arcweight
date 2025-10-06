@@ -1,16 +1,16 @@
 # Algorithms
 
-The algorithmic foundations of weighted finite state transducers represent a sophisticated synthesis of classical automata theory, semiring algebra, and computational optimization. This chapter provides a comprehensive treatment of the core algorithms that enable efficient manipulation of WFSTs, from fundamental rational operations to advanced optimization procedures.
+The algorithmic foundations of weighted finite state transducers combine classical automata theory, semiring algebra, and computational optimization. This chapter presents core algorithms for efficient manipulation of WFSTs, covering fundamental rational operations and optimization procedures.
 
-## Rational Operations: Foundation of Complex Transducers
+## Rational Operations
 
-Rational operations form the cornerstone of finite state transducer algebra, providing the fundamental mechanisms by which complex linguistic and computational systems are constructed from simpler components. These operations—union, concatenation, Kleene closure, and composition—correspond directly to the mathematical operations that define rational relations, establishing both the theoretical foundation and practical toolkit for FST-based applications.
+Rational operations form the foundation of finite state transducer algebra, providing mechanisms for constructing complex systems from simpler components. These operations—union, concatenation, Kleene closure, and composition—correspond to the mathematical operations that define rational relations.
 
 ### Mathematical Foundations
 
-The power of rational operations stems from their closure properties. The class of rational relations is closed under all rational operations, meaning that any combination of rational operations applied to rational relations yields another rational relation. This closure property ensures that complex systems built through composition remain computationally tractable.
+Rational operations preserve closure properties. The class of rational relations is closed under all rational operations, meaning that any combination of rational operations applied to rational relations yields another rational relation. This closure property ensures that complex systems built through composition remain computationally tractable.
 
-**Fundamental Theorem of Rational Operations**: If \\(R_1, R_2 \subseteq \Sigma^* \times \Delta^*\\) are rational relations, then:
+**Closure Properties**: If \\(R_1, R_2 \subseteq \Sigma^* \times \Delta^*\\) are rational relations, then:
 - \\(R_1 \cup R_2\\) (union) is rational
 - \\(R_1 \circ R_2\\) (composition) is rational  
 - \\(R_1 \cdot R_2\\) (concatenation) is rational
@@ -24,7 +24,7 @@ Each rational operation presents unique algorithmic challenges and optimization 
 use arcweight::prelude::*;
 
 fn rational_operations_example() -> Result<(), Box<dyn std::error::Error>> {
-    // Build component transducers
+    // Build component transducers (helper functions not shown)
     let morpheme_analyzer = build_morpheme_analyzer()?;
     let phonological_rules = build_phonological_rules()?;
     let orthographic_rules = build_orthographic_rules()?;
@@ -47,9 +47,9 @@ fn optimize_fst_basic(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
 }
 ```
 
-## Composition: The Central Operation
+## Composition
 
-Composition represents the most fundamental and computationally significant operation in WFST theory. It enables the creation of complex transformations by combining simpler components, providing the mathematical foundation for modular system design.
+Composition is a fundamental operation in WFST theory that creates complex transformations by combining simpler components.
 
 **Mathematical Foundation**: For WFSTs \\(T_1: \Sigma^* \to \Gamma^* \\) and \\(T_2: \Gamma^* \to \Delta^* \\) over semiring \\(\mathcal{K}\\), their composition \\(T_1 \circ T_2: \Sigma^* \to \Delta^* \\) is defined by:
 
@@ -57,12 +57,12 @@ $$ (T_1 \circ T_2)( \langle x, z \rangle ) = \bigoplus_{ y \in \Gamma^* } T_1( \
 
 This definition captures the essential idea that composition considers all possible intermediate strings \\(y\\) and combines their contributions through the semiring operations.
 
-**Algorithmic Implementation**: The composition algorithm employs a sophisticated filter construction that manages the complex interaction between epsilon transitions and regular symbols. The algorithm maintains a cross-product state space where each state encodes:
+**Algorithmic Implementation**: The composition algorithm uses a filter construction that manages the interaction between epsilon transitions and regular symbols. The algorithm maintains a cross-product state space where each state encodes:
 - Current state in the first transducer
 - Current state in the second transducer  
 - Filter state tracking epsilon transition handling
 
-**Filter States and Epsilon Management**: The composition algorithm uses specialized filter states to handle the intricate semantics of epsilon transitions:
+**Filter States and Epsilon Management**: The composition algorithm uses specialized filter states to handle epsilon transitions:
 - **MATCH_LABEL**: Both transducers advance on non-epsilon symbols
 - **MATCH_OUTPUT**: Output of first transducer matches input of second
 - **EPSILON_1**: First transducer processes epsilon, second waits
@@ -97,14 +97,14 @@ fn sophisticated_composition_example() -> Result<(), Box<dyn std::error::Error>>
 - **Epsilon optimization**: Specialized handling reduces effective state space
 - **Early termination**: Algorithms can terminate when specific conditions are met
 
-**Applications in Complex Systems**: Composition enables sophisticated multi-stage processing:
+**Applications**: Composition enables multi-stage processing:
 - **Machine translation pipelines**: Source analysis \\(\to\\) transfer \\(\to\\) target generation
 - **Speech recognition**: Acoustic model \\(\to\\) lexicon \\(\to\\) language model
 - **Information extraction**: Text preprocessing \\(\to\\) entity recognition \\(\to\\) relation extraction
 
-## Union: Combining Alternative Transductions
+## Union
 
-Union operations enable the combination of alternative transductions, creating systems that can handle multiple input variations or provide multiple output options.
+Union operations combine alternative transductions, creating systems that can handle multiple input variations or provide multiple output options.
 
 **Mathematical Definition**: For WFSTs \\(T_1\\) and \\(T_2\\) over the same alphabet, their union \\(T_1 \cup T_2\\) satisfies:
 $$(T_1 \cup T_2)(\langle x, y \rangle) = T_1(\langle x, y \rangle) \oplus T_2(\langle x, y \rangle)$$
@@ -136,9 +136,9 @@ fn union_construction_example() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-**Complexity Analysis**: Union construction runs in \\(O(|Q_1| + |Q_2|)\\) time and space, making it one of the most efficient rational operations. The linear complexity stems from the simple structural combination without cross-product construction.
+**Complexity Analysis**: Union construction runs in \\(O(|Q_1| + |Q_2|)\\) time and space. The linear complexity stems from the simple structural combination without cross-product construction.
 
-## Concatenation: Sequential Transduction
+## Concatenation
 
 Concatenation creates sequential combinations of transductions, enabling the modeling of temporal or structural ordering constraints.
 
@@ -168,9 +168,9 @@ fn concatenation_linguistics_example() -> Result<(), Box<dyn std::error::Error>>
 }
 ```
 
-## Kleene Closure: Iterative Transduction
+## Kleene Closure
 
-The Kleene closure operation enables the modeling of repetitive processes and unbounded iteration, crucial for many linguistic and computational phenomena.
+The Kleene closure operation enables the modeling of repetitive processes and unbounded iteration.
 
 **Mathematical Definition**: For a transducer \\(T\\), its Kleene closure \\(T^* \\) is defined as:
 $$T^* = \varepsilon \cup T \cup T^2 \cup T^3 \cup \ldots = \bigcup_{i=0}^{\infty} T^i$$
@@ -196,13 +196,13 @@ fn kleene_closure_example() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Optimization Algorithms: Enhancing Computational Efficiency
+## Optimization Algorithms
 
-### Determinization: Eliminating Non-determinism
+### Determinization
 
 Determinization transforms non-deterministic transducers into equivalent deterministic ones, enabling efficient linear-time processing at the cost of potentially exponential state space expansion.
 
-**Theoretical Foundation**: The determinization algorithm employs subset construction generalized to weighted transducers. Each state in the deterministic result represents a set of weighted states from the original transducer.
+**Theoretical Foundation**: The determinization algorithm uses subset construction generalized to weighted transducers. Each state in the deterministic result represents a set of weighted states from the original transducer.
 
 **Weight Management**: In weighted determinization, states carry weight distributions rather than simple state sets. The algorithm must carefully manage weight redistribution to maintain equivalence while ensuring deterministic behavior.
 
@@ -233,18 +233,18 @@ fn determinization_pipeline() -> Result<(), Box<dyn std::error::Error>> {
 
 **Semiring Requirements**: Determinization requires weakly left-divisible semirings to ensure that weight redistribution preserves the original transducer's semantics.
 
-### Minimization: Canonical Form Construction
+### Minimization
 
 Minimization reduces transducers to their canonical minimal form, eliminating redundant states while preserving functional behavior.
 
-**Algorithmic Approach**: The minimization algorithm typically employs Brzozowski's method:
+**Algorithmic Approach**: The minimization algorithm uses Brzozowski's method:
 1. **Reversal**: Compute the reverse of the transducer
 2. **Determinization**: Apply determinization to the reversed transducer
 3. **Reversal**: Reverse the result again
 4. **Determinization**: Apply final determinization
 5. **Connection**: Remove unreachable states
 
-**Mathematical Foundation**: This sequence of operations is guaranteed to produce the minimal deterministic transducer equivalent to the original, leveraging the duality between reachability and coreachability.
+**Mathematical Foundation**: This sequence of operations produces the minimal deterministic transducer equivalent to the original, using the duality between reachability and coreachability.
 
 ```rust,ignore
 fn minimization_optimization() -> Result<(), Box<dyn std::error::Error>> {
@@ -264,9 +264,9 @@ fn minimization_optimization() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-**Complexity Analysis**: Each step of Brzozowski's algorithm can cause exponential blowup, leading to potential double exponential overall complexity. However, the final result is guaranteed to be minimal.
+**Complexity Analysis**: Each step of Brzozowski's algorithm can cause exponential blowup, leading to potential double exponential overall complexity. The final result is minimal.
 
-### Connection: Reachability Optimization
+### Connection
 
 The connection operation removes states that are either unreachable from the initial state or cannot reach any final state, ensuring that all remaining states contribute to valid transductions.
 
@@ -275,7 +275,7 @@ The connection operation removes states that are either unreachable from the ini
 2. **Backward Reachability**: Reverse depth-first search from final states identifies coreachable states
 3. **State Removal**: Eliminate states that are not both reachable and coreachable
 
-**Complexity**: Connection runs in \\(O(V + E)\\) time using standard graph traversal algorithms, making it one of the most efficient optimization operations.
+**Complexity**: Connection runs in \\(O(V + E)\\) time using standard graph traversal algorithms.
 
 ```rust,ignore
 fn connection_cleanup() -> Result<(), Box<dyn std::error::Error>> {
@@ -291,13 +291,13 @@ fn connection_cleanup() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Path Algorithms: Optimization and Search
+## Path Algorithms
 
-### Shortest Path: Optimal Path Discovery
+### Shortest Path
 
 Shortest path algorithms find optimal paths through weighted transducers, enabling applications in optimization, decoding, and best-first search.
 
-**Generalized Dijkstra's Algorithm**: The shortest path algorithm generalizes Dijkstra's classical algorithm to semirings, using semiring operations instead of min and plus:
+**Algorithm**: The shortest path algorithm generalizes Dijkstra's algorithm to semirings, using semiring operations instead of min and plus:
 
 **Algorithm Outline**:
 1. **Initialize**: Set distance to initial state as \\(\mathbf{1}\\), all others as \\(\mathbf{0}\\)

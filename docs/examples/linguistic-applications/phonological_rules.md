@@ -88,9 +88,12 @@ Languages tend to avoid difficult consonant sequences, and cluster simplificatio
 
 This process is incredibly common in casual English where "exactly" → \[ɪˈzækli\] (dropping the \[t\]), in AAVE where "desk" → \[dɛs\] (dropping the \[k\]), and historically where Latin "noctem" → Spanish "noche" (cluster simplified).
 
-**Rule Formalization:** `/kt/ → /t/` (delete /k/ before /t/)
+**Rule Formalization:**
+```text
+k → ∅ / __t
+```
 
-This models a common pattern where the first consonant in a difficult cluster gets deleted. The FST elegantly captures this by looking ahead to see if a /t/ follows a /k/.
+This rule deletes /k/ in the environment before /t/, representing a common cluster simplification pattern.
 
 **Implementation:**
 ```rust,ignore
@@ -151,15 +154,21 @@ program → pirogirám (clusters broken)
 strong  → sitirong (clusters broken)
 ```
 
-### 4. Final Devoicing: The German Phenomenon
+### 4. Final Devoicing
 
-Final devoicing is a classic example of positional neutralization—a contrast that exists in most positions is eliminated in one specific environment. In German, the distinction between voiced and voiceless obstruents (stops and fricatives) is neutralized word-finally.
+Final devoicing represents positional neutralization wherein the voicing contrast in obstruents is suspended word-finally. This process is widely attested in Germanic languages.
 
-This creates interesting alternations where "Hund" \[hunt\] 'dog' contrasts with "Hunde" \[ˈhʊndə\] 'dogs', "Tag" \[taːk\] 'day' with "Tage" \[ˈtaːgə\] 'days', and "lieb" \[liːp\] 'dear' with "liebe" \[ˈliːbə\] 'dear (inflected)'.
+German alternations:
+- "Hund" \[hunt\] 'dog' ~ "Hunde" \[ˈhʊndə\] 'dogs'
+- "Tag" \[taːk\] 'day' ~ "Tage" \[ˈtaːgə\] 'days'
+- "lieb" \[liːp\] 'dear' ~ "liebe" \[ˈliːbə\] 'dear.INFL'
 
-**Rule Formalization:** `[+voiced] → [-voiced] / _#` (voiced obstruents become voiceless word-finally)
+**Rule Formalization:**
+```text
+[+voice, -sonorant] → [-voice] / __#
+```
 
-The rule applies to all voiced obstruents (b→p, d→t, g→k, v→f, z→s) when they occur at the end of a word. This is why German spelling can be tricky—the spelling preserves the underlying voiced consonant even though it's pronounced voiceless.
+This rule devoices all obstruents ([-sonorant]) in word-final position. The process affects: /b/→[p], /d/→[t], /g/→[k], /v/→[f], /z/→[s]. German orthography maintains underlying voicing, creating surface-underlying mismatches.
 
 **Implementation:**
 ```rust,ignore
@@ -187,15 +196,19 @@ lieb → liep  (final /b/ devoiced)
 
 ## FST Implementation
 
-### The Magic of Rule Ordering
+### Rule Ordering and Interaction
 
-One of the most important discoveries in phonology is that rules must apply in a specific order. This isn't just a technical detail—it reveals something fundamental about how our minds process language. FST composition naturally models this through sequential application.
+Phonological theory recognizes that rules apply in ordered sequences, producing different outputs based on ordering relationships. Finite state transducer composition models this through cascaded application.
 
-When rules interact, we see several possible relationships. **Feeding** occurs when Rule A creates the environment for Rule B. **Bleeding** happens when Rule A destroys the environment for Rule B. **Opacity** means the surface form doesn't transparently show all rules. **Transparency** means each rule's effect is clearly visible.
+Rule interaction types:
+- **Feeding**: Rule A creates the structural description for Rule B
+- **Bleeding**: Rule A removes the structural description for Rule B
+- **Counterfeeding**: Potential feeding relationship blocked by ordering
+- **Counterbleeding**: Potential bleeding relationship blocked by ordering
 
 ### Sequential Rule Application
 
-FST composition naturally models these interactions. Different ordering produces different results, just like following a recipe in different orders can produce different dishes:
+Transducer composition implements ordered rule application:
 
 ```rust,ignore
 fn apply_phonological_rules(
@@ -210,14 +223,11 @@ fn apply_phonological_rules(
     }
     
     extract_output_string(&current_fst)
-}
 ```
 
-### Order Effects: A Linguistic Puzzle
+### Ordering Effects
 
-Rule ordering effects have fascinated linguists since the 1960s. The same rules applied in different orders can produce completely different outputs—a phenomenon that tells us phonology isn't just a simultaneous constraint system but a derivational process.
-
-Let's trace through a concrete example to see how this works:
+Rule ordering produces distinct derivations, supporting serial models of phonology over parallel constraint-based approaches. Consider the following derivation:
 
 **Input:** `aktE` (a hypothetical word with a cluster and a harmony-triggering vowel)
 
@@ -226,7 +236,7 @@ Let's trace through a concrete example to see how this works:
 aktE → (harmony looks at 'a', sees back vowel) → akta
      → (cluster simplification deletes 'k') → ata
 Final output: ata
-```
+```text
 
 **Order 2: Cluster Simplification First, Then Harmony**  
 ```text
@@ -235,9 +245,9 @@ aktE → (cluster simplification deletes 'k') → atE
 Final output: ata (same result!)
 ```
 
-In this case, both orders give the same result. But with other rules, different orders can produce different outputs. This is crucial for modeling real languages where historical rule reordering has produced modern irregularities.
+This example demonstrates convergent derivations. However, other rule combinations yield order-dependent outputs, accounting for synchronic irregularities arising from diachronic rule reordering.
 
-## Running the Example
+## Execution
 
 ```bash
 cargo run --example phonological_rules
@@ -274,9 +284,9 @@ Rule: Voiced obstruents become voiceless word-finally
 
 ## Advanced Features
 
-### Rule Composition Chain
+### Rule Composition
 
-Complex phonological systems can be modeled by composing multiple FSTs:
+Multiple phonological rules are modeled through transducer composition:
 
 ```rust,ignore
 let complex_word = "sportE";
@@ -290,9 +300,9 @@ let result = apply_phonological_rules(complex_word, all_rules)?;
 // Result: "sipórte" → "sipórte" → "sipórt"
 ```
 
-### Context-Sensitive Rules
+### Context-Sensitive Application
 
-The FST framework naturally handles contextual restrictions:
+Finite state transducers encode phonological environments:
 
 ```rust,ignore
 // Rule: k → ∅ / _t (only before /t/)
@@ -308,9 +318,9 @@ for vowel in "aeiou".chars() {
 }
 ```
 
-### Weighted Rules
+### Weighted Transducers
 
-Different rules can have different costs, modeling gradient acceptability:
+Variable rule application is modeled through weight assignment:
 
 ```rust,ignore
 // Preferred rule (lower cost)
@@ -328,9 +338,9 @@ fst.add_arc(state1, Arc::new(
 ));
 ```
 
-### FST Construction Details
+### Transducer Construction
 
-Each phonological rule is implemented as a separate FST:
+Phonological rules are implemented as individual transducers:
 
 ```rust,ignore
 fn build_rule_fst(rule_type: RuleType) -> VectorFst<TropicalWeight> {
@@ -343,9 +353,9 @@ fn build_rule_fst(rule_type: RuleType) -> VectorFst<TropicalWeight> {
 }
 ```
 
-### Output Extraction
+### Path Extraction
 
-Results are extracted by traversing successful FST paths:
+Output forms are recovered through path traversal:
 
 ```rust,ignore
 fn extract_output_string(fst: &VectorFst<TropicalWeight>) -> Option<String> {
@@ -374,21 +384,21 @@ fn extract_output_string(fst: &VectorFst<TropicalWeight>) -> Option<String> {
 
 ## Applications
 
-Phonological rules aren't just theoretical constructs—they're essential for many practical applications. Understanding how sounds change in context improves technology and helps us understand human language processing.
+Phonological rule systems have both theoretical and practical applications in computational linguistics and speech technology.
 
-### Speech Recognition: Handling Natural Variation
+### Speech Recognition
 
-Speech recognition systems must handle the fact that people don't pronounce words the same way every time. Phonological rules help model this systematic variation:
+Phonological variation modeling improves automatic speech recognition:
 
 ```text
 Lexical: /ˈæktər/
 Surface: \[ˈætər\] (with cluster simplification)
 ASR: Must handle both forms
-```
+```text
 
-### Text-to-Speech
+### Text-to-Speech Synthesis
 
-Generate appropriate pronunciations:
+Phonological rules generate contextually appropriate surface forms:
 
 ```text
 Orthography: "actor"
@@ -397,9 +407,9 @@ Surface: \[ˈætər\] (apply phonological rules)
 Speech: Generate audio for \[ˈætər\]
 ```
 
-### Historical Linguistics
+### Historical Sound Change
 
-Model sound changes over time:
+Diachronic phonological processes are modeled as rule sequences:
 
 ```text
 Proto-Germanic: *hund-
@@ -409,7 +419,7 @@ Modern German: Hund (final devoicing still active)
 
 ### Language Documentation
 
-Formalize phonological patterns in endangered languages:
+Formal specification of phonological systems:
 
 ```text
 Language X:
@@ -418,40 +428,23 @@ Cluster constraints: No more than 2 consonants
 Final neutralization: No voiced obstruents word-finally
 ```
 
-### Enhanced Rule Types
+### Additional Rule Types
 
-**Metathesis Rules:**
-```text
-/asks/ → /æsks/ (consonant reordering)
-```
+**Metathesis**: Segment reordering (e.g., /ask/ → [æks])
 
-**Vowel Shifts:**
-```text
-/i/ → /aɪ/ (Great Vowel Shift patterns)
-```
+**Chain Shifts**: Systematic vowel movements (e.g., Great Vowel Shift)
 
-**Tonal Rules:**
-```text
-H-L → H-∅ (tone sandhi processes)
-```
+**Tone Sandhi**: Tonal alternations in context
 
-### Prosodic Phonology
+### Prosodic Phenomena
 
-**Stress Rules:**
-```text
-Default stress → penultimate syllable
-Stress shift → avoid stress clash
-```
+**Stress Assignment**: Metrical structure and stress placement algorithms
 
-**Syllable Structure:**
-```text
-Onset maximization: /æt.læs/ → /æ.tlæs/
-Coda constraints: No complex codas
-```
+**Syllabification**: Onset maximization and coda constraints
 
-### Optimality Theory
+### Constraint-Based Approaches
 
-Model constraint-based phonology:
+Optimality Theory implementation via weighted constraints:
 
 ```rust,ignore
 struct OTConstraint {
@@ -469,29 +462,44 @@ fn optimality_theory_fst(
 
 ## Related Examples
 
-This phonological rules example connects with **[Morphological Analyzer](morphological_analyzer.md)** for morphophonological alternations, **[Pronunciation Lexicon](../practical-applications/pronunciation_lexicon.md)** for phonetic representations, **[Transliteration](../practical-applications/transliteration.md)** for cross-linguistic sound correspondences, and **[Edit Distance](../text-processing/edit_distance.md)** for phonological similarity metrics.
+- **[Morphological Analyzer](morphological_analyzer.md)**: Morphophonological alternations
+- **[Pronunciation Lexicon](../practical-applications/pronunciation_lexicon.md)**: Phonetic representation systems
+- **[Transliteration](../practical-applications/transliteration.md)**: Cross-linguistic sound mappings
+- **[Edit Distance](../text-processing/edit_distance.md)**: Phonological similarity computation
 
 ## Performance Considerations
 
-### Performance Optimization
+### Optimization Strategies
 
-Performance optimization includes **State Minimization** to reduce FST size, **Determinization** to ensure unique outputs, **Composition Caching** to reuse composed FSTs, and **Lazy Evaluation** to compute outputs on demand.
+- **Minimization**: Reduce transducer state count
+- **Determinization**: Ensure unique path outputs
+- **Composition Caching**: Memoize rule combinations
+- **Lazy Evaluation**: On-demand computation
 
-### Memory Management
+### Scalability Considerations
 
-Memory management strategies include **Shared Arcs** to reuse common transitions, **Sparse Representation** to store only non-zero weights, **Reference Counting** to manage FST lifecycles, and **Garbage Collection** to clean up unused states.
-
-### Scalability
-
-Scalability considerations include **Parallel Composition** to distribute FST operations, **Streaming Processing** to handle large inputs, **Incremental Updates** to modify rules dynamically, and **Cloud Deployment** to scale across servers.
+- Parallel composition for large rule sets
+- Streaming architecture for continuous processing
+- Incremental rule updates
+- Distributed deployment options
 
 ## References
 
-### Foundational Work
-Foundational works include Johnson, C. D. (1972) "Formal aspects of phonological description", Koskenniemi, K. (1983) "Two-level morphology: A general computational model for word-form recognition and production", and Kaplan, R. M., & Kay, M. (1994) "Regular models of phonological rule systems" Computational Linguistics, 20(3):331-378.
+### Theoretical Foundations
 
-### Modern Applications  
-Modern applications are described in Mohri, M. (1997) "Finite-state transducers in language and speech processing", Beesley, K.R. & Karttunen, L. (2003) "Finite State Morphology" (CSLI Publications), and Roark, B., & Sproat, R. (2007) "Computational approaches to morphology and syntax".
+- Johnson, C. D. (1972). Formal aspects of phonological description
+- {{#cite koskenniemi1983two}}
+- {{#cite kaplan1994regular}}
+
+### Computational Implementations
+
+- {{#cite mohri1997finite}}
+- {{#cite beesley2003finite}}
+- Roark, B., & Sproat, R. (2007). Computational approaches to morphology and syntax
 
 ### Software Tools
-Relevant software tools include **XFST** (Xerox Finite State Tool), **HFST** (Helsinki Finite State Technology), **Foma** (Open-source finite state compiler), and **Phonological CorpusTools** (Corpus-based phonological analysis).
+
+- XFST: Xerox Finite State Tools
+- HFST: Helsinki Finite State Technology
+- Foma: Open-source finite state compiler
+- Phonological CorpusTools: Quantitative phonological analysis

@@ -1,12 +1,12 @@
 # Semiring Theory
 
-Semirings provide the mathematical foundation that transforms finite state transducers from simple string processors into powerful computational frameworks capable of optimization, probabilistic inference, and multi-criteria decision making. This chapter presents a comprehensive treatment of semiring theory as it applies to weighted finite state transducers, establishing both the mathematical foundations and practical implementation considerations.
+Semirings provide the mathematical foundation that transforms finite state transducers from simple string processors into computational frameworks capable of optimization, probabilistic inference, and multi-criteria decision making. This chapter presents semiring theory as it applies to weighted finite state transducers, establishing mathematical foundations and practical implementation considerations.
 
 ## Mathematical Foundations of Semirings
 
 ### Algebraic Structure and Axioms
 
-The concept of a semiring generalizes familiar algebraic structures like fields and rings by relaxing certain requirements while maintaining the essential properties needed for computational applications.
+The concept of a semiring generalizes familiar algebraic structures like fields and rings by relaxing certain requirements while maintaining essential properties needed for computational applications.
 
 **Definition 2.1**: A **semiring** is an algebraic structure \\(\mathcal{K} = \langle S, \oplus, \otimes, \mathbf{0}, \mathbf{1} \rangle\\) consisting of:
 - A set \\(S\\) of elements (weights)
@@ -33,7 +33,7 @@ The concept of a semiring generalizes familiar algebraic structures like fields 
 4. **Annihilation**: The additive identity annihilates under multiplication:
    - \\(a \otimes \mathbf{0} = \mathbf{0} \otimes a = \mathbf{0}\\)
 
-These axioms ensure that semiring operations correspond naturally to the combination of weights along paths in weighted automata. The additive operation \\(\oplus\\) combines alternative paths, while the multiplicative operation \\(\otimes\\) combines sequential path segments.
+These axioms ensure that semiring operations correspond to the combination of weights along paths in weighted automata. The additive operation \\(\oplus\\) combines alternative paths, while the multiplicative operation \\(\otimes\\) combines sequential path segments.
 
 ### Specialized Properties for Optimization
 
@@ -41,12 +41,12 @@ Many applications require additional structural properties that enable efficient
 
 **Definition 2.2**: A semiring \\(\mathcal{K}\\) is **idempotent** if \\(\forall a \in S: a \oplus a = a\\).
 
-Idempotency ensures that combining identical alternatives produces no change, which is crucial for optimization problems where we seek the best among alternatives rather than accumulating them.
+Idempotency ensures that combining identical alternatives produces no change, which is important for optimization problems where we seek the best among alternatives rather than accumulating them.
 
 **Definition 2.3**: A semiring \\(\mathcal{K}\\) satisfies the **path property** (is **selective**) if:
 $$\forall a, b \in S: a \oplus b \in \{a, b\}$$
 
-The path property ensures that the addition operation selects one of its operands rather than combining them, which is essential for shortest-path and optimization algorithms.
+The path property ensures that the addition operation selects one of its operands rather than combining them, which is important for shortest-path and optimization algorithms.
 
 **Definition 2.4**: A semiring \\(\mathcal{K}\\) is \\(k\\)**-closed** if for any element \\(a \in S\\), the infinite series:
 $$a^* = \mathbf{1} \oplus a \oplus a^2 \oplus a^3 \oplus \cdots = \bigoplus_{i=0}^{\infty} a^i$$
@@ -63,9 +63,9 @@ Natural ordering enables shortest-path algorithms and provides a framework for u
 
 ## Fundamental Semirings for Computation
 
-### The Tropical Semiring: Foundation for Optimization
+### The Tropical Semiring
 
-The tropical semiring represents perhaps the most important semiring for practical applications, providing the mathematical foundation for shortest-path algorithms, edit distance computation, and optimization problems.
+The tropical semiring represents an important semiring for practical applications, providing the mathematical foundation for shortest-path algorithms, edit distance computation, and optimization problems.
 
 **Definition 2.6**: The **tropical semiring** (also known as the min-plus semiring) is defined as:
 $$\mathcal{T} = \langle \mathbb{R}_{+} \cup \{+\infty\}, \min, +, +\infty, 0 \rangle$$
@@ -115,7 +115,7 @@ fn tropical_semiring_example() {
 - Viterbi decoding and finding most likely sequences in HMMs
 - Any optimization problem seeking minimum cost solutions
 
-### The Probability Semiring: Foundations for Stochastic Modeling
+### The Probability Semiring
 
 The probability semiring provides the mathematical foundation for probabilistic modeling in applications where events are independent and path probabilities should be combined through standard probability theory.
 
@@ -146,14 +146,14 @@ fn probability_semiring_example() {
 }
 ```
 
-**Applications**: Essential for probabilistic parsing, speech recognition, machine translation confidence, and Bayesian inference.
+**Applications**: Used for probabilistic parsing, speech recognition, machine translation confidence, and Bayesian inference.
 
 **Limitations**: 
 - Addition can exceed 1, violating probability axioms
 - Small probabilities can cause numerical underflow
 - Non-idempotent: \\(p + p \neq p\\) in general
 
-### The Log Semiring: Numerically Stable Probability Computation
+### The Log Semiring
 
 The log semiring addresses the numerical stability issues inherent in the probability semiring by working in the logarithmic domain, avoiding underflow while maintaining equivalent probabilistic semantics.
 
@@ -189,9 +189,9 @@ fn log_semiring_example() {
 }
 ```
 
-**Use Cases**: Large-vocabulary speech recognition, machine translation with large models, avoiding numerical underflow, and high-precision probability computation.
+**Use Cases**: Large-vocabulary speech recognition, machine translation with large models, numerical underflow avoidance, and high-precision probability computation.
 
-### The Boolean Semiring: Foundation for Recognition
+### The Boolean Semiring
 
 The Boolean semiring provides the simplest non-trivial semiring structure, corresponding to unweighted finite state automata and basic recognition problems.
 
@@ -228,7 +228,7 @@ fn boolean_semiring_example() {
 
 **Applications**: Regular expression matching, reachability analysis, Boolean satisfiability, set membership testing.
 
-### The MinMax Semirings: Bottleneck and Capacity Optimization
+### The MinMax Semirings
 
 The MinMax family of semirings provides mathematical frameworks for optimization problems involving bottlenecks, capacity constraints, and reliability analysis.
 
@@ -257,7 +257,7 @@ fn minmax_semiring_example() {
 
 **Applications**: Network flow optimization, resource allocation, reliability analysis, quality assurance.
 
-### The Product Semiring: Multi-Objective Optimization
+### The Product Semiring
 
 The Product semiring enables simultaneous computation over multiple independent semiring structures, providing the foundation for multi-objective optimization and composite metric tracking.
 
@@ -295,9 +295,9 @@ fn product_semiring_example() {
 
 **Applications**: Multi-criteria decision making, resource allocation, quality vs. performance trade-offs, model combination.
 
-### The String Semiring: Sequence Analysis and Pattern Tracking
+### The String Semiring
 
-The String semiring provides a framework for string operations where addition computes longest common prefixes and multiplication performs concatenation, enabling sophisticated pattern analysis and sequence processing.
+The String semiring provides a framework for string operations where addition computes longest common prefixes and multiplication performs concatenation, enabling pattern analysis and sequence processing.
 
 **Definition 2.13**: The **String semiring** over alphabet \\(\Sigma\\) is defined as:
 $$\mathcal{S} = \langle \Sigma^* \cup \{\perp\}, \text{lcp}, \cdot, \perp, \varepsilon \rangle$$
@@ -309,7 +309,7 @@ where:
 - **Additive identity**: \\(\mathbf{0} = \perp\\) (impossible/rejected string)
 - **Multiplicative identity**: \\(\mathbf{1} = \varepsilon\\) (empty string)
 
-**Key Properties**: 
+**Properties**: 
 - **Non-commutative**: String concatenation is order-dependent
 - **Idempotent addition**: \\(\text{lcp}(s, s) = s\\) for any string \\(s\\)
 - **Path tracking**: Maintains actual sequences traversed through FSTs

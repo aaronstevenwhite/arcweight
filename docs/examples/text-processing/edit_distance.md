@@ -10,7 +10,7 @@ cargo run --example edit_distance
 
 # Explore the source code
 cat examples/edit_distance.rs
-```text
+```
 
 ## What You'll Learn
 
@@ -58,7 +58,7 @@ d(i,j) = min {
     d(i,j-1) + insertion_cost,     // Insert into s₁ 
     d(i-1,j-1) + subst_cost        // Substitute in s₁
 }
-```text
+```
 
 **Base Cases:**
 - `d(0,j) = j × insertion_cost` (insert j characters)
@@ -66,9 +66,9 @@ d(i,j) = min {
 
 ## Implementation
 
-### Key Insight
+### FST Encoding
 
-Traditional implementations use a 2D dynamic programming table, while the FST approach offers several advantages. The algorithm creates a **lattice FST** that encodes all possible transformations.
+The traditional dynamic programming algorithm employs a two-dimensional table. The finite state transducer approach encodes this computation as a lattice structure.
 
 | Approach | Advantages | Use Cases |
 |----------|------------|-----------|
@@ -83,7 +83,7 @@ Each state `(i,d)` represents:
 - **i**: Characters processed from target string
 - **d**: Edit operations used so far
 
-This encoding allows tracking progress through the transformation process.
+This representation tracks algorithmic progress through both strings.
 
 #### Arc Structure and Meaning
 
@@ -94,25 +94,16 @@ This encoding allows tracking progress through the transformation process.
 | **Weight** | Cost of this operation | `1.0`, `0.5`, `2.0` |
 | **Destination** | Next state after operation | `state_42` |
 
-### FST Advantages
+### Transducer Properties
 
-**Reusability**  
-Build once for target, use with multiple source strings
+- **Reusability**: Single transducer serves multiple source strings
+- **Composability**: Integration with other transducers via composition
+- **Path Preservation**: Complete transformation sequences retained
+- **Semiring Flexibility**: Support for various weight algebras
 
-**Composability**  
-Combine with other FSTs for complex operations
+## Implementation Details
 
-**Path Preservation**  
-Maintains transformation sequences, not just distances
-
-**Flexible Semirings**  
-Support probabilistic or tropical computations
-
-## Code Walkthrough
-
-Let's explore each component and design decision in detail.
-
-### Core Function: Building the Edit Distance FST
+### Transducer Construction
 
 ```rust,ignore
 fn build_edit_distance_fst(
@@ -127,13 +118,11 @@ fn build_edit_distance_fst(
     let n = target_chars.len();
 ```text
 
-> **Function Purpose**: Creates an FST that can compute edit distance from any source string to the specified target string.
+This function constructs a transducer computing edit distance to a fixed target string.
 
 ### State Space Design
 
-**Key Insight: 2D Lattice Organization**
-
-Organize states in a systematic grid structure that mirrors dynamic programming tables.
+The state space forms a two-dimensional lattice corresponding to the dynamic programming table:
 
 ```rust,ignore
 // Create lattice: states[i][d] = state after matching i chars with d edits
@@ -143,54 +132,31 @@ for state_row in states.iter_mut() {
         state_row.push(fst.add_state());
     }
 }
-```text
+```
 
-**Rows (i = 0 to n)**  
-Position in target string
-- Row 0: Start of target
-- Row n: End of target
+- **Rows (i ∈ [0, n])**: Position in target string
+- **Columns (d ∈ [0, k])**: Number of edit operations applied
 
-**Columns (d = 0 to k)**  
-Number of edits used
-- Column 0: No edits
-- Column k: Maximum edits
-
-### Setting Start and Final States
+### Initial and Final States
 
 ```rust,ignore
-fst.set_start(states[0][0]);  // Start: 0 chars matched, 0 edits
+fst.set_start(states[0][0]);
 
-// Final states: reached end of target with ≤ k edits
+// Mark states at target end as final
 for d in 0..=k {
     fst.set_final(states[n][d], TropicalWeight::one());
 }
-```text
+```
 
-**Start State Logic**  
-Begin at position `(0,0)`
-- 0 characters processed
-- 0 edit operations used
-- Top-left corner of our grid
+The start state represents position (0,0) in the lattice. Final states occur at row n with any edit count d ≤ k, representing successful transformation of the entire target string.
 
-**Final States Logic**  
-Any state at row `n`
-- All target characters processed
-- Any edit count ≤ k is valid
-- Enables finding various solutions
+## Transition Types
 
-> **Weight Insight**: `TropicalWeight::one()` (value 0.0) on final states means no additional cost for reaching the end - the path weight alone determines the total cost.
+Edit operations are encoded as transducer arcs with specific input/output label patterns:
 
-## Three Types of Transitions
+### 1. Match Operation
 
-**Edit Operations as FST Arcs**
-
-Each edit operation translates to a specific FST arc pattern with distinct input/output labels and state transitions.
-
-### 1. Match Operation (No Cost)
-
-**Perfect Character Match**
-
-When characters match, advance in both strings without incrementing the edit count.
+Character matches advance both string positions without cost:
 
 ```rust,ignore
 // Advance both strings when characters match
@@ -203,7 +169,7 @@ fst.add_arc(
         states[i + 1][d],        // Next position, same edit count
     ),
 );
-```text
+```
 
 | Aspect | Value | Meaning |
 |--------|-------|---------|
@@ -214,9 +180,7 @@ fst.add_arc(
 
 ### 2. Deletion Operation
 
-**Skip Target Character**
-
-Deletion means we skip a character in the target string without consuming input.
+Deletion transitions consume no input while outputting target characters:
 
 ```rust,ignore
 // Skip character in target (epsilon input)
@@ -229,7 +193,7 @@ fst.add_arc(
         states[i + 1][d + 1],           // Advance target, increment edits
     ),
 );
-```text
+```
 
 | Aspect | Value | Meaning |
 |--------|-------|---------|
@@ -238,13 +202,9 @@ fst.add_arc(
 | **Weight** | `deletion_cost` | Cost of this deletion operation |
 | **State Transition** | `(i,d) → (i+1,d+1)` | Advance target, increment edit count |
 
-**Semantic Interpretation**: "Produce this target character without consuming any input"
+This models removing a character from the source string.
 
 ### 3. Insertion and Substitution Operations
-
-**Source Character Operations**
-
-These operations handle characters from the source string that need processing.
 
 **Insertion Operation**
 
@@ -259,9 +219,7 @@ fst.add_arc(
         states[i][d + 1],               // Same target position, increment edits
     ),
 );
-```text
-
-**Logic**: Consume source character, produce nothing, stay at same target position.
+```
 
 **Substitution Operation**
 
@@ -278,20 +236,17 @@ if c != target_chars[i] {
         ),
     );
 }
-```text
+```
 
-**Logic**: Transform one character into another, advance both positions.
 
 | Operation | Input | Output | State Transition | Purpose |
 |-----------|-------|--------|------------------|---------|
 | **Insertion** | `c` | `ε` | `(i,d) → (i,d+1)` | Handle extra source characters |
 | **Substitution** | `c` | `target[i]` | `(i,d) → (i+1,d+1)` | Handle mismatched characters |
 
-## FST Implementation
+## Transducer Composition
 
-**The Power of FST Composition**
-
-Real power emerges when combining simple FSTs to solve complex problems.
+The edit distance computation employs transducer composition:
 
 ```rust,ignore
 fn compute_edit_distance(source: &str, target: &str, ...) -> Result<f32> {
@@ -310,105 +265,69 @@ fn compute_edit_distance(source: &str, target: &str, ...) -> Result<f32> {
     // 5. Extract minimum cost
     // ... traverse shortest path to find final cost ...
 }
-```text
+```
 
-### Step-by-Step Composition Process
+### Composition Steps
 
-**1. Build Edit Distance Transducer**  
-Create the lattice FST that encodes all possible ways to transform any string into the target.  
-**Benefit**: Reusable for multiple source strings!
-
-**2. Create Source String Acceptor**  
-Build a simple linear FST that accepts only the source string.  
-**Structure**: Each arc = one character, weights = 1.0
-
-**3. Perform Composition**  
-Find all paths where source acceptor's output matches edit FST's input.  
-**Result**: Only valid transformation paths remain
-
-**4. Find Shortest Path**  
-Seek the minimum cost transformation using Dijkstra's algorithm.  
-**Semiring**: Tropical ensures minimum cost, not probability
-
-**5. Extract Distance**  
-Traverse the optimal path to sum weights and get total edit distance.  
-**Output**: Single optimal transformation cost
+1. **Edit Distance Transducer**: Construct lattice encoding all transformations to target
+2. **Source Acceptor**: Linear automaton accepting the source string
+3. **Composition**: Compute intersection of valid paths
+4. **Shortest Path**: Extract minimum-weight path using tropical semiring
+5. **Cost Extraction**: Sum arc weights along optimal path
 
 ## Example Output
 
-**Live Demo Results**
-
-When you run the example, you'll see these transformations in action:
-
-### Standard Levenshtein Distance (all operations cost 1.0)
+### Uniform Costs (Standard Levenshtein)
 
 ```text
-  'kitten' → 'sitting': 3  ✅
-  'saturday' → 'sunday': 3  ✅  
-  'hello' → 'hallo': 1  ✅
-  'abc' → 'abc': 0  ✅ (perfect match)
-  'abc' → 'def': 3  ✅
-```text
+'kitten' → 'sitting': 3
+'saturday' → 'sunday': 3
+'hello' → 'hallo': 1
+'abc' → 'abc': 0
+'abc' → 'def': 3
+```
 
-### Custom Weights (insert=0.5, delete=2.0, substitute=1.0)
-
-```text
-  'kitten' → 'sitting': 2.5  📉 (cheaper insertions)
-  'saturday' → 'sunday': 3  ➡️
-  'hello' → 'hallo': 1  ➡️
-```text
-
-### Expensive Substitutions (insert=1.0, delete=1.0, substitute=3.0)
+### Variable Costs (insert=0.5, delete=2.0, substitute=1.0)
 
 ```text
-  'kitten' → 'sitting': 5  📈 (avoids substitutions)
-  'saturday' → 'sunday': 8  📈
-  'hello' → 'hallo': 2  📈 (delete+insert cheaper than substitute)
+'kitten' → 'sitting': 2.5
+'saturday' → 'sunday': 3
+'hello' → 'hallo': 1
+```
+
+### High Substitution Cost (insert=1.0, delete=1.0, substitute=3.0)
+
 ```text
+'kitten' → 'sitting': 5
+'saturday' → 'sunday': 8
+'hello' → 'hallo': 2
+```
 
-## Understanding the Results
+## Analysis
 
-**Deep Analysis**
+Cost models significantly influence optimal transformation paths.
 
-Let's analyze how different cost models affect optimal transformations.
+### Uniform Cost Model
 
-### Standard Levenshtein Distance
+With unit costs, the algorithm computes standard Levenshtein distance. For "kitten" → "sitting", one optimal path involves:
+- Substitute 'k' → 's' (cost: 1)
+- Substitute 'e' → 'i' (cost: 1)
+- Insert 'g' (cost: 1)
+- Total: 3
 
-With uniform costs (1.0 for all operations), we get the classic edit distance:
+The transducer explores all transformation sequences, selecting the minimum-cost path.
 
-**"kitten" → "sitting" (distance: 3)**
+### Variable Cost Models
 
-The FST finds one optimal transformation sequence: substitute 'k' → 's' yielding `sitten` (cost: 1.0), substitute 'e' → 'i' yielding `sittin` (cost: 1.0), and insert 'g' yielding `sitting` (cost: 1.0), for a total cost of 3.0.
+**Reduced Insertion Cost**: With insertion=0.5, the algorithm favors insertions. For "kitten" → "sitting", the optimal path may utilize the cheaper insertion operation, achieving distance 2.5.
 
-Alternative paths exist (like deleting "kitten" and inserting "sitting" = 13 operations), but the FST automatically finds the minimum cost path.
-
-**"saturday" → "sunday" (distance: 3)**
-
-This transformation showcases a more complex optimal path: keep 's' yielding `s` (cost: 0), delete 'a' and 't' keeping `s` (cost: 2.0), keep 'u' yielding `su` (cost: 0), delete 'r' keeping `su` (cost: 1.0), and keep 'n', 'd', 'a', 'y' yielding `sunday` (cost: 0), for a total cost of 3.0.
-
-The FST correctly identifies that aligning the common suffix "nday" minimizes the total cost.
-
-### Custom Weight Effects
-
-Different cost models dramatically change the optimal transformation strategy:
-
-**Cheap Insertions (0.5 cost)**
-
-With `insertion=0.5, deletion=2.0, substitution=1.0`, the algorithm now prefers insertions over other operations. "kitten" → "sitting" achieves distance 2.5 with a possible path of substitute 'k'→'s' (1.0) + substitute 'e'→'i' (1.0) + insert 'g' (0.5). This models scenarios like typing where adding characters is easier than correcting.
-
-**Expensive Substitutions (3.0 cost)**
-
-With `insertion=1.0, deletion=1.0, substitution=3.0`, the algorithm avoids substitutions, preferring insert+delete pairs. "kitten" → "sitting" achieves distance 5.0, where instead of substituting 'k'→'s', it might delete 'k' (1.0) + insert 's' (1.0), costing 2.0 instead of 3.0 for direct substitution. This models scenarios where changing a character requires significant effort.
+**Increased Substitution Cost**: With substitution=3.0, the algorithm prefers deletion-insertion pairs over direct substitution. A substitution costing 3.0 is replaced by delete (1.0) + insert (1.0) = 2.0.
 
 ## Applications
 
-Understanding edit distance through FSTs opens up numerous practical use cases.
-
 ### 1. Spell Checking
 
-**Most Common Application**
-
-Use edit distance to find spelling corrections with intelligent cost modeling.
+Edit distance enables spelling correction through candidate generation and ranking:
 
 ```rust,ignore
 // Find words within edit distance 2 of user input
@@ -432,17 +351,9 @@ for word in dictionary {
         println!("Suggestion: {} (distance: {})", word, distance);
     }
 }
-```text
+```
 
-**Output:**
-```text
-Suggestion: hello (distance: 1)  // Missing 'l'
-Suggestion: help (distance: 1)   // 'o' → 'p'
-Suggestion: held (distance: 2)   // 'o' → 'd'
-Suggestion: hero (distance: 2)   // 'l' → 'r'
-```text
-
-Enhancement ideas include weighting common typos lower (teh → the), considering phonetic similarity (nite → night), and using frequency data to rank suggestions.
+Keyboard-aware cost models can improve suggestion quality by assigning lower costs to adjacent key substitutions.
 
 ### 2. Approximate String Matching
 
@@ -458,28 +369,31 @@ for entry in database {
         println!("Match: {} (distance: {})", entry, similarity);
     }
 }
-```text
+```
 
 ### 3. DNA Sequence Alignment
 
 ```rust,ignore
-// Compare genetic sequences with biological costs
+// Biological sequence alignment with gap penalties
 let seq1 = "ACGTACGT";
 let seq2 = "ACTTACGT";
 
-// Biological costs: insertions/deletions more expensive than substitutions
-let insertion_cost = 2.0;   // Gap penalty
-let deletion_cost = 2.0;    // Gap penalty  
-let substitution_cost = 1.0; // Point mutation
+let gap_penalty = 2.0;        // Insertion/deletion cost
+let mismatch_penalty = 1.0;   // Substitution cost
 
-let alignment_cost = compute_edit_distance(seq1, seq2, insertion_cost, deletion_cost, substitution_cost)?;
-```text
+let alignment_cost = compute_edit_distance(
+    seq1, seq2, gap_penalty, gap_penalty, mismatch_penalty
+)?;
+```
 
 ## Advanced Concepts
 
 ### State Space Optimization
 
-The FST creates `(n+1) × (k+1)` states where `n` equals target string length and `k` equals maximum allowed edits. For large strings or high edit distances, consider pruning (remove states with costs above threshold), band limitation (only consider edits within diagonal band), and incremental construction (build FST on-demand).
+The transducer contains (n+1) × (k+1) states. Optimization strategies include:
+- Beam search pruning
+- Diagonal band constraints
+- Lazy state construction
 
 ### Extending the Algorithm
 
@@ -495,13 +409,13 @@ fn char_specific_cost(from: char, to: char) -> f32 {
         _ => 1.0,
     }
 }
-```text
+```
 
 **Phonetic similarity:**
 ```rust,ignore
 // Use Soundex or metaphone distance for phonetic matching
 let phonetic_weight = if sounds_similar(from_char, to_char) { 0.5 } else { 1.0 };
-```text
+```
 
 ### Performance Considerations
 
@@ -546,5 +460,4 @@ Journal of the ACM, 21(1):168-173
 *Speech and Language Processing (3rd Edition)*  
 Chapter 2: Minimum Edit Distance
 
----
 

@@ -1,8 +1,6 @@
 # Advanced Topics
 
-**Master production-ready FST techniques**
-
-*Performance • Scalability • Best practices*
+**Production-ready FST techniques**
 
 This section covers advanced FST techniques for production systems, including performance optimization, memory management, and specialized operations.
 
@@ -16,7 +14,7 @@ Closure operations (Kleene star and plus) allow FSTs to accept repeated applicat
 use arcweight::prelude::*;
 
 fn build_word_breaker() -> Result<VectorFst<TropicalWeight>> {
-    // Match any sequence of letters
+    // Match any sequence of letters (helper functions not shown)
     let letter = build_character_class_fst(&['a'..='z'])?;
     
     // Zero or more letters
@@ -24,13 +22,13 @@ fn build_word_breaker() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(word)
 }
-```text
+```
 
 ### Kleene Plus (One or More)
 
 ```rust,ignore
 fn build_number_matcher() -> Result<VectorFst<TropicalWeight>> {
-    // Match digits
+    // Match digits (helper functions not shown)
     let digit = build_character_class_fst(&['0'..='9'])?;
     
     // One or more digits
@@ -38,13 +36,13 @@ fn build_number_matcher() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(number)
 }
-```text
+```
 
 ### Practical Example: Pattern Repetition
 
 ```rust,ignore
 fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
-    // Components
+    // Components (helper functions not shown)
     let word = build_word_pattern()?;
     let space = build_string_fst(" ")?;
     let punctuation = build_character_class_fst(&['.', '!', '?'])?;
@@ -59,7 +57,7 @@ fn build_pattern_matcher() -> Result<VectorFst<TropicalWeight>> {
     
     Ok(sentence)
 }
-```text
+```
 
 ## Performance Guidelines
 
@@ -73,7 +71,7 @@ fn optimal_pipeline(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropica
     let connected = connect(fst)?;
     
     // 2. Simplify structure
-    let no_eps = rm_epsilon(&connected)?;
+    let no_eps = remove_epsilons(&connected)?;
     
     // 3. Determinize (can be expensive)
     let det = determinize(&no_eps)?;
@@ -83,7 +81,7 @@ fn optimal_pipeline(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropica
     
     Ok(min)
 }
-```text
+```
 
 ### When to Optimize
 
@@ -138,7 +136,7 @@ impl OptimizationStrategy {
         Ok(result)
     }
 }
-```text
+```
 
 ### Lazy Evaluation
 
@@ -158,7 +156,7 @@ fn lazy_pipeline(
     
     result
 }
-```text
+```
 
 ## Memory Management
 
@@ -202,7 +200,7 @@ impl LargeFstHandler {
         Ok(())
     }
 }
-```text
+```
 
 ### Streaming Operations
 
@@ -236,7 +234,7 @@ where
     
     Ok(())
 }
-```text
+```
 
 ### Memory Pooling
 
@@ -258,7 +256,7 @@ impl FstPool {
         }
     }
 }
-```text
+```
 
 ## Specialized Techniques
 
@@ -276,7 +274,7 @@ fn optimize_weights(
     // Helps with shortest path and prevents underflow
     Ok(pushed)
 }
-```text
+```
 
 ### Epsilon Sequencing
 
@@ -297,7 +295,7 @@ fn epsilon_sequence_optimize(
     
     Ok(result)
 }
-```text
+```
 
 ### Incremental Determinization
 
@@ -324,7 +322,7 @@ impl IncrementalDeterminizer {
         Ok(())
     }
 }
-```text
+```
 
 ## Production Patterns
 
@@ -346,7 +344,7 @@ fn parallel_fst_processing(
         })
         .collect()
 }
-```text
+```
 
 ### Pattern: Caching and Memoization
 
@@ -368,7 +366,7 @@ impl FstCache {
         Ok(fst)
     }
 }
-```text
+```
 
 ### Pattern: Graceful Degradation
 
@@ -396,7 +394,7 @@ impl RobustProcessor {
         }
     }
 }
-```text
+```
 
 ## Debugging and Profiling
 
@@ -421,7 +419,7 @@ fn debug_fst(fst: &VectorFst<TropicalWeight>, name: &str) -> Result<()> {
     
     Ok(())
 }
-```text
+```
 
 ### Performance Profiling
 
@@ -451,7 +449,7 @@ impl FstProfiler {
         }
     }
 }
-```text
+```
 
 ## Best Practices Summary
 
@@ -463,7 +461,7 @@ let large_composition = LazyComposeFst::new(fst1, fst2);
 
 // Bad: Eager evaluation of huge FST
 let huge_fst = compose(&million_state_fst1, &million_state_fst2)?;
-```text
+```
 
 ### 2. Handle Failures Gracefully
 
@@ -476,7 +474,7 @@ match timeout(Duration::from_secs(5), || expensive_operation(fst)) {
 
 // Bad: Unbounded operation
 let result = expensive_operation(fst)?; // Might hang
-```text
+```
 
 ### 3. Monitor Resource Usage
 
@@ -488,7 +486,7 @@ if estimate_composition_size(fst1, fst2) > MAX_FST_SIZE {
 
 // Bad: Blind composition
 let result = compose(fst1, fst2)?; // Might OOM
-```text
+```
 
 ## Next Steps
 

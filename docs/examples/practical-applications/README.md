@@ -1,39 +1,37 @@
 # Practical Applications
 
-**Real-world tools for text processing and language conversion**
+This section demonstrates finite state transducer applications in natural language processing systems, including text normalization, grapheme-to-phoneme conversion, and script transliteration.
 
-These examples show practical applications of FSTs in production systems, covering text normalization, pronunciation generation, and cross-script conversion.
-
-## Examples in This Category
+## Examples
 
 ### [Number & Date Normalizer](number_date_normalizer.md)
-**Complexity:** Intermediate  
-**Concepts:** Pattern recognition, format conversion  
+Converts numeric and temporal expressions to standardized textual representations. The implementation handles various numeric formats and date/time conventions.
+
 ```bash
 cargo run --example number_date_normalizer
-```text
+```
 
 ### [Pronunciation Lexicon](pronunciation_lexicon.md)
-**Complexity:** Advanced  
-**Concepts:** Grapheme-to-phoneme, phonological mapping  
+Implements grapheme-to-phoneme conversion using finite state transducers. The system combines lexicon lookup with rule-based pronunciation generation.
+
 ```bash
 cargo run --example pronunciation_lexicon
-```text
+```
 
 ### [Transliteration](transliteration.md)
-**Complexity:** Advanced  
-**Concepts:** Cross-script mapping, Unicode handling  
+Performs script conversion following international standards (BGN/PCGN, ISO). The implementation supports Cyrillic, Arabic, and Greek to Latin transliteration.
+
 ```bash
 cargo run --example transliteration
-```text
+```
 
-## Use Cases
+## Application Domains
 
-These examples demonstrate FSTs solving real production problems:
-- **Text normalization** for consistent data processing
-- **Speech synthesis** with pronunciation generation  
-- **International applications** with script conversion
+These implementations address common requirements in:
+- Text normalization for consistent data representation
+- Speech synthesis requiring accurate pronunciation models
+- Cross-linguistic information retrieval and text processing
 
 ---
 
-**[← Back to Examples Overview](../README.md)**
+[← Examples Overview](../README.md)

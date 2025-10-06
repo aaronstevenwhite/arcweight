@@ -1,43 +1,45 @@
 # Transliteration
 
-This example demonstrates building sophisticated transliteration systems using FSTs to convert text between writing systems while handling linguistic complexities and competing standards.
+This example implements script conversion systems using finite state transducers, supporting multiple transliteration standards and writing systems.
 
 ## Overview
 
-Transliteration converts text from one script to another while preserving pronunciation—essential for global communication. Unlike translation (meaning), transliteration converts sounds represented by different writing systems. This creates challenges: one-to-many mappings (Russian 'х' → 'kh' or 'h'), context sensitivity (Arabic letters change by position), cultural variations (same word, different audiences), and reversibility questions.
+Transliteration preserves phonetic representation across writing systems, distinct from translation which preserves semantic content. Key challenges include:
+- One-to-many character mappings (e.g., Cyrillic 'х' → 'kh' or 'h')
+- Context-dependent forms (e.g., Arabic positional variants)
+- Multiple competing standards (BGN/PCGN, ISO, popular conventions)
+- Reversibility constraints
 
-FSTs provide an elegant solution by encoding these complexities as composable rules. The framework handles multiple transliteration standards (BGN/PCGN, ISO, popular), bidirectional conversion where possible, and context-aware processing for position-dependent forms.
+Finite state transducers encode transliteration rules as composable transformations. The implementation supports BGN/PCGN and ISO standards for Cyrillic, Arabic, and Greek to Latin conversion.
 
-This system supports Cyrillic, Arabic, and Greek to Latin conversion, demonstrating how major translation systems handle script conversion in production environments.
-
-## Quick Start
+## Usage
 
 ```bash
 cargo run --example transliteration
-```text
+```
 
-## What You'll Learn
+## Concepts Demonstrated
 
-- **Multi-Script Processing**: Convert Cyrillic, Arabic, and Greek scripts to Latin
-- **Multiple Standards**: Support BGN/PCGN, ISO, and popular transliteration schemes
-- **Context-Aware Rules**: Handle position-dependent forms and digraphs
-- **Bidirectional Conversion**: FSTs that work in both directions when possible
-- **Ambiguity Resolution**: Manage cases where multiple mappings exist
-- **Performance Optimization**: Efficient FST composition for real-time processing
+- **Multi-Script Support**: Cyrillic, Arabic, and Greek to Latin conversion
+- **Standards Compliance**: BGN/PCGN and ISO transliteration schemes
+- **Context-Dependent Rules**: Positional variants and digraph handling
+- **Bidirectional Transduction**: Reversible transliteration where applicable
+- **Ambiguity Management**: Multiple valid transliterations
+- **Efficient Implementation**: Optimized transducer composition
 
 ## Core Concepts
 
-### Supported Writing Systems
+### Writing Systems
 
-Understanding each script's unique characteristics is crucial for building accurate transliteration systems.
+Each script presents distinct challenges for systematic transliteration.
 
-### Cyrillic Script: The Challenges of Slavic Languages
+### Cyrillic Script
 
-Cyrillic presents several transliteration challenges that our FST system must handle:
+Cyrillic transliteration addresses the following phenomena:
 
 #### Character Mappings
 
-**Basic Letters (Mostly Straightforward):**
+**Simple Mappings:**
 ```text
 а → a    б → b    в → v    г → g    д → d
 е → e    з → z    и → i    к → k    л → l
@@ -45,7 +47,7 @@ Cyrillic presents several transliteration challenges that our FST system must ha
 с → s    т → t    у → u    ф → f
 ```text
 
-**Complex Mappings (Digraphs and Special Cases):**
+**Digraph Mappings:**
 ```text
 ж → zh   (one Cyrillic letter → two Latin letters)
 х → kh   (BGN/PCGN) or h (popular)
@@ -57,40 +59,29 @@ Cyrillic presents several transliteration challenges that our FST system must ha
 
 **Special Characters:**
 ```text
-ъ → " (hard sign: prevents palatalization)
-ь → ' (soft sign: marks palatalization)
-ё → yo (BGN/PCGN) or e (when diacritic is dropped)
-й → y (consonantal /j/, not a vowel)
-ы → y (hard vowel, doesn't exist in most languages)
-э → e (used for foreign words)
-ю → yu (represents /ju/)
-я → ya (represents /ja/)
-```text
+ъ → " (hard sign)
+ь → ' (soft sign)
+ё → yo (BGN/PCGN) or e 
+й → y 
+ы → y 
+э → e 
+ю → yu 
+я → ya 
+```
 
-#### Real-World Examples
-
-Let's see how these rules apply to actual Russian words:
+#### Examples
 
 ```text
-москва → moskva (Moscow)
-  м(m) о(o) с(s) к(k) в(v) а(a)
-
-санкт-петербург → sankt-peterburg (Saint Petersburg)
-  Note: т(t) not ть(t') - no soft sign
-
-большой → bol'shoy (big)
-  Note: ь → ' (soft sign preserved)
-
-хорошо → khorosho (BGN/PCGN) or horosho (popular)
-  Scheme-dependent х mapping
-
-щи → shchi (cabbage soup)
-  Single letter → four letters!
-```text
+москва → moskva 
+санкт-петербург → sankt-peterburg
+большой → bol'shoy 
+хорошо → khorosho (BGN/PCGN) / horosho (popular)
+щи → shchi
+```
 
 ### Arabic Script
 
-Implements Arabic to Latin transliteration following international standards:
+Arabic to Latin transliteration following BGN/PCGN standards:
 
 **Arabic Letters:**
 ```text
@@ -100,43 +91,43 @@ Implements Arabic to Latin transliteration following international standards:
 ط -> t    ظ -> z    ع -> '    غ -> gh   ف -> f
 ق -> q    ك -> k    ل -> l    م -> m    ن -> n
 ه -> h    و -> w    ي -> y
-```text
+```
 
-**Example Words:**
+**Examples:**
 ```text
-السلام -> assalam (peace)
-مرحبا -> marhaba (hello)
-قاهرة -> qahirah (Cairo)
-بغداد -> baghdad (Baghdad)
-مكة -> makkah (Mecca)
-```text
+السلام -> assalam
+مرحبا -> marhaba
+قاهرة -> qahirah
+بغداد -> baghdad
+مكة -> makkah
+```
 
 ### Greek Script
 
-Classical and modern Greek transliteration:
+Greek to Latin transliteration:
 
-**Greek Letters:**
+**Greek Alphabet:**
 ```text
 α -> a    β -> v    γ -> g    δ -> d    ε -> e
 ζ -> z    η -> i    θ -> th   ι -> i    κ -> k
 λ -> l    μ -> m    ν -> n    ξ -> x    ο -> o
 π -> p    ρ -> r    σ/ς -> s  τ -> t    υ -> y
 φ -> f    χ -> ch   ψ -> ps   ω -> o
-```text
+```
 
-**Example Words:**
+**Examples:**
 ```text
-αθήνα -> athina (Athens)
+αθήνα -> athina
 θεσσαλονίκη -> thessaloniki
-φιλοσοφία -> filosofia (philosophy)
-δημοκρατία -> dimokratia (democracy)
-```text
+φιλοσοφία -> filosofia
+δημοκρατία -> dimokratia
+```
 
-### Transliteration Schemes
+## Transliteration Standards
 
-### BGN/PCGN Standard
+### BGN/PCGN
 
-The Board on Geographic Names/Permanent Committee on Geographical Names standard for official geographic transliteration:
+Board on Geographic Names/Permanent Committee on Geographical Names standard:
 
 ```rust,ignore
 TransliterationRule {
@@ -144,13 +135,16 @@ TransliterationRule {
     target: "kh".to_string(),
     scheme: TransliterationScheme::BgnPcgn,
 }
-```text
+```
 
-**Characteristics:** This international standard for geographic names preserves linguistic accuracy, is used in official documents and maps, and handles diacritical marks precisely.
+Characteristics:
+- Geographic name standardization
+- Official document usage
+- Diacritical mark preservation
 
-### Popular/Simplified Scheme
+### Popular Conventions
 
-Simplified transliteration for general use:
+Simplified transliteration schemes:
 
 ```rust,ignore
 TransliterationRule {
@@ -158,13 +152,18 @@ TransliterationRule {
     target: "h".to_string(),    // Simplified vs "kh"
     scheme: TransliterationScheme::Popular,
 }
-```text
+```
 
-**Characteristics:** This scheme is easier to type and read, uses no special characters, is used in informal contexts, and is better for keyboard input.
+Characteristics:
+- ASCII-compatible representation
+- Keyboard-friendly input
+- Informal usage contexts
 
 ### ISO Standards
 
-International Organization for Standardization schemes include **ISO 9** for Cyrillic transliteration, **ISO 233** for Arabic transliteration, and **ISO 843** for Greek transliteration.
+- ISO 9:1995 - Cyrillic transliteration
+- ISO 233:1984 - Arabic transliteration
+- ISO 843:1997 - Greek transliteration
 
 ## Implementation
 
@@ -178,7 +177,7 @@ struct TransliterationSystem {
     arabic_to_latin: HashMap<TransliterationScheme, Vec<TransliterationRule>>,
     greek_to_latin: HashMap<TransliterationScheme, Vec<TransliterationRule>>,
 }
-```text
+```
 
 ### TransliterationRule Definition
 
@@ -192,7 +191,7 @@ struct TransliterationRule {
     context_after: Option<String>,  // Right context
     scheme: TransliterationScheme,  // Transliteration standard
 }
-```text
+```
 
 ### Simple String-Based Processing
 
@@ -228,7 +227,7 @@ fn transliterate_simple(
         text.to_string()
     }
 }
-```text
+```
 
 ## FST-Based Implementation
 
@@ -295,7 +294,7 @@ fn build_transliteration_fst(rules: &[TransliterationRule]) -> VectorFst<Tropica
 
     fst
 }
-```text
+```
 
 ### Bidirectional Transliteration
 
@@ -311,7 +310,7 @@ fn create_reverse_mappings(rules: &[TransliterationRule]) -> Vec<Transliteration
         scheme: rule.scheme,
     }).collect()
 }
-```text
+```
 
 **Usage:**
 ```rust,ignore
@@ -321,13 +320,13 @@ let forward_fst = build_transliteration_fst(&cyrillic_rules);
 // Reverse: Latin -> Cyrillic  
 let reverse_rules = create_reverse_mappings(&cyrillic_rules);
 let reverse_fst = build_transliteration_fst(&reverse_rules);
-```text
+```
 
 ## Running the Example
 
 ```bash
 cargo run --example transliteration
-```text
+```
 
 ### Sample Output
 
@@ -361,7 +360,7 @@ Greek: 'αθήνα'
 
 Greek: 'φιλοσοφία'
   Latin: 'filosofia'
-```text
+```
 
 ## Advanced Features
 
@@ -381,7 +380,7 @@ Popular:  'yo'    (ASCII-only)
 Character: щ (Cyrillic SHCHA)
 BGN/PCGN: 'shch'  (full representation)
 Popular:  'sch'   (simplified)
-```text
+```
 
 ### Context-Sensitive Rules
 
@@ -402,14 +401,14 @@ enum Position {
     Final,      // Word-final
     Any,        // Any position
 }
-```text
+```
 
 **Example:**
 ```text
 Arabic ة (ta marbuta):
 Word-final: ة -> ah
 Word-medial: ة -> at
-```text
+```
 
 ### Digraph Handling
 
@@ -425,7 +424,7 @@ let digraphs = vec![
 
 // Sort by length descending
 digraphs.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
-```text
+```
 
 ## Applications
 
@@ -459,7 +458,7 @@ fn cross_script_search(
     
     deduplicate_and_rank(results)
 }
-```text
+```
 
 ### Machine Translation
 
@@ -486,7 +485,7 @@ fn preprocess_for_mt(
         _ => text.to_string(),
     }
 }
-```text
+```
 
 ### Name Matching
 
@@ -516,7 +515,7 @@ fn match_names(
     
     best_similarity >= threshold
 }
-```text
+```
 
 ### Geographic Information Systems
 
@@ -546,7 +545,7 @@ fn standardize_place_names(
         }
     }).collect()
 }
-```text
+```
 
 ### Challenges and Solutions
 
@@ -576,7 +575,7 @@ fn handle_multiple_mappings(
         ('ج', _) => "j".to_string(),  // default
     }
 }
-```text
+```
 
 ### Diacritical Marks
 
@@ -606,7 +605,7 @@ fn handle_diacritics(
         }
     }
 }
-```text
+```
 
 ### Ambiguous Sequences
 
@@ -633,7 +632,7 @@ fn resolve_ambiguity(
         TransliterationChoice::Ambiguous(get_all_possibilities(sequence))
     }
 }
-```text
+```
 
 ### Quality Assurance
 
@@ -674,7 +673,7 @@ fn validate_transliteration_rules(
     
     ValidationReport::new(issues)
 }
-```text
+```
 
 ### Round-Trip Testing
 
@@ -709,7 +708,7 @@ fn test_round_trip_consistency(
     
     ConsistencyReport::new(inconsistencies)
 }
-```text
+```
 
 ## Performance Optimization
 
@@ -753,7 +752,7 @@ impl OptimizedTransliterator {
         result
     }
 }
-```text
+```
 
 ### Caching Strategies
 
@@ -785,7 +784,7 @@ impl CachedTransliterator {
         result
     }
 }
-```text
+```
 
 ### Standards Compliance
 
@@ -847,7 +846,7 @@ fn calculate_quality_metrics(
         reversibility: reversible as f32 / total as f32,
     }
 }
-```text
+```
 
 ### Neural Transliteration
 
@@ -870,7 +869,7 @@ impl NeuralTransliterator {
         self.decode_to_string(decoded)
     }
 }
-```text
+```
 
 ### Context-Aware Processing
 
@@ -895,7 +894,7 @@ fn contextual_transliteration(
         }
     )
 }
-```text
+```
 
 ### Real-Time Processing
 
@@ -921,7 +920,7 @@ impl StreamingTransliterator {
         }
     }
 }
-```text
+```
 
 ## Related Examples
 

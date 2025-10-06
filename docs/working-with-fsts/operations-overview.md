@@ -2,13 +2,11 @@
 
 **Understanding FST operations and when to use them**
 
-*Choose wisely • Combine effectively • Optimize intelligently*
-
-This section introduces FST operations conceptually, helping you understand what each operation does and when to use it. Think of FST operations as tools in your toolkit — each has a specific purpose and works best in certain situations.
+This section introduces FST operations conceptually, explaining what each operation does and when to use it. FST operations are algorithms that transform, combine, or analyze FSTs for different purposes.
 
 ## What Are FST Operations?
 
-Finite State Transducer (FST) operations are algorithms that transform, combine, or analyze FSTs. They're the building blocks for creating complex language processing systems from simple components.
+Finite State Transducer (FST) operations are algorithms that transform, combine, or analyze FSTs. They provide building blocks for creating complex language processing systems from simple components.
 
 ### Core Capabilities
 
@@ -22,29 +20,29 @@ FST operations allow you to:
 
 ## When to Use Each Operation
 
-### 🔗 Composition: Building Pipelines
+### Composition: Building Pipelines
 
 **Use when:** You need to chain transformations together
 
-**Real-world examples:**
+**Examples:**
 - Text processing: `lowercase → normalize → tokenize`
 - Translation: `source text → phrase extraction → target text`
 - Speech: `acoustic model → language model → text`
 
 **Key insight:** Output of first FST becomes input to second FST
 
-### 🌟 Union: Combining Alternatives
+### Union: Combining Alternatives
 
 **Use when:** You have multiple valid options
 
-**Real-world examples:**
+**Examples:**
 - Vocabularies: Medical terms ∪ General English
 - Dialects: US spelling ∪ UK spelling
 - Formats: Email patterns ∪ Phone patterns
 
 **Key insight:** Accepts input if ANY component FST accepts it
 
-### ⚡ Optimization Operations
+### Optimization Operations
 
 **Use when:** Performance or memory is a concern
 
@@ -55,7 +53,7 @@ FST operations allow you to:
 | **Minimize** | Redundant states | Smallest equivalent FST |
 | **Epsilon Remove** | Has ε-transitions | Cleaner structure |
 
-### 🎯 Path Operations
+### Path Operations
 
 **Use when:** You need specific outputs
 
@@ -63,7 +61,7 @@ FST operations allow you to:
 - **N-best Paths**: Get top N alternatives
 - **Pruning**: Remove unlikely paths
 
-### 🔍 Structural Operations
+### Structural Operations
 
 **Use when:** You need to analyze or extract
 
@@ -74,37 +72,37 @@ FST operations allow you to:
 
 ## Decision Tree
 
-Use this decision tree to quickly identify which operation you need:
+Use this decision tree to identify which operation you need:
 
 ```text
-📝 What are you trying to do?
+What are you trying to do?
 │
-├─ 🔗 Combine FSTs?
+├─ Combine FSTs?
 │  ├─ Sequential processing? → Composition
 │  ├─ Alternative options? → Union
 │  └─ One after another? → Concatenation
 │
-├─ ⚡ Optimize performance?
+├─ Optimize performance?
 │  ├─ First optimization? → Connect (always start here!)
 │  ├─ Multiple paths per input? → Determinize
 │  ├─ Too many states? → Minimize
 │  └─ Has ε-transitions? → Epsilon Removal
 │
-├─ 🎯 Find solutions?
+├─ Find solutions?
 │  ├─ Best answer only? → Shortest Path
 │  ├─ Multiple good answers? → N-best Paths
 │  └─ Remove bad options? → Pruning
 │
-└─ 🔍 Analyze structure?
+└─ Analyze structure?
    ├─ Valid inputs? → Input Projection
    ├─ Possible outputs? → Output Projection
    ├─ Common elements? → Intersection
    └─ Unique elements? → Difference
-```text
+```
 
 ## Operation Flow
 
-Some operations work better in specific orders. Here's the recommended optimization pipeline:
+Some operations work better in specific orders. The recommended optimization pipeline is:
 
 ```text
 Original FST
@@ -118,7 +116,7 @@ Determinize (one path per input)
 Minimize (canonical form)
     ↓
 Optimized FST
-```text
+```
 
 ### Why This Order?
 
@@ -135,7 +133,7 @@ Optimized FST
 // Tokenizer → Lowercase → Stemmer
 let pipeline = compose(&tokenizer, &lowercase)?;
 let pipeline = compose(&pipeline, &stemmer)?;
-```text
+```
 
 ### Creating a Spell Checker
 
@@ -143,17 +141,17 @@ let pipeline = compose(&pipeline, &stemmer)?;
 // Dictionary ∪ Common Misspellings
 let vocabulary = union(&dictionary, &common_errors)?;
 let spell_checker = compose(&edit_distance, &vocabulary)?;
-```text
+```
 
 ### Optimizing for Production
 
 ```rust,ignore
 // Full optimization pipeline
 let fst = connect(&fst)?;           // Remove dead states
-let fst = rm_epsilon(&fst)?;        // Remove epsilons
+let fst = remove_epsilons(&fst)?;   // Remove epsilons
 let fst = determinize(&fst)?;       // Make deterministic
 let fst = minimize(&fst)?;          // Minimize size
-```text
+```
 
 ## Performance Considerations
 
@@ -179,11 +177,11 @@ let fst = minimize(&fst)?;          // Minimize size
 ### 1. Start Simple
 Build complex operations from simple, tested components:
 ```rust,ignore
-// Good: Test each component
+// Good: Test each component (helper functions not shown)
 let lower = build_lowercase_fst()?;
 let norm = build_normalizer_fst()?;
 let combined = compose(&lower, &norm)?;
-```text
+```
 
 ### 2. Optimize Lazily
 Don't optimize until you need to:
@@ -192,7 +190,7 @@ Don't optimize until you need to:
 if fst.num_states() > 10000 {
     fst = optimize_fst(fst)?;
 }
-```text
+```
 
 ### 3. Monitor Size
 Track FST growth during composition:
@@ -200,7 +198,7 @@ Track FST growth during composition:
 println!("States: {} → {}", 
     fst1.num_states() * fst2.num_states(),
     composed.num_states());
-```text
+```
 
 ## Common Mistakes to Avoid
 
@@ -209,23 +207,23 @@ println!("States: {} → {}",
 // Bad: Optimizing tiny FSTs wastes time
 let tiny_fst = /* 10 states */;
 let optimized = full_optimization_pipeline(tiny_fst)?; // Unnecessary!
-```text
+```
 
 ### ❌ Wrong Operation Order
 ```rust,ignore
 // Bad: Minimizing before determinizing
 let min = minimize(&fst)?;  // Error: needs deterministic input!
 let det = determinize(&min)?;
-```text
+```
 
 ### ❌ Ignoring Epsilon Transitions
 ```rust,ignore
 // Bad: Determinizing with epsilons
 let det = determinize(&fst_with_epsilons)?; // Suboptimal!
 // Good: Remove epsilons first
-let clean = rm_epsilon(&fst_with_epsilons)?;
+let clean = remove_epsilons(&fst_with_epsilons)?;
 let det = determinize(&clean)?;
-```text
+```
 
 ## Next Steps
 

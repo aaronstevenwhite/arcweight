@@ -1,14 +1,12 @@
 # Path Operations
 
-**Find optimal solutions and rankings in your FSTs**
+**Find optimal solutions and rankings in FSTs**
 
-*Shortest path • N-best • Pruning*
-
-Path operations help you extract meaningful results from FSTs. Whether you need the single best answer or multiple alternatives, these operations are essential for practical applications.
+Path operations help you extract meaningful results from FSTs. Whether you need the single best answer or multiple alternatives, these operations are important for practical applications.
 
 ## Shortest Path
 
-The shortest path operation finds the path through an FST with the minimum total weight. This is fundamental for applications like spell correction, speech recognition, and machine translation.
+The shortest path operation finds the path through an FST with the minimum total weight. This is useful for applications like spell correction, speech recognition, and machine translation.
 
 ### When to Use Shortest Path
 
@@ -31,7 +29,7 @@ fn find_best_path(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalW
     
     Ok(shortest)
 }
-```text
+```
 
 ### Extracting Path Information
 
@@ -61,16 +59,16 @@ fn extract_shortest_path(fst: &VectorFst<TropicalWeight>) -> Result<(Vec<Label>,
     
     Ok((path, total_weight))
 }
-```text
+```
 
-### Real-World Example: Spell Correction
+### Example: Spell Correction
 
 ```rust,ignore
 fn spell_correct(
     word: &str,
     dictionary: &VectorFst<TropicalWeight>
 ) -> Result<String> {
-    // Build error model (edit distance FST)
+    // Build error model (edit distance FST) (helper functions not shown)
     let input_fst = build_string_fst(word)?;
     let error_model = build_edit_distance_fst(max_edits: 2)?;
     
@@ -84,7 +82,7 @@ fn spell_correct(
     // Extract the corrected word
     extract_output_string(&best)
 }
-```text
+```
 
 ## N-Best Paths
 
@@ -114,7 +112,7 @@ fn find_top_paths(
     
     Ok(nbest)
 }
-```text
+```
 
 ### Extracting Multiple Paths
 
@@ -138,7 +136,7 @@ fn extract_nbest_paths(
     
     Ok(paths)
 }
-```text
+```
 
 ### Real-World Example: Autocomplete
 
@@ -168,7 +166,7 @@ impl AutocompleteEngine {
         extract_suggestions(&top_matches)
     }
 }
-```text
+```
 
 ### Unique vs Non-Unique Paths
 
@@ -194,7 +192,7 @@ fn demonstrate_unique_paths() -> Result<()> {
     
     Ok(())
 }
-```text
+```
 
 ## Pruning
 
@@ -226,7 +224,7 @@ fn prune_by_weight(
     
     Ok(connected)
 }
-```text
+```
 
 ### Relative Pruning
 
@@ -243,7 +241,7 @@ fn prune_relative(
     let threshold = best_weight.value() + delta;
     prune(fst, TropicalWeight::new(threshold))
 }
-```text
+```
 
 ### Pruning in Beam Search
 
@@ -265,7 +263,7 @@ impl BeamSearchDecoder {
         prune_relative(&expanded, self.beam_width)
     }
 }
-```text
+```
 
 ## Advanced Path Operations
 
@@ -285,7 +283,7 @@ fn sample_random_path(
     
     Ok(path)
 }
-```text
+```
 
 ### Path Enumeration
 
@@ -315,7 +313,7 @@ fn enumerate_all_paths(
     
     Ok(paths)
 }
-```text
+```
 
 ### Distance-Based Operations
 
@@ -334,7 +332,7 @@ fn find_paths_within_distance(
     // Keep only close paths
     prune(&distances, TropicalWeight::new(max_distance))
 }
-```text
+```
 
 ## Practical Applications
 
@@ -365,7 +363,7 @@ fn multi_stage_search(
     
     extract_strings(&results)
 }
-```text
+```
 
 ### Application: Confidence Scoring
 
@@ -394,7 +392,7 @@ fn get_confidence_scores(
     
     Ok(scores)
 }
-```text
+```
 
 ## Performance Considerations
 
@@ -436,7 +434,7 @@ fn search_with_fallback(
     let best = shortest_path(&fuzzy)?;
     extract_string(&best)
 }
-```text
+```
 
 ### Pattern: Incremental Results
 
@@ -461,7 +459,7 @@ fn incremental_search(
     // Return iterator that yields results as they're found
     IncrementalIterator::new(results)
 }
-```text
+```
 
 ## Next Steps
 

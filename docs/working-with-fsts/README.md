@@ -2,15 +2,15 @@
 
 **FST operations guide with practical examples**
 
-This comprehensive guide teaches you how to work with FST operations in ArcWeight. While the [Quick Start](../quick-start.md) gives you a fast introduction to basic FST concepts, this guide provides deep coverage of all operations you'll need for production applications.
+This guide covers FST operations in ArcWeight. While the [Quick Start](../quick-start.md) provides an introduction to basic FST concepts, this guide covers all operations needed for production applications.
 
 ## How This Guide Differs from Quick Start
 
 | Quick Start | Working with FSTs |
 |-------------|-------------------|
-| **Introduction to basics** | **Comprehensive operation reference** |
+| **Introduction to basics** | **Operation reference** |
 | First FST, basic concepts | All FST operations in depth |
-| Single example workflow | Multiple real-world patterns |
+| Single example workflow | Multiple patterns |
 | Get started quickly | Production techniques |
 
 **When to use this guide:**
@@ -29,14 +29,14 @@ This comprehensive guide teaches you how to work with FST operations in ArcWeigh
 - Operation flow and dependencies
 
 ### [Core Operations](core-operations.md)
-**Essential building blocks** — Fundamental FST transformations
+**Building blocks** — Fundamental FST transformations
 
 - **Composition** — Chain FSTs together
 - **Union** — Combine alternative paths
 - **Concatenation** — Sequential combination
 
 ### [Optimization Operations](optimization-operations.md)
-**Make FSTs fast and efficient** — Performance and memory optimization
+**Performance and memory optimization**
 
 - **Determinization** — Remove non-determinism
 - **Minimization** — Reduce to canonical form
@@ -44,21 +44,21 @@ This comprehensive guide teaches you how to work with FST operations in ArcWeigh
 - **Epsilon Removal** — Eliminate ε-transitions
 
 ### [Path Operations](path-operations.md)
-**Find solutions in FSTs** — Extract best paths and rankings
+**Extract paths and rankings**
 
 - **Shortest Path** — Find optimal solutions
 - **N-best Paths** — Multiple solutions
 - **Pruning** — Remove unlikely paths
 
 ### [Structural Operations](structural-operations.md)
-**Analyze and transform** — Extract FST components
+**Extract FST components**
 
 - **Projection** — Extract input/output languages
 - **Difference** — Set operations on FSTs
 - **Intersection** — Common accepted strings
 
 ### [Advanced Topics](advanced-topics.md)
-**Production-ready techniques** — Performance and best practices
+**Performance and best practices**
 
 - **Closure Operations** — Kleene star and plus
 - **Performance Guidelines** — Operation ordering
@@ -114,9 +114,9 @@ Before diving into FST operations, ensure you have:
 
 > **Need Theory?** See [Core Concepts](../core-concepts/) for mathematical foundations
 
-## Real-World Applications
+## Applications
 
-This guide's operations power many applications:
+This guide's operations support many applications:
 
 - **Natural Language Processing** — Text normalization, tokenization
 - **Speech Recognition** — Acoustic model composition

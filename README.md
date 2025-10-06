@@ -7,21 +7,20 @@
 
 **A high-performance, modular Rust library for weighted finite state transducers (WFSTs).**
 
-ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. Built upon the foundational work of {{#cite mohri1997finite}}, {{#cite mohri2000design}}, and {{#cite allauzen2007openfst}}, it offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API, making it ideal for natural language processing, speech recognition, computational linguistics, and machine learning applications.
+ArcWeight provides a comprehensive toolkit for constructing, combining, optimizing, and searching weighted finite-state transducers. It offers functionality comparable to [OpenFst](https://www.openfst.org/) with a modern, type-safe Rust API, making it ideal for natural language processing and computational linguistics applications.
 
 ## What Are Finite State Transducers?
 
-Finite State Transducers (FSTs) are computational models that define rational relations between strings, enabling the transformation of input sequences into output sequences with associated weights {{#cite mohri1997finite}}. Originally developed for speech recognition and natural language processing {{#cite mohri2002weighted}}, FSTs have become fundamental tools in computational linguistics that can:
+Finite State Transducers (FSTs) are computational models that define rational relations between strings, enabling the transformation of input sequences into output sequences with associated weights ([Mohri 1997](https://aclanthology.org/J97-2003/)). FSTs have become fundamental tools in computational linguistics and natural language processing for:
 
-- **Spell check and correct text** (input: "teh" $\to$ output: "the")
-- **Translate between languages** (input: "hello" $\to$ output: "hola") 
-- **Convert speech to text** (input: audio features $\to$ output: words)
-- **Normalize text** (input: "2nd" $\to$ output: "second")
-- **Parse and generate morphology** (input: "running" $\to$ output: "run+ing")
+- Computing the distance between strings
+- Spell checking and correcting text
+- Normalizing dates, times, etc.
+- Analyzing and generating words
 
 **Why choose ArcWeight over alternatives?**
 - 🦀 **Pure Rust**: Memory safety, modern tooling, no C++ dependencies
-- ⚡ **Performance**: Optimized algorithms implementing state-of-the-art techniques {{#cite mohri2002semiring}}
+- ⚡ **Performance**: Optimized algorithms implementing state-of-the-art techniques ([Mohri 2002](https://doi.org/10.1016/S0304-3975(99)00014-6))
 - 🔧 **Flexibility**: Extensible design with custom semirings and FST types
 - 📚 **Complete**: Comprehensive algorithm suite based on established theoretical foundations
 
@@ -105,21 +104,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 **Want to dive deeper?**
-- **[🧠 Core Concepts](docs/core-concepts/README.md)** - Understand FSTs and semirings
-- **[💡 Examples](examples/)** - Real-world applications in the examples directory
+- **[🧠 Core Concepts](docs/core-concepts/README.md):** Understand FSTs and semirings
+- **[💡 Examples](examples/):** Theoretical and applied examples
 
 ## Documentation
 
 ### 📚 Learning Resources
 
-| Resource | Description | Best For |
-|----------|-------------|----------|
-| **[Core Concepts](docs/core-concepts/README.md)** | FSTs, semirings, and mathematical foundations | Understanding theory |
+- **[Core Concepts](docs/core-concepts/README.md):** Mathematical foundations
 
 ### 🔗 Reference Documentation
 
-- **[API Reference](https://docs.rs/arcweight)** - Complete API documentation with examples
-- **[Bibliography](docs/bibliography.bib)** - Foundational papers and references
+- **[API Reference](https://docs.rs/arcweight):** Complete API documentation with examples
+- **[Bibliography](docs/bibliography.bib):** Foundational papers and references
 
 ## Examples & Applications
 
@@ -214,10 +211,6 @@ We welcome contributions! Whether you're:
 - ⚡ **Optimizing performance** - Help us go faster
 - 🧪 **Adding tests** - Increase code coverage and reliability
 
-**Get Started:**
-1. Check out **[good first issues](https://github.com/aaronstevenwhite/arcweight/labels/good%20first%20issue)**
-2. Join the discussion in **[GitHub Discussions](https://github.com/aaronstevenwhite/arcweight/discussions)**
-
 ### 🛠️ Development
 
 **Quick Setup:**
@@ -252,9 +245,3 @@ mdbook build
 ## License
 
 Licensed under [Apache 2.0](LICENSE) - see the license file for details.
-
----
-
-**Made with ❤️ by the ArcWeight community**
-
-*ArcWeight is designed for researchers, engineers, and developers working with finite state methods in natural language processing, speech recognition, and computational linguistics.*

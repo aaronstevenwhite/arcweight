@@ -1,14 +1,12 @@
 # Optimization Operations
 
-**Make your FSTs fast, small, and efficient**
+**FST performance and memory optimization**
 
-*Determinize • Minimize • Connect • Clean*
-
-Optimization operations transform FSTs into equivalent but more efficient forms. These operations are crucial for production systems where performance and memory usage matter.
+Optimization operations transform FSTs into equivalent but more efficient forms. These operations are important for production systems where performance and memory usage matter.
 
 ## Connection
 
-Connection removes states that don't participate in any successful path. Always start optimization with connection — it's fast and can significantly reduce FST size.
+Connection removes states that don't participate in any successful path. Start optimization with connection — it's fast and can significantly reduce FST size.
 
 ### When to Use Connection
 
@@ -31,7 +29,7 @@ fn optimize_fst(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWei
     
     Ok(connected)
 }
-```text
+```
 
 ### Understanding Dead States
 
@@ -56,7 +54,7 @@ fst.add_arc(s2, Arc::new(3, 3, TropicalWeight::one(), s2)); // Self loop
 // s2 is not connected - will be removed
 let connected = connect(&fst)?;
 assert_eq!(connected.num_states(), 3); // s2 removed
-```text
+```
 
 ## Epsilon Removal
 
@@ -71,16 +69,16 @@ Epsilon transitions (ε:ε) can make FSTs harder to work with. Removing them sim
 ### Basic Epsilon Removal
 
 ```rust,ignore
-fn remove_epsilons(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
+fn remove_epsilons_example(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Remove epsilon transitions
-    let no_eps = rm_epsilon(fst)?;
+    let no_eps = remove_epsilons(fst)?;
     
     // Epsilon removal might create dead states
     let cleaned = connect(&no_eps)?;
     
     Ok(cleaned)
 }
-```text
+```
 
 ### Epsilon Removal in Practice
 
@@ -100,9 +98,9 @@ fst.add_arc(s0, Arc::new(1, 2, TropicalWeight::new(2.0), s1)); // a:b
 fst.add_arc(s1, Arc::new(0, 0, TropicalWeight::new(1.0), s2)); // ε:ε
 
 // After epsilon removal
-let clean = rm_epsilon(&fst)?;
+let clean = remove_epsilons(&fst)?;
 // Direct path from s0 to s2 with combined weights
-```text
+```
 
 ## Determinization
 
@@ -128,7 +126,7 @@ fn make_deterministic(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
     let det = determinize(fst)?;
     Ok(det)
 }
-```text
+```
 
 ### Determinization Example
 
@@ -150,7 +148,7 @@ fst.add_arc(s0, Arc::new(1, 3, TropicalWeight::new(2.0), s2));
 // After determinization: one transition per input
 let det = determinize(&fst)?;
 // Now only one outgoing arc with label 1 from start state
-```text
+```
 
 ### Handling Determinization Explosion
 
@@ -173,7 +171,7 @@ fn safe_determinize(
         }
     }
 }
-```text
+```
 
 ## Minimization
 
@@ -201,7 +199,7 @@ fn minimize_fst(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWei
     
     Ok(min)
 }
-```text
+```
 
 ### Complete Optimization Pipeline
 
@@ -213,7 +211,7 @@ fn full_optimization(
     let connected = connect(fst)?;
     
     // Step 2: Remove epsilon transitions
-    let no_eps = rm_epsilon(&connected)?;
+    let no_eps = remove_epsilons(&connected)?;
     
     // Step 3: Make deterministic
     let det = determinize(&no_eps)?;
@@ -231,7 +229,7 @@ fn full_optimization(
     
     Ok(min)
 }
-```text
+```
 
 ### Minimization Example
 
@@ -245,7 +243,7 @@ let redundant_fst = build_redundant_fst()?;
 let minimized = minimize(&determinize(&redundant_fst)?)?;
 // After minimization: states 1 and 2 merged
 // States: 0 -a-> 1 -b-> 2
-```text
+```
 
 ## Advanced Optimization Techniques
 
@@ -261,7 +259,7 @@ fn push_weights(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWei
     // Useful for probability FSTs
     Ok(pushed)
 }
-```text
+```
 
 ### Pruning
 
@@ -280,7 +278,7 @@ fn prune_unlikely_paths(
     
     Ok(connected)
 }
-```text
+```
 
 ### Lazy Operations
 
@@ -296,7 +294,7 @@ fn lazy_composition(
     // Composition computed on-demand
     ComposeFst::new(fst1, fst2)
 }
-```text
+```
 
 ## Optimization Strategies
 
@@ -306,7 +304,7 @@ fn lazy_composition(
 fn optimize_for_memory(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<TropicalWeight>> {
     // Aggressive optimization for small size
     let connected = connect(fst)?;
-    let no_eps = rm_epsilon(&connected)?;
+    let no_eps = remove_epsilons(&connected)?;
     let det = determinize(&no_eps)?;
     let min = minimize(&det)?;
     
@@ -315,7 +313,7 @@ fn optimize_for_memory(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Trop
     
     Ok(compacted)
 }
-```text
+```
 
 ### Strategy 2: Speed-Critical Systems
 
@@ -331,7 +329,7 @@ fn optimize_for_speed(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
     // Don't minimize if it would slow down access
     Ok(pushed)
 }
-```text
+```
 
 ### Strategy 3: Balanced Optimization
 
@@ -344,14 +342,14 @@ fn balanced_optimization(
     
     // Only do expensive operations if FST is large
     if connected.num_states() > size_threshold {
-        let no_eps = rm_epsilon(&connected)?;
+        let no_eps = remove_epsilons(&connected)?;
         let det = determinize(&no_eps)?;
         minimize(&det)
     } else {
         Ok(connected)
     }
 }
-```text
+```
 
 ## Performance Benchmarks
 
@@ -377,7 +375,7 @@ fn should_optimize(fst: &VectorFst<TropicalWeight>) -> bool {
     // Optimize if large or has many epsilons
     num_states > 1000 || num_arcs > 5000 || has_epsilons
 }
-```text
+```
 
 ### 2. Test Equivalence
 
@@ -389,7 +387,7 @@ fn verify_optimization(
     // Ensure optimization preserved behavior
     equivalent(original, optimized)
 }
-```text
+```
 
 ### 3. Monitor Resources
 
@@ -404,7 +402,7 @@ fn timed_optimization(fst: &VectorFst<TropicalWeight>) -> Result<VectorFst<Tropi
     println!("Optimization took: {:?}", duration);
     Ok(result)
 }
-```text
+```
 
 ## Common Issues and Solutions
 

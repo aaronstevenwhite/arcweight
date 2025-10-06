@@ -1,18 +1,18 @@
 # Design Philosophy
 
-ArcWeight's architecture reflects several key design philosophies that influence every implementation decision:
+ArcWeight's architecture reflects key design principles that influence implementation decisions.
 
 ## Mathematical Fidelity
 
-The implementation directly mirrors formal automata theory, ensuring that every operation has a solid theoretical foundation and maintains mathematical correctness.
+The implementation mirrors formal automata theory, ensuring operations maintain theoretical foundations and mathematical correctness.
 
 ## Performance Through Types
 
-Rust's type system is leveraged extensively to provide zero-cost abstractions, compile-time optimization, and memory safety without runtime overhead.
+Rust's type system provides compile-time optimization and memory safety without runtime overhead.
 
 ## Modularity and Extensibility
 
-Clean separation of concerns allows easy extension of the library with new semirings, FST types, and algorithms while maintaining API compatibility.
+Separation of concerns allows extension with new semirings, FST types, and algorithms while maintaining API compatibility.
 
 ## Core Design Principles
 
@@ -30,48 +30,31 @@ where
     M: MutableFst<W> + Default,     // Output FST type
 ```
 
-### Zero-Cost Abstractions
+### Generic Programming
 
-Generic programming enables compile-time specialization without runtime overhead:
+Generic programming enables compile-time specialization:
 
 ```rust,ignore
-// Compiles to optimal code for each semiring type
+// Compiles to specialized code for each semiring type
 let tropical_fst = VectorFst::<TropicalWeight>::new();
 let boolean_fst = VectorFst::<BooleanWeight>::new();
 ```
 
 ### Separation of Concerns
 
-Clear boundaries between different architectural layers:
-- **Data structures** separate from **algorithms**
-- **Algebraic operations** (semirings) separate from **graph operations**
-- **I/O concerns** isolated from **computation logic**
+Clear boundaries between architectural layers:
+- Data structures separate from algorithms
+- Algebraic operations (semirings) separate from graph operations
+- I/O concerns isolated from computation logic
 
-## Architectural Principles Summary
+## Implementation Principles
 
-The ArcWeight architecture embodies several key principles:
+**Mathematical Correctness**: Operations respect formal automata theory. The type system enforces mathematical constraints. Properties are tracked and validated automatically.
 
-**1. Mathematical Correctness First**
-- All operations respect formal automata theory
-- Type system enforces mathematical constraints
-- Properties tracked and validated automatically
+**Performance Through Design**: Multiple storage strategies for different use cases. Optimization opportunities at compile and runtime.
 
-**2. Performance Through Design**
-- Zero-cost abstractions wherever possible
-- Multiple storage strategies for different use cases
-- Optimization opportunities at compile and runtime
+**Extensibility**: Trait-based design enables extension. Clean separation of concerns. Plugin architecture for algorithms and data structures.
 
-**3. Extensibility and Modularity**
-- Trait-based design enables easy extension
-- Clean separation of concerns
-- Plugin architecture for algorithms and data structures
+**Rust-Native Design**: Follows Rust idioms and best practices. Integrates with the Rust ecosystem.
 
-**4. Rust-Native Design**
-- Leverages Rust's strengths (safety, performance, concurrency)
-- Follows Rust idioms and best practices
-- Integrates well with the Rust ecosystem
-
-**5. Production Ready**
-- Comprehensive error handling
-- Extensive testing and validation
-- Documentation and examples for all features
+**Error Handling**: Type-safe error handling through Result types. Structured error categories for different failure modes.

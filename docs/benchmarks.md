@@ -1,207 +1,139 @@
 # Performance Benchmarks
 
-This document presents comprehensive performance analysis of ArcWeight operations, measured on real hardware using Criterion.rs benchmarking framework.
+This document presents performance measurements of ArcWeight operations using the Criterion.rs benchmarking framework.
 
 ## Test Environment
 
-**Hardware Specifications:**
-- **Processor**: Apple M1 Max (ARM64 architecture)
-- **Cores**: 10 cores (8 performance + 2 efficiency)
-- **Memory**: 64 GB unified memory
-- **OS**: macOS 15.5 (Build 24F74)
-- **Rust Version**: 1.85.0 (release mode with optimizations)
+- Architecture: ARM64
+- Operating System: macOS 15.5
+- Rust Version: 1.85.0
+- Benchmark Framework: Criterion.rs
+- Compilation Profile: Release with optimizations
 
-**Benchmark Configuration:**
-- **Framework**: Criterion.rs with default settings
-- **Samples**: 100 samples per benchmark  
-- **Warm-up**: 3 seconds per benchmark
-- **Compilation**: `bench` profile (inherits from `release` with standard optimizations)
-
-## Core Operations Performance
+## Core Operations
 
 ### FST Creation
 
-Building FSTs from scratch with different topologies:
+Time complexity: O(V + E) where V = states, E = arcs
 
-| FST Type | Size | Creation Time | Throughput (states/sec) |
-|----------|------|---------------|-------------------------|
-| **Linear** | 100 states | 5.92 µs | 16,892 states/sec |
-| **Linear** | 1,000 states | 52.44 µs | 19,070 states/sec |
-| **Branching** | 100 states | 5.91 µs | 16,920 states/sec |
+| FST Type | States | Time | States/sec |
+|----------|--------|------|------------|
+| Linear | 100 | 5.80 µs | 17,241 |
+| Linear | 1,000 | 51.85 µs | 19,286 |
+| Branching | 100 | 5.93 µs | 16,863 |
 
-**Key Insights:**
-- Excellent scaling for small to medium FSTs
-- Branching structure has virtually no overhead compared to linear
-- Performance is consistent across different FST topologies
+Creation time scales linearly with FST size. Branching topology shows minimal overhead.
 
-### Shortest Path Computation
+### Shortest Path
 
-Finding optimal paths through FSTs using tropical semiring:
+Time complexity: O((V + E) log V) using priority queue
 
-**Algorithm**: Dijkstra-style shortest path with early termination
+| FST Type | States | Time | States/sec |
+|----------|--------|------|------------|
+| Linear | 1,000 | 66.44 µs | 15,051 |
+| Linear | 10,000 | 707.13 µs | 14,142 |
+| Branching | 100 | 7.32 µs | 13,661 |
+| Branching | 500 | 33.37 µs | 14,978 |
 
-| FST Structure | Size | Computation Time | Performance (states/sec) |
-|---------------|------|------------------|-------------------------|
-| **Linear** | 1,000 states | 67.09 µs | 14,905 states/sec |
-| **Linear** | 10,000 states | 667.50 µs | 14,981 states/sec |
-| **Branching** | 100 states | 7.46 µs | 13,405 states/sec |
+Observed scaling is near-linear for typical FST structures, better than theoretical worst-case.
 
-**Complexity**: Actual performance shows near-linear scaling, much better than theoretical \\(O((V + E) \log V)\\)
+### Composition
 
-### Composition Operations
+Time complexity: O(V₁ × V₂ × D₁ × D₂) worst case, where D = out-degree
 
-Chaining FSTs through composition (T\\(_1\\) \\(\circ\\) T\\(_2\\)):
+| FST₁ × FST₂ | Time | 
+|-------------|------|
+| 100 × 100 (linear) | 12.41 µs |
+| 100 × 50 (mixed) | 487.0 ns |
 
-| FST\\(_1\\) \\(\times\\) FST\\(_2\\) | Composition Time | Notes |
-|-------------|------------------|-------|
-| **100 \\(\times\\) 100** (linear) | 12.53 µs | Standard composition |
-| **100 \\(\times\\) 50** (mixed) | 478.78 ns | Optimized for smaller second FST |
+Composition benefits from on-the-fly construction and filter optimization.
 
-**Performance Notes:**
-- Small FST composition is extremely fast (< 1 µs for mixed cases)
-- Linear \\(\times\\) Linear composition shows good performance for moderate sizes
-- Asymmetric sizes (different FST sizes) can be significantly faster
+### Determinization
 
-### Determinization Performance
+Time complexity: O(2^V) worst case (exponential in subset construction)
 
-Converting non-deterministic FSTs to deterministic form:
+| FST Type | States | Time |
+|----------|--------|------|
+| Linear | 100 | 29.11 µs |
+| Branching | 50 | 26.04 µs |
 
-| Input FST | Input Size | Determinization Time |
-|-----------|------------|---------------------|
-| **Linear** | 100 states | 29.20 µs |
-| **Branching** | 50 states | 26.28 µs |
+Practical performance avoids exponential blowup for typical FST structures.
 
-**Complexity**: Much better than theoretical exponential worst-case due to typical FST structure
+## Memory Operations
 
-## Memory Performance
+### Large FST Performance
 
-### Large-Scale FST Handling
+| Operation | 10,000 States | 50,000 States | Scaling |
+|-----------|---------------|---------------|---------|
+| Creation | 1.07 ms | 5.78 ms | 5.4× |
+| Clone | 497.1 µs | 3.47 ms | 7.0× |
+| Clear | 700.5 ps | 708.1 ps | ~1× |
 
-Performance with substantial FSTs:
+Memory operations scale linearly with FST size. Clear operation is O(1) as it only resets internal state.
 
-| Operation | 10,000 States | 50,000 States | Scaling Factor |
-|-----------|---------------|---------------|----------------|
-| **Creation** | 1.056 ms | 6.22 ms | 5.89x |
-| **Clone** | 514.10 µs | > 3.5 ms* | > 6.8x |
+## Parallel Processing Analysis
 
-*Note: 50,000 state cloning exceeded benchmark timeout, indicating > 3.5ms
+### Sequential vs Parallel Performance
 
-**Memory Insights:**
-- **Creation** scales well but shows some overhead for very large FSTs
-- **Cloning** requires deep copy and scales with FST complexity
-- Memory allocation patterns are efficient for typical use cases
+| Operation | Sequential | Parallel | Overhead Factor |
+|-----------|------------|----------|-----------------|
+| Arc Count | 417.7 ns | 33.41 µs | 80× |
+| Arc Iteration | 729.4 ns | 30.42 µs | 42× |
+| Weight Sum | 2.79 µs | 54.43 µs | 19× |
 
-### Arc Processing Performance
+Parallel processing incurs significant overhead for small FSTs due to thread coordination costs. Sequential processing is recommended for FSTs with fewer than 100,000 arcs.
 
-Detailed arc-level operations:
+## Complexity Analysis
 
-| Operation | 1,000 States | 5,000 States | Performance Notes |
-|-----------|--------------|--------------|-------------------|
-| **Arc Count** | 802.40 ns | 4.08 µs | ~5x scaling |
-| **Arc Iteration** | 27.74 µs | 139.92 µs | ~5x scaling |
-| **Arc Lookup** | 27.80 µs | 139.39 µs | ~5x scaling |
+### Theoretical vs Observed Complexity
 
-**Arc Operations** show excellent linear scaling characteristics.
+| Algorithm | Theoretical Complexity | Observed Behavior |
+|-----------|----------------------|-------------------|
+| Creation | O(V + E) | Linear |
+| Shortest Path | O((V + E) log V) | Near-linear |
+| Composition | O(V₁ × V₂ × D₁ × D₂) | Sublinear for small FSTs |
+| Determinization | O(2^V) worst case | Linear to quadratic typical |
+| Union | O(V₁ + V₂ + E₁ + E₂) | Linear |
+| Minimization | O(2^V) worst case* | Polynomial typical |
 
-## Real-World Performance Patterns
+*Minimization uses Brzozowski's algorithm with double reversal and determinization.
 
-### Parallel vs Sequential Processing
+## Performance Guidelines
 
-For arc-intensive operations:
+### FST Size Categories
 
-| Operation | Sequential | Parallel | Parallel Overhead |
-|-----------|------------|----------|-------------------|
-| **Arc Count** | 402.4 ns | 35.73 µs | ~89x slower |
-| **Arc Iteration** | 765.1 ns | 35.31 µs | ~46x slower |
-| **Weight Sum** | 2.89 µs | 68.48 µs | ~24x slower |
+| Size | States | Recommendations |
+|------|--------|-----------------|
+| Small | < 1,000 | All operations < 100 µs |
+| Medium | 1,000-10,000 | Use sequential processing |
+| Large | > 10,000 | Consider optimization strategies |
 
-**Key Finding**: Parallel processing shows significant overhead for small FSTs. Parallelization is only beneficial for very large datasets due to thread coordination costs.
+### Optimization Strategies
 
-## Algorithm Complexity Analysis
+1. Minimize FSTs before composition or determinization
+2. Use ConstFst for read-only operations
+3. Prefer sequential processing for typical workloads
+4. Profile memory usage for large FSTs
 
-### Actual vs Theoretical Performance
-
-| Algorithm | Theoretical | Measured Scaling | Performance Notes |
-|-----------|-------------|------------------|-------------------|
-| **FST Creation** | \\(O(V + E)\\) | Linear | Excellent scaling |
-| **Shortest Path** | \\(O((V+E) \log V)\\) | Near-linear | Better than expected |
-| **Composition** | \\(O(V_1 \times V_2 \times \Sigma )\\) | Sublinear for small FSTs | Filter optimization effective |
-| **Determinization** | \\(O(2^V)\\) worst case | Linear-to-quadratic typical | Real FSTs avoid exponential blowup |
-
-### Scalability Observations
-
-**Linear Scaling (Excellent):**
-- FST creation: Consistent ~17-19K states/sec
-- Arc operations: Predictable 5x scaling from 1K to 5K states
-- Memory usage: Proportional to FST size
-
-**Near-Linear Scaling (Very Good):**
-- Shortest path: ~15K states/sec across different sizes
-- Basic FST operations maintain efficiency
-
-## Performance Recommendations
-
-### For Different Use Cases
-
-**Small FSTs (< 1,000 states):**
-- All operations are fast (< 100 µs)
-- No special optimization needed
-- Memory usage negligible
-
-**Medium FSTs (1,000 - 10,000 states):**
-- Use sequential processing (parallel overhead too high)
-- Operations remain efficient
-- Consider minimization before complex operations
-
-**Large FSTs (> 10,000 states):**
-- Essential to profile memory usage
-- Minimize before expensive operations like composition
-- Consider lazy evaluation for very large computations
-
-### Development Workflow
-
-**Optimization Priority:**
-1. **Algorithm choice** - Select appropriate operations
-2. **Operation order** - Minimize before compose when possible
-3. **Data structure** - VectorFst for construction, ConstFst for queries
-4. **Avoid premature parallelization** - Sequential is faster for typical FST sizes
-
-## Benchmark Reproduction
-
-To reproduce these benchmarks on your system:
+## Reproducing Benchmarks
 
 ```bash
-# Run all benchmarks (warning: takes significant time)
+# Run all benchmarks
 cargo bench
 
-# Run specific benchmark categories
+# Run specific categories
 cargo bench --bench basic_operations
-cargo bench --bench memory_usage  
+cargo bench --bench memory_usage
 cargo bench --bench shortest_path
 
-# Generate detailed reports with outlier analysis
-cargo bench -- --verbose
+# Quick benchmarks
+cargo bench -- --quick
 ```
 
-**Expected Variance:**
-- ±5-10% due to system load and thermal conditions
-- ±20-30% between different architectures (x86_64 vs ARM64)
-- ±2-3x between debug and release builds
+Expected variance: ±5-10% due to system load and thermal throttling.
 
-## Platform-Specific Notes
+## Further Reading
 
-**Apple M1 Max Performance Characteristics:**
-- Excellent single-core performance benefits FST algorithms
-- Unified memory architecture reduces memory bandwidth bottlenecks
-- ARM64 NEON instructions may benefit certain operations
-- Sequential processing often outperforms parallel due to coordination overhead
-
-**Cross-Platform Expectations:**
-- Intel/AMD x86_64: Likely 10-30% different performance
-- Different ARM chips: Similar performance characteristics
-- Memory-constrained systems: May show different scaling patterns
-
----
-
-**Data Collection Date**: Run on actual hardware as of 2025-06-16  
-**Reproducibility**: All numbers are from real Criterion.rs benchmark runs and can be reproduced using the provided commands.
+- [Core Concepts](core-concepts/) — Theoretical foundations
+- [Working with FSTs](working-with-fsts/) — Operations guide
+- [Architecture](architecture/) — Implementation details

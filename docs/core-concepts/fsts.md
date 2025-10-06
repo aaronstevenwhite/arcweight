@@ -1,12 +1,12 @@
 # Finite State Transducers
 
-Finite State Transducers (FSTs) represent a fundamental computational model in theoretical computer science and natural language processing {{#cite mohri1997finite}}. This chapter provides a comprehensive mathematical foundation for understanding FSTs, their weighted extensions, and their role in rational transduction theory, building upon the seminal work of {{#cite elgot1965relations}} and subsequent developments in weighted automata theory.
+Finite State Transducers (FSTs) represent a fundamental computational model in theoretical computer science and natural language processing {{#cite mohri1997finite}}. This chapter provides a mathematical foundation for understanding FSTs, their weighted extensions, and their role in rational transduction theory, building upon the work of {{#cite elgot1965relations}} and subsequent developments in weighted automata theory.
 
 ## Mathematical Foundations
 
-### Finite State Automata: The Foundation
+### Finite State Automata
 
-Before examining transducers, we establish the mathematical framework through finite state automata. A **Finite State Automaton** (FSA) provides the structural foundation upon which all transducer theory is built.
+Before examining transducers, we establish the mathematical framework through finite state automata. A **Finite State Automaton** (FSA) provides the structural foundation for transducer theory.
 
 **Definition 1.1**: A finite state automaton is a 5-tuple \\(M = \langle Q, \Sigma, \delta, q_0, F \rangle\\) where:
 - \\(Q\\) is a finite set of states
@@ -17,7 +17,7 @@ Before examining transducers, we establish the mathematical framework through fi
 
 The automaton \\(M\\) defines a language \\(L(M) \subseteq \Sigma^*\\) consisting of all strings accepted by the machine. A string \\(w = a_1 a_2 \ldots a_n\\) is accepted if there exists a sequence of states \\(q_0, q_1, \ldots, q_n\\) such that \\(\delta(q_{i-1}, a_i) = q_i\\) for all \\(i \in \\{1, n\\}\\) and \\(q_n \in F\\).
 
-The fundamental theorem of regular language theory establishes that finite state automata recognize precisely the class of regular languages, which form the lowest level of the Chomsky hierarchy. This theoretical foundation, established in the 1960s, provided the basis for the later development of finite-state transducers {{#cite elgot1965relations}}.
+Finite state automata recognize precisely the class of regular languages, which form the lowest level of the Chomsky hierarchy. This theoretical foundation provided the basis for the later development of finite-state transducers {{#cite elgot1965relations}}.
 
 **Example**: Consider recognizing strings over \\(\{a, b\}^*\\) that end with "ing":
 
@@ -62,7 +62,7 @@ fn build_ing_acceptor() -> Result<VectorFst<BooleanWeight>, Box<dyn std::error::
 - \\(q_0 \in Q\\) is the initial state  
 - \\(F \subseteq Q\\) is the set of final states
 
-FSTs define rational relations between strings, mapping input sequences to output sequences {{#cite mohri1997finite}}. The fundamental difference between automata and transducers lies in the transition structure: where automata transitions are functions \\(Q \times \Sigma \to Q\\), transducer transitions are relations that associate input symbols with output symbols during state changes, enabling the modeling of complex linguistic phenomena.
+FSTs define rational relations between strings, mapping input sequences to output sequences {{#cite mohri1997finite}}. The fundamental difference between automata and transducers lies in the transition structure: where automata transitions are functions \\(Q \times \Sigma \to Q\\), transducer transitions are relations that associate input symbols with output symbols during state changes.
 
 An FST defines a rational relation \\(R_T \subseteq \Sigma^* \times \Delta^*\\). A pair \\((u, v)\\) belongs to \\(R_T\\) if there exists a path from \\(q_0\\) to some \\(q_f \in F\\) such that the concatenation of input labels along the path equals \\(u\\) and the concatenation of output labels equals \\(v\\).
 
@@ -127,12 +127,12 @@ For comprehensive coverage of semiring theory, algebraic properties, and detaile
 
 ### Epsilon Transitions
 
-**Epsilon transitions** (label 0 in ArcWeight) consume no input but may produce output or change state. They serve crucial functions:
+**Epsilon transitions** (label 0 in ArcWeight) consume no input but may produce output or change state. They serve several functions:
 
 1. **Structural Composition**: Enable connection of disparate automata components in complex operations
 2. **Output Generation**: Allow insertion of output symbols without input consumption
 3. **Non-deterministic Choice**: Implement non-deterministic branching for ambiguous transformations
-4. **Algorithmic Efficiency**: Provide computational shortcuts, though may require epsilon removal
+4. **Algorithmic Efficiency**: Provide computational shortcuts, though they may require epsilon removal
 
 **Mathematical Properties**: Epsilon transitions affect computational complexity:
 - Epsilon loops can cause non-termination in naive algorithms
@@ -193,7 +193,7 @@ fn determinism_example() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Theoretical Properties
 
-A relation \\(R \subseteq \Sigma^* \times \Delta^*\\) is **rational** if it can be recognized by a finite state transducer {{#cite elgot1965relations}}. The class of rational relations forms a fundamental object of study in theoretical computer science, with important connections to formal language theory and computational linguistics.
+A relation \\(R \subseteq \Sigma^* \times \Delta^*\\) is **rational** if it can be recognized by a finite state transducer {{#cite elgot1965relations}}. The class of rational relations forms a fundamental object of study in theoretical computer science, with connections to formal language theory and computational linguistics.
 
 **Closure Properties**: Rational relations are closed under:
 - **Union**: If \\(R_1, R_2\\) are rational, then \\(R_1 \cup R_2\\) is rational
@@ -208,7 +208,7 @@ A relation \\(R \subseteq \Sigma^* \times \Delta^*\\) is **rational** if it can 
 - **Complement**: \\(\overline{R}\\) may not be rational
 - **Difference**: \\(R_1 \setminus R_2\\) may not be rational
 
-These closure properties directly correspond to FST operations available in computational systems and determine which composite transformations can be computed efficiently.
+These closure properties correspond to FST operations available in computational systems and determine which composite transformations can be computed efficiently.
 
 ## Mathematical Notation Summary
 
@@ -222,7 +222,7 @@ Throughout this chapter, we employ standard mathematical notation from automata 
 - \\(\Pi(u,v)\\): Set of paths transducing \\(u\\) to \\(v\\)
 - \\(R_T\\): Rational relation recognized by transducer \\(T\\)
 
-This notation provides a precise foundation for understanding the mathematical principles underlying all FST computation.
+This notation provides a foundation for understanding the mathematical principles underlying FST computation.
 
 ## References and Further Reading
 

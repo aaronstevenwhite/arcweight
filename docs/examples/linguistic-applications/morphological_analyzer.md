@@ -1,60 +1,73 @@
 # Morphological Analyzer
 
-This example demonstrates building a sophisticated morphological analyzer using FSTs to break words into meaningful components and reveal grammatical structure.
+This example implements a two-level morphological analyzer using finite-state transducers for morphological analysis and generation.
 
 ## Overview
 
-Morphological analysis sits at the heart of natural language processing, breaking words into their meaningful components (morphemes). While simple for English ("walked" = walk + ed), morphology becomes complex in languages like Finnish, Turkish, or Arabic where a single word can encode what English expresses in an entire sentence.
+Morphological analysis decomposes words into constituent morphemes while identifying their grammatical properties. The complexity varies significantly across languages: English exhibits relatively simple morphology (e.g., "walked" → walk + -ed), while agglutinative languages such as Finnish, Turkish, and Arabic encode multiple grammatical categories within single word forms.
 
-FSTs provide an elegant solution to morphological complexity through bidirectional processing (analyze or generate words), rule composition (complex phenomena from simple rules), and language independence (works for any morphology). The framework handles rich morphological systems efficiently while maintaining mathematical rigor.
+Finite state transducers provide a formal framework for morphological processing through:
+- Bidirectional transduction between lexical level and surface level
+- Two-level rules as parallel constraints
+- Language-independent computational architecture
 
-This implementation follows foundational work by {{#cite koskenniemi1983two}}, {{#cite beesley2003finite}}, and other computational morphology pioneers, demonstrating how FSTs can model everything from English derivation to Finnish vowel harmony through the two-level model and finite-state morphology.
+This implementation follows the two-level morphology model {{#cite koskenniemi1983two}} and the Xerox finite-state morphology framework {{#cite beesley2003finite}}, demonstrating applications from English derivational morphology to Finnish case systems with vowel harmony.
 
-## Quick Start
+## Usage
 
 ```bash
 cargo run --example morphological_analyzer
 ```
 
-## What You'll Learn
+## Concepts Demonstrated
 
-- **Two-Level Morphology**: Koskenniemi's model for handling sound changes at morpheme boundaries
-- **Morphotactics**: Language constraints on morpheme ordering through LEXC-style rules  
-- **Bidirectional Processing**: Using the same FST for both analysis and generation
-- **Morphophonology**: Modeling sound changes like vowel harmony and consonant gradation
-- **Lexicon Building**: Creating FST-based lexicons for stems and affixes
-- **Cross-Linguistic Analysis**: Handling English, Finnish, Turkish, and Arabic morphology
+- **Two-Level Morphology**: Implementation of Koskenniemi's two-level formalism
+- **Morphotactics**: Continuation lexicons for morpheme ordering (lexc style)  
+- **Bidirectional Processing**: Same transducer for analysis and generation
+- **Morphophonological Rules**: Two-level constraints for alternations
+- **Lexicon Structure**: Lexical entries with continuation classes
+- **Cross-Linguistic Coverage**: Applications to typologically diverse languages
 
 ## Core Concepts
 
 ### Theoretical Background
 
-This implementation is based on foundational work in computational morphology, building upon {{#cite koskenniemi1983two}} two-level morphology for modeling morphophonological alternations, {{#cite beesley2003finite}} comprehensive treatment of finite-state morphology, and {{#cite karttunen2001applications}} applications of finite-state transducers in natural language processing.
+The implementation draws upon foundational work in computational morphology: {{#cite koskenniemi1983two}} for the two-level model, {{#cite beesley2003finite}} for the comprehensive Xerox finite-state morphology framework, and the two-level compiler (twolc) developed by Karttunen, Koskenniemi, and Kaplan.
 
-Understanding morphology requires grasping how languages build words from smaller units. Let's explore the key concepts with concrete examples.
+Morphological systems construct words through systematic combination of morphemes according to language-specific morphotactic constraints and morphophonological rules.
 
 ### Morphological Categories
 
-Languages encode various types of information through morphology. Our analyzer handles:
+Languages encode grammatical and semantic information through morphological processes. The analyzer implements:
 
 #### Inflectional Categories (Grammar)
 
-Part of speech tags include Noun (N) for entities and concepts (cat, happiness, Finland), Verb (V) for actions and states (run, exist, analyze), Adjective (A) for properties (blue, happy, computational), and Adverb (Adv) for manner, time, place (quickly, yesterday, here).
+**Part of Speech Categories:**
+- Noun (N): entities and concepts
+- Verb (V): actions and states
+- Adjective (A): properties and attributes
+- Adverb (Adv): manner, time, and place
 
-Number marking includes singular for one entity (cat, child), plural for multiple entities (cats, children), and dual for exactly two (found in Arabic, Slovenian).
+**Number Marking:**
+- Singular: single entity reference
+- Plural: multiple entity reference
+- Dual: exactly two entities (Arabic, Slovenian)
 
 **Case Systems (Finnish examples):**
 ```text
-Nominative (subject):     kissa       "cat" (as subject)
-Genitive (possession):    kissan      "cat's"
-Partitive (partial):      kissaa      "some cat"
-Illative (into):         kissaan     "into the cat"
-Inessive (in):           kissassa    "in the cat"
-Elative (from):          kissasta    "from the cat"
+Nominative (subject):     kala        "fish" (as subject)
+Genitive (possession):    kalan       "of the fish/fish's"
+Partitive (partial):      kalaa       "(some) fish"
+Illative (into):         kalaan      "into the fish"
+Inessive (in):           kalassa     "in the fish"
+Elative (from):          kalasta     "from/out of the fish"
 ... and 9 more cases
 ```
 
-Verbal categories include tense such as present (walk), past (walked), future (will walk); person such as 1st (I walk), 2nd (you walk), 3rd (she walks); and voice such as active (I broke it), passive (it was broken).
+**Verbal Categories:**
+- Tense: present, past, future
+- Person: first, second, third
+- Voice: active, passive
 
 #### Derivational Categories (Word Formation)
 
@@ -66,11 +79,14 @@ Noun → Adjective:         nation → national
 Verb → Adjective:         break → breakable
 ```
 
-Semantic changes include diminutives that make smaller/cuter (dog → doggy), augmentatives that make bigger (in Spanish: casa → casona), and causatives that add "cause to" meaning (in Turkish: öl- "die" → öldür- "kill").
+**Semantic Derivation:**
+- Diminutive: semantic diminution (e.g., dog → doggy)
+- Augmentative: semantic augmentation (e.g., Spanish: casa → casona)
+- Causative: causation semantics (e.g., Turkish: öl- "die" → öldür- "kill")
 
-### Finite State Lexicon: Organizing Morphological Knowledge
+### Finite State Lexicon Architecture
 
-The lexicon is where linguistic knowledge meets computational representation. Our FST-based lexicon organizes morphemes efficiently:
+The lexicon encodes morphological knowledge following the lexc formalism:
 
 ```rust,ignore
 struct FiniteStateLexicon {
@@ -89,17 +105,26 @@ struct FiniteStateLexicon {
 }
 ```
 
-**Key Design Principles:**
+**Design Principles:**
 
-The system follows several key design principles. **Stem Classes** group words by inflection patterns, with English distinguishing regular vs. irregular verbs (walk/walked vs. go/went) and Finnish using vowel harmony classes (front vs. back vowels). **Feature Bundles** ensure each morpheme carries grammatical information, such as "+ed" → `[Past, Active]` and "+ssa" → `[Inessive, Singular]`. **Rule-Based Alternations** keep sound changes separate from the lexicon, storing "happy" (stem) and "+ness" (suffix), applying the rule y→i before suffixes to produce the surface form "happiness".
+1. **Stem Classification**: Morphemes grouped by inflectional patterns
+   - English: regular vs. irregular verb classes
+   - Finnish: vowel harmony classes (front/back vowel stems)
+
+2. **Feature Representation**: Grammatical features encoded as attribute sets
+   - Example: "+ed" → [+Past, +Active]
+   - Example: "+ssa" → [+Inessive, +Singular]
+
+3. **Two-Level Rules**: Morphophonological alternations as parallel constraints
+   - Example: y:i ⇔ _ +:0 ness (happy + ness → happiness)
 
 ## Implementation
 
-Let's explore how different languages challenge our morphological analyzer with increasing complexity.
+The implementation handles languages of varying morphological complexity.
 
 ### Finnish Morphology: A Case Study in Complexity
 
-Finnish exemplifies agglutinative morphology where words are built by concatenating morphemes, each adding specific meaning. With 15 cases and strict vowel harmony, it's an ideal test for our FST approach.
+Finnish exemplifies agglutinative morphology through systematic morpheme concatenation. The language employs 15 grammatical cases, vowel harmony constraints, and consonant gradation, demonstrating the capabilities of finite state morphological analysis.
 
 #### The Finnish Case System
 
@@ -108,9 +133,9 @@ Finnish nouns inflect for 15 cases, each encoding spatial, temporal, or grammati
 **Basic Cases (Grammatical):**
 ```text
 kala (fish) - Nominative (subject)
-├── kalan   - Genitive (possession/object)      "fish's" / "of fish"
-├── kalaa   - Partitive (partial object)        "some fish"
-└── kalaksi - Translative (transformation)      "into a fish"
+├── kalan   - Genitive (possession/object)      "of the fish"
+├── kalaa   - Partitive (partial object)        "(some) fish"
+└── kalaksi - Translative (transformation)      "(to become) a fish"
 ```
 
 **Local Cases (Spatial Relations):**
@@ -118,12 +143,12 @@ kala (fish) - Nominative (subject)
 Interior (inside):
 ├── kalassa  - Inessive (in)         "in the fish"
 ├── kalaan   - Illative (into)       "into the fish"
-└── kalasta  - Elative (out of)      "out of the fish"
+└── kalasta  - Elative (from)        "from/out of the fish"
 
-Exterior (surface):
-├── kalalla  - Adessive (on/at)      "on the fish"
-├── kalalle  - Allative (onto)       "onto the fish"
-└── kalalta  - Ablative (off/from)   "off the fish"
+Exterior (surface/possession):
+├── kalalla  - Adessive (at/with)    "at/by the fish" or "the fish has"
+├── kalalle  - Allative (to)         "to the fish"
+└── kalalta  - Ablative (from)       "from the fish"
 ```
 
 #### Vowel Harmony: A Phonological Constraint
@@ -133,26 +158,30 @@ Finnish vowels are divided into three groups: **back vowels** (a, o, u), **front
 **Harmony Rule**: Suffixes must match the stem's vowel type:
 
 ```text
-Back vowel stems:
+Back vowel stems (a, o, u):
 talo (house) + -ssa → talossa    "in the house"
 auto (car)   + -lla → autolla    "by car"
+katu (street) + -lla → kadulla   "on the street"
 
-Front vowel stems:
+Front vowel stems (ä, ö, y):
 kylä (village) + -ssä → kylässä  "in the village"
 yö (night)     + -llä → yöllä    "at night"
+työ (work)     + -ssä → työssä   "at work"
 ```
 
-This is where FSTs shine - the same morphological rule has different surface realizations based on phonological context.
+Finite-state transducers handle these alternations through two-level rules that define correspondences between the lexical level and surface level based on phonological context. The suffix alternants -ssa/-ssä, -lla/-llä, etc., are selected based on the vowel harmony of the stem.
 
 ### English Morphology
 
-English examples focus on derivational morphology and inflectional patterns:
+English morphology demonstrates both inflectional and derivational processes:
 
 **Derivational Processes:**
 ```text
-work + er  → worker    (agent nominal)
-happy + ness → happiness (abstract nominal with y→i rule)
-write + er → writer    (with e-deletion)
+work + er  → worker     (agent nominal)
+happy + ness → happiness (abstract nominal with y:i correspondence)
+write + er → writer     (with e:0 correspondence)
+teach + er → teacher    (agent nominal)
+kind + ness → kindness  (abstract nominal)
 ```
 
 **Inflectional Morphology:**
@@ -164,7 +193,13 @@ work + s  → works    (3rd person singular)
 
 ### Analysis Pipeline
 
-The morphological analyzer processes words through several stages. **Lexical Lookup** checks if the word exists in stem dictionaries. **Affix Segmentation** tries different affix combinations. **Phonological Processing** applies morphophonological rules. **Feature Assembly** combines stem and affix features. **Result Formatting** generates morphological glosses.
+The morphological analysis proceeds through the following stages:
+
+1. **Surface Form Input**: Receive the word form to analyze
+2. **Transducer Application**: Apply the composed lexicon-rules transducer
+3. **Lexical Form Recovery**: Extract underlying representations
+4. **Feature Assembly**: Combine morphological features from morphemes
+5. **Result Formatting**: Generate interlinear morphological glosses
 
 ```rust,ignore
 fn analyze(&self, surface_form: &str) -> Vec<MorphAnalysis> {
@@ -181,12 +216,14 @@ fn analyze(&self, surface_form: &str) -> Vec<MorphAnalysis> {
 
 ### Morphophonological Processing
 
-The system handles common sound change patterns:
+The implementation includes morphophonological rules for common alternations:
 
 **Y-to-I Rule (English):**
 ```rust,ignore
-// happy + ness → happiness
-if stem.ends_with('y') && !suffix.is_empty() {
+// Simplified implementation of two-level rule:
+// y:i ⇔ _ +:0 ness
+// (y corresponds to i when followed by morpheme boundary and "ness")
+if stem.ends_with('y') && suffix == "ness" {
     let modified_stem = format!("{}{}", &stem[..stem.len() - 1], "i");
     let expected = format!("{}{}", modified_stem, suffix);
     if expected == surface_form {
@@ -197,8 +234,10 @@ if stem.ends_with('y') && !suffix.is_empty() {
 
 **E-Deletion Rule (English):**
 ```rust,ignore
-// write + er → writer  
-if stem.ends_with('e') && !suffix.is_empty() {
+// Simplified implementation of two-level rule:
+// e:0 ⇔ _ +:0 er  
+// (e is deleted when followed by morpheme boundary and "er")
+if stem.ends_with('e') && suffix == "er" {
     let modified_stem = &stem[..stem.len() - 1];
     let expected = format!("{}{}", modified_stem, suffix);
     if expected == surface_form {
@@ -207,7 +246,7 @@ if stem.ends_with('e') && !suffix.is_empty() {
 }
 ```
 
-## Running the Example
+## Execution
 
 ```bash
 cargo run --example morphological_analyzer
@@ -223,15 +262,25 @@ Analyzing 'kalan':
     Gloss: kala.GEN
     Morphemes: kala + n
 
-Analyzing 'kirjassa':
-  Analysis 1: kirja+ssa [N+Iness+Sg]
-    Gloss: kirja.INESS
-    Morphemes: kirja + ssa
+Analyzing 'kalassa':
+  Analysis 1: kala+ssa [N+Iness+Sg]
+    Gloss: kala.INESS
+    Morphemes: kala + ssa
+
+Analyzing 'taloon':
+  Analysis 1: talo+on [N+Ill+Sg]
+    Gloss: talo.ILL
+    Morphemes: talo + on
+
+Analyzing 'luen':
+  Analysis 1: luke+n [V+Pres+1+Sg]
+    Gloss: read.PRES.1SG
+    Morphemes: luke + n
 
 English Derivational Morphology
 ----------------------------------
 Analyzing 'worker':
-  Analysis 1: work+er [V+Agent+N]
+  Analysis 1: work+er [V+Ag+N]
     Gloss: work.AGENT
     Morphemes: work + er
 
@@ -245,7 +294,7 @@ Analyzing 'happiness':
 
 ### Morphotactic FST
 
-The example includes a simplified FST for morpheme ordering:
+A simplified morphotactic transducer encodes morpheme ordering constraints (following lexc continuation class principles):
 
 ```rust,ignore
 fn build_morphotactic_fst() -> VectorFst<TropicalWeight> {
@@ -257,10 +306,10 @@ fn build_morphotactic_fst() -> VectorFst<TropicalWeight> {
     let noun_inflected = fst.add_state();
     let final_state = fst.add_state();
     
-    // Add morpheme boundary marker
+    // Add morpheme boundary (lexc uses ^, we use + here)
     fst.add_arc(noun_stem, Arc::new(
-        '+' as u32,   // morpheme boundary
-        0,            // epsilon output
+        '+' as u32,   // morpheme boundary symbol
+        0,            // epsilon on surface (boundary deleted)
         TropicalWeight::one(),
         noun_inflected,
     ));
@@ -271,22 +320,34 @@ fn build_morphotactic_fst() -> VectorFst<TropicalWeight> {
 
 ## Applications
 
-This morphological analyzer enables several important applications:
+The morphological analyzer supports various computational linguistics applications:
 
 ### Natural Language Processing
-The morphological analyzer enables several important applications in natural language processing. **Machine Translation** benefits from better handling of morphologically rich languages. **Information Retrieval** improves through lemmatization and morphological normalization. **Text Mining** can extract semantic content from morphological variants more effectively. **Language Modeling** achieves better handling of unseen word forms.
+
+- **Machine Translation**: Improved handling of morphologically complex languages
+- **Information Retrieval**: Morphological normalization and lemmatization
+- **Text Mining**: Extraction of semantic content across morphological variants
+- **Language Modeling**: Productive handling of unseen word forms
 
 ### Linguistic Research
-The analyzer supports various linguistic research applications. **Corpus Analysis** enables studying morphological patterns in large corpora. **Language Documentation** helps model morphological systems of understudied languages. **Historical Linguistics** can trace morphological changes over time. **Typological Studies** facilitate comparing morphological systems across languages.
+
+- **Corpus Analysis**: Quantitative study of morphological patterns
+- **Language Documentation**: Formal modeling of morphological systems
+- **Historical Linguistics**: Tracking morphological change over time
+- **Typological Studies**: Cross-linguistic comparison of morphological phenomena
 
 ### Language Technology
-The system enables various language technology applications. **Spell Checkers** benefit from morphologically-aware error detection and correction. **Grammar Checkers** can detect morphosyntactic errors more accurately. **Text-to-Speech** systems achieve proper pronunciation of morphologically complex words. **Language Learning** applications can generate morphological exercises and provide feedback.
+
+- **Spell Checking**: Morphologically informed error detection and correction
+- **Grammar Checking**: Morphosyntactic agreement verification
+- **Text-to-Speech**: Accurate pronunciation of morphologically complex forms
+- **Computer-Assisted Language Learning**: Morphological exercise generation
 
 ## Advanced Features
 
-### Multiple Pronunciations
+### Morphological Ambiguity
 
-The system handles words with multiple valid analyses:
+The system handles morphologically ambiguous forms:
 
 ```rust,ignore
 LexiconEntry {
@@ -298,49 +359,81 @@ LexiconEntry {
 }
 ```
 
-### Contextual Rules
+### Context-Sensitive Rules
 
-Future extensions could include context-sensitive morphophonological rules:
+The framework supports context-dependent morphophonological alternations:
 
 ```rust,ignore
 PhonologicalRule {
     name: "Finnish Consonant Gradation".to_string(),
-    input_context: vec!["k".to_string()],
-    output_context: vec!["".to_string()], // deletion
-    environment: Some("V_V".to_string()),  // between vowels
+    // Strong grade → weak grade examples:
+    // katu → kadun (t→d)
+    // kukka → kukan (kk→k)  
+    // kampa → kamman (mp→mm)
+    input_context: vec!["t".to_string()],
+    output_context: vec!["d".to_string()],
+    environment: Some("V_V".to_string()),  // between vowels in closed syllable
 }
 ```
 
 ## Performance Considerations
 
-The system incorporates several performance optimizations. **Trie Structure** provides efficient prefix sharing for stem storage. **Rule Caching** memoizes morphophonological rule applications to avoid recomputation. **Lazy Evaluation** generates analyses on demand rather than precomputing all possibilities. **Memory Management** reuses FST states where possible to minimize resource usage.
+### Optimization Strategies
 
-The system gracefully handles various edge cases including unknown words (no analysis returned), malformed input (character encoding issues), rule conflicts (multiple competing analyses), and resource limits (maximum analysis depth).
+- **Trie-based Lexicon**: Efficient prefix sharing for stem storage
+- **Rule Memoization**: Caching of morphophonological rule applications
+- **Lazy Evaluation**: On-demand analysis generation
+- **State Reuse**: Minimal FST state allocation
 
-## Advanced Features
+### Edge Case Handling
 
-### Enhanced Phonology
-Future work could extend the phonological component with **Two-Level Rules** providing full implementation of Koskenniemi's formalism, **Feature-Based Phonology** using articulatory feature representations, **Optimality Theory** for constraint-based phonological analysis, and **Morphophonemic Alternations** to handle complex stem changes.
+- Unknown words: Return empty analysis set
+- Encoding issues: UTF-8 validation
+- Ambiguous analyses: Return all valid interpretations
+- Resource constraints: Bounded search depth
 
-### Broader Language Coverage
-Expanding language coverage could include **Semitic Languages** with root-and-pattern morphology (Arabic, Hebrew), **Polysynthetic Languages** with complex agglutination (Inuktitut, Mohawk), **Tonal Languages** exploring the interaction of tone and morphology, and **Sign Languages** with spatial morphological processes.
+## Extensions
 
-### Machine Learning Integration
-Future directions could incorporate **Neural Morphology** using deep learning for morphological analysis, **Unsupervised Learning** to discover morphological patterns from corpora, **Transfer Learning** to adapt analyzers across related languages, and **Active Learning** to iteratively improve with human feedback.
+### Enhanced Phonological Modeling
+
+- Full two-level rule implementation with proper rule notation
+- Feature-based phonological representations
+- Context-sensitive alternations with left and right contexts
+- Complex morphophonemic phenomena (gradation, harmony, etc.)
+
+### Additional Language Types
+
+- Semitic root-and-pattern morphology (Arabic, Hebrew)
+- Polysynthetic morphology (Inuktitut, Mohawk)
+- Tonal morphology interactions
+- Sign language morphological processes
+
+### Computational Approaches
+
+- Neural morphological analysis models
+- Unsupervised morphological segmentation
+- Cross-lingual transfer learning
+- Active learning for morphological rule acquisition
 
 ## Related Examples
 
-This morphological analyzer connects with other examples in the collection. **[Edit Distance](../text-processing/edit_distance.md)** provides the foundation for fuzzy morphological matching. **[Phonological Rules](phonological_rules.md)** demonstrates advanced sound change modeling. **[Spell Checking](../text-processing/spell_checking.md)** shows morphologically-aware spell checking. **[Transliteration](../practical-applications/transliteration.md)** explores cross-script morphological analysis.
+- **[Edit Distance](../text-processing/edit_distance.md)**: String similarity for morphological variant matching
+- **[Phonological Rules](phonological_rules.md)**: Cascaded phonological rule application
+- **[Spell Checking](../text-processing/spell_checking.md)**: Morphologically informed spelling correction
+- **[Transliteration](../practical-applications/transliteration.md)**: Cross-script morphological processing
 
 ## References
 
-### Foundational Papers
-The theoretical foundations rest on {{#cite koskenniemi1983two}} two-level morphological model, {{#cite kaplan1994regular}} regular models of phonological rule systems, and {{#cite beesley2003finite}} comprehensive treatment of finite-state morphology.
+### Foundational Work
 
-### Modern Applications
-Modern applications build upon these foundations, as described in {{#cite beesley2003finite}} comprehensive treatment and contemporary NLP applications.
+- {{#cite koskenniemi1983two}}: Two-level morphology: A general computational model
+- {{#cite karttunen1987compiler}}: A compiler for two-level phonological rules
+- {{#cite beesley2003finite}}: Finite State Morphology (Xerox tools and theory)
 
-### Software Implementations
-Relevant software implementations include **XFST** (Xerox Finite State Tool), **HFST** (Helsinki Finite State Technology), **Foma** (Open-source finite state compiler), and **OpenFST** (Google's finite state library).
+### Related Software
 
-This morphological analyzer demonstrates the power and elegance of finite state methods for modeling natural language morphology, providing both theoretical insights and practical applications for computational linguistics and NLP systems.
+- lexc: Xerox lexicon compiler for morphotactics
+- twolc: Two-level rule compiler (Xerox)
+- xfst: Xerox finite-state tool for regular expressions
+- HFST: Helsinki Finite-State Technology (open-source alternatives)
+- Foma: Open-source finite-state morphology compiler

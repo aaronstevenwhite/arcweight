@@ -1,36 +1,34 @@
-# Text Processing Fundamentals
+# Text Processing
 
-**Core algorithms for string manipulation and similarity**
+This section presents fundamental string algorithms implemented using finite state transducers, including string metrics, sequence alignment, and error correction.
 
-These examples demonstrate fundamental text processing algorithms using FSTs, focusing on string comparison, transformation, and correction techniques.
-
-## Examples in This Category
+## Examples
 
 ### [Edit Distance](edit_distance.md)
-**Complexity:** Intermediate  
-**Concepts:** Dynamic programming, cost matrices, string similarity  
+Implements the Levenshtein distance algorithm using weighted finite state transducers. The implementation supports configurable operation costs for insertion, deletion, and substitution.
+
 ```bash
 cargo run --example edit_distance
-```text
+```
 
 ### [String Alignment](string_alignment.md)  
-**Complexity:** Intermediate  
-**Concepts:** Path extraction, alignment visualization, multiple optimality  
+Computes optimal alignments between strings using path extraction from weighted transducers. The system handles multiple equally optimal alignments.
+
 ```bash
 cargo run --example string_alignment
-```text
+```
 
 ### [Spell Checking](spell_checking.md)
-**Complexity:** Advanced  
-**Concepts:** Composition, shortest path, error modeling  
+Demonstrates spell checking through transducer composition, combining error models with lexicon constraints for candidate generation and ranking.
+
 ```bash
 cargo run --example spell_checking
-```text
+```
 
-## Learning Path
+## Organization
 
-Start with **Edit Distance** to understand the fundamentals, then progress to **String Alignment** to see how to extract transformation paths, and finally explore **Spell Checking** for a real-world application.
+The examples progress from basic string metrics through alignment algorithms to practical applications in spell checking. Each builds upon concepts from the previous examples.
 
 ---
 
-**[← Back to Examples Overview](../README.md)**
+[← Examples Overview](../README.md)

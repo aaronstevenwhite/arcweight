@@ -425,7 +425,7 @@ struct CompactState {
 ///
 /// The `Compactor` trait defines the interface for compression algorithms that can
 /// reduce the memory footprint of FST arcs and weights. Implementations can range
-/// from simple enumeration-based approaches to sophisticated domain-specific
+/// from simple enumeration-based approaches to domain-specific
 /// compression schemes that exploit patterns in the data.
 ///
 /// # Design Principles
@@ -1724,7 +1724,7 @@ impl<W: Semiring> ContextCompactor<W> {
 
     #[allow(dead_code)]
     fn analyze_context(&self, _context: &[Arc<W>]) -> CompressionMode {
-        // Simplified context analysis - would be more sophisticated in practice
+        // Simplified context analysis - would be more complex in practice
         CompressionMode::VarInt
     }
 }
@@ -2783,7 +2783,7 @@ impl<W: Semiring, C: Compactor<W>> CompactFst<W, C> {
     /// using interior mutability patterns.
     ///
     /// Note: This is a conceptual implementation. A full implementation
-    /// would use more sophisticated caching strategies with eviction policies.
+    /// would use more complex caching strategies with eviction policies.
     pub fn expanded_arcs_cached(&self, state: StateId) -> Vec<Arc<W>> {
         // In a full implementation, this would:
         // 1. Check an internal cache (e.g., RefCell<HashMap<StateId, Vec<Arc<W>>>>)

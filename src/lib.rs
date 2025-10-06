@@ -5,14 +5,14 @@
 //!
 //! ## Overview
 //!
-//! ArcWeight provides a comprehensive toolkit for working with finite state machines,
+//! ArcWeight provides a toolkit for working with finite state machines,
 //! from simple acceptors to complex weighted transducers. Built with performance and
 //! correctness in mind, it leverages Rust's type system to ensure compile-time safety
-//! while maintaining the flexibility needed for advanced FST operations.
+//! while maintaining the flexibility needed for FST operations.
 //!
 //! ## Key Features
 //!
-//! ### 🎯 Comprehensive FST Support
+//! ### 🎯 FST Support
 //! - **Multiple implementations:** [`fst::VectorFst`] for construction, [`fst::ConstFst`] for deployment
 //! - **Lazy evaluation:** On-demand computation with [`fst::LazyFstImpl`]
 //! - **Memory efficiency:** Compact representations and caching strategies
@@ -31,7 +31,7 @@
 //! - **Core operations:** [`algorithms::compose`], [`algorithms::concat`], [`algorithms::union`], [`algorithms::closure`]
 //! - **Optimizations:** [`algorithms::minimize`], [`algorithms::determinize`], [`algorithms::remove_epsilons`]
 //! - **Path algorithms:** [`algorithms::shortest_path`], [`algorithms::randgen`]
-//! - **Advanced transforms:** [`algorithms::synchronize`], [`algorithms::push_weights`]
+//! - **Additional transforms:** [`algorithms::synchronize`], [`algorithms::push_weights`]
 //!
 //! ### 📊 Property Analysis
 //! - **Automatic property tracking:** Detect determinism, cyclicity, connectivity
@@ -130,7 +130,7 @@
 //! 3. **Batch operations:** Combine multiple operations when possible
 //! 4. **Use lazy evaluation:** For large FSTs, consider lazy implementations
 //!
-//! ## Advanced Topics
+//! ## Additional Topics
 //!
 //! - **Custom Semirings:** Implement the [`Semiring`] trait for domain-specific weights
 //! - **Lazy Computation:** Use [`fst::LazyFstImpl`] for on-demand arc generation

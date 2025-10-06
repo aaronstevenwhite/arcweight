@@ -347,7 +347,7 @@ impl FstProperties {
 ///
 /// - **Time Complexity:** O(|V| + |E|) where V = states, E = arcs
 /// - **Space Complexity:** O(|V|) for visited state tracking
-/// - **Analysis:** Single pass through all states and arcs
+/// - **Analysis:** Single pass through all states and arcs with graph traversal
 ///
 /// # Properties Computed
 ///
@@ -688,6 +688,10 @@ fn compute_determinism<W: Semiring, F: Fst<W>>(fst: &F) -> (bool, bool) {
 /// An FST is functional if each input string has at most one corresponding output string.
 /// This is a conservative approximation - we check if the FST is both input-deterministic
 /// and has no epsilon cycles, which guarantees functionality.
+///
+/// # Complexity
+/// - Time: O(|V| + E_ε) where E_ε is the number of epsilon transitions
+/// - Space: O(|V|) for visited state tracking
 fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
     // Simple approximation: functional if input deterministic and no epsilon cycles
     let (is_input_deterministic, _) = compute_determinism(fst);
@@ -696,64 +700,57 @@ fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
         return false;
     }
 
-    // Check for epsilon cycles - functional FSTs shouldn't have epsilon cycles
-    // that could generate multiple outputs for the same input
+    // Check for epsilon cycles using a single-pass DFS
+    // This explores all reachable states once while checking for epsilon cycles
+    if let Some(start_state) = fst.start() {
+        let mut visited: std::collections::HashSet<StateId> =
+            std::collections::HashSet::new();
+        let mut rec_stack: std::collections::HashSet<StateId> =
+            std::collections::HashSet::new();
 
-    fn has_epsilon_cycle<W: Semiring, F: Fst<W>>(
-        fst: &F,
-        state: StateId,
-        visited: &mut std::collections::HashSet<StateId>,
-        rec_stack: &mut std::collections::HashSet<StateId>,
-    ) -> bool {
-        visited.insert(state);
-        rec_stack.insert(state);
+        // Single-pass DFS that detects epsilon cycles
+        fn has_epsilon_cycle_dfs<W: Semiring, F: Fst<W>>(
+            fst: &F,
+            state: StateId,
+            visited: &mut std::collections::HashSet<StateId>,
+            rec_stack: &mut std::collections::HashSet<StateId>,
+        ) -> bool {
+            if !visited.insert(state) {
+                // Already fully explored this state
+                return false;
+            }
 
-        for arc in fst.arcs(state) {
-            // Only consider epsilon transitions for cycles
-            if arc.is_epsilon() {
-                if !visited.contains(&arc.nextstate) {
-                    if has_epsilon_cycle(fst, arc.nextstate, visited, rec_stack) {
+            rec_stack.insert(state);
+
+            for arc in fst.arcs(state) {
+                // Check epsilon arcs for cycles
+                if arc.is_epsilon() {
+                    if rec_stack.contains(&arc.nextstate) {
+                        // Found epsilon cycle
                         return true;
                     }
-                } else if rec_stack.contains(&arc.nextstate) {
+                    if !visited.contains(&arc.nextstate)
+                        && has_epsilon_cycle_dfs(fst, arc.nextstate, visited, rec_stack)
+                    {
+                        return true;
+                    }
+                }
+
+                // Also explore non-epsilon arcs to reach all states
+                // (but only check epsilon arcs for cycles)
+                if !arc.is_epsilon()
+                    && !visited.contains(&arc.nextstate)
+                    && has_epsilon_cycle_dfs(fst, arc.nextstate, visited, rec_stack)
+                {
                     return true;
                 }
             }
+
+            rec_stack.remove(&state);
+            false
         }
 
-        rec_stack.remove(&state);
-        false
-    }
-
-    // Check for epsilon cycles from any reachable state
-    if let Some(start_state) = fst.start() {
-        // First, find all reachable states
-        let mut reachable_states: std::collections::HashSet<StateId> =
-            std::collections::HashSet::new();
-        let mut stack = vec![start_state];
-
-        while let Some(state) = stack.pop() {
-            if reachable_states.insert(state) {
-                for arc in fst.arcs(state) {
-                    if !reachable_states.contains(&arc.nextstate) {
-                        stack.push(arc.nextstate);
-                    }
-                }
-            }
-        }
-
-        // Check for epsilon cycles starting from any reachable state
-        for &state in &reachable_states {
-            let mut local_visited: std::collections::HashSet<StateId> =
-                std::collections::HashSet::new();
-            let mut local_rec_stack: std::collections::HashSet<StateId> =
-                std::collections::HashSet::new();
-            if has_epsilon_cycle(fst, state, &mut local_visited, &mut local_rec_stack) {
-                return false;
-            }
-        }
-
-        true // No epsilon cycles found
+        !has_epsilon_cycle_dfs(fst, start_state, &mut visited, &mut rec_stack)
     } else {
         true // Empty FST is vacuously functional
     }

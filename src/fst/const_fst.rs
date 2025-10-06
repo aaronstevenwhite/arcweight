@@ -391,7 +391,7 @@ impl<W: Semiring> ConstFst<W> {
 ///
 /// This iterator is created automatically by `ConstFst::arcs()` and should
 /// not be constructed directly. It implements the standard Iterator trait
-/// for seamless integration with Rust iteration patterns.
+/// for integration with Rust iteration patterns.
 ///
 /// ```rust
 /// use arcweight::prelude::*;

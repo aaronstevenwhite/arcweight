@@ -1,6 +1,6 @@
 //! FST properties computation and tracking
 //!
-//! This module provides a comprehensive system for analyzing and tracking properties
+//! This module provides a system for analyzing and tracking properties
 //! of weighted finite state transducers (FSTs). Properties are structural and algorithmic
 //! characteristics that enable optimization and guide algorithm selection.
 //!

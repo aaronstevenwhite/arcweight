@@ -284,7 +284,7 @@ use std::sync::{Arc as SyncArc, RwLock};
 ///
 /// # Algorithm Integration
 ///
-/// CacheFst integrates seamlessly with all FST algorithms:
+/// CacheFst integrates with all FST algorithms:
 /// - **Composition:** Cache intermediate results during multi-stage composition
 /// - **Search Algorithms:** Accelerate repeated state visits in search trees
 /// - **Path Finding:** Cache explored paths for backtracking algorithms

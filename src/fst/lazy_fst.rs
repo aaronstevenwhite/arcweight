@@ -106,7 +106,7 @@ use std::sync::{Arc as StdArc, RwLock};
 /// }
 ///
 /// fn decode_composed_state(state: StateId) -> (StateId, StateId) {
-///     // Simplified decoding - in practice would be more sophisticated
+///     // Simplified decoding - in practice would be more complex
 ///     (state / 1000, state % 1000)
 /// }
 ///
@@ -448,7 +448,7 @@ use std::sync::{Arc as StdArc, RwLock};
 /// [`ConstFst`]: crate::fst::ConstFst
 /// [`CompactFst`]: crate::fst::CompactFst
 /// [`CacheFst`]: crate::fst::CacheFst
-/// Redesigned LazyFstImpl with improved storage and lifetime management
+/// LazyFstImpl with on-demand storage and lifetime management
 ///
 /// This new implementation fixes the critical lifetime limitation by using RwLock
 /// for better concurrency control and storing final weights in a way that allows
@@ -1030,7 +1030,7 @@ where
         // For compatibility with the Fst trait, we compute and cache the state
         // but return None to indicate the limitation still exists at the trait level.
         //
-        // WORKAROUND: Use the improved methods instead:
+        // WORKAROUND: Use the alternative methods instead:
         // ```
         // let weight_ref = lazy_fst.final_weight_ref(state);  // Returns Arc<W>
         // let weight_owned = lazy_fst.final_weight_owned(state);  // Returns Option<W>

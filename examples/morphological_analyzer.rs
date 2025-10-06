@@ -1,20 +1,33 @@
 //! Finite State Morphology Example
 //!
-//! This example demonstrates finite state morphological analysis following the
-//! foundational work of Lauri Karttunen and subsequent developments in computational
-//! morphology. It shows:
+//! This example demonstrates finite state morphological analysis based on two-level
+//! morphology (Koskenniemi 1983) and the Xerox finite-state tools framework. It shows:
 //!
-//! 1. Two-level morphology principles (Koskenniemi & Karttunen)
-//! 2. Lexicon construction and morphotactics
+//! 1. Two-level morphology theory (Koskenniemi 1983)
+//! 2. Lexicon construction using lexc formalism (Karttunen 1993)
 //! 3. Classic examples: Finnish morphology, English derivation, agglutination
 //! 4. Morphophonological alternations and surface realization
 //! 5. Bidirectional morphological processing (analysis ↔ generation)
 //!
-//! This implementation follows the theoretical framework established in:
+//! # Historical Development
+//!
+//! ## Theoretical Foundation
+//! - **Two-level morphology**: Koskenniemi, K. (1983). University of Helsinki
+//!   - Novel formalism for morphological rules as parallel constraints
+//!   - Used Finnish as primary example language
+//!
+//! ## Xerox PARC Implementation Tools (1990s)
+//! - **lexc**: Lexicon compiler (Karttunen 1993)
+//! - **twolc**: Two-level rule compiler (Karttunen & Kaplan 1987, 1994)
+//! - **xfst**: Extended finite-state tools (Karttunen et al.)
+//!
+//! ## Key References
 //! - Koskenniemi, K. (1983). Two-level morphology: A general computational model
-//! - Karttunen, L., Koskenniemi, K., & Kaplan, R. M. (1987). A compiler for two-level phonological rules
-//! - Beesley, K. R. & Karttunen, L. (2003). Finite State Morphology
-//! - Karttunen, L. (1994). Constructing lexical transducers
+//!   for word-form recognition and production. University of Helsinki.
+//! - Karttunen, L., Koskenniemi, K., & Kaplan, R. M. (1987). A compiler for
+//!   two-level phonological rules. In Tools for Morphological Analysis, CSLI.
+//! - Karttunen, L. (1993). Finite-state lexicon compiler. Xerox PARC Technical Report.
+//! - Beesley, K. R. & Karttunen, L. (2003). Finite State Morphology. CSLI Publications
 //!
 //! Related examples:
 //! - phonological_rules.rs: Demonstrates phonological rule application with FST composition
@@ -211,7 +224,7 @@ impl FiniteStateLexicon {
             .insert("puhu".to_string(), vec![MorphCategory::Verb]); // speak (puhua)
         self.verb_stems
             .insert("tule".to_string(), vec![MorphCategory::Verb]); // come (tulla)
-        
+
         // Add past tense stems for verbs that change (e->i)
         self.verb_stems
             .insert("lui".to_string(), vec![MorphCategory::Verb]); // read-PAST stem
@@ -546,7 +559,7 @@ impl FiniteStateLexicon {
                 }
             }
         }
-        
+
         // Special handling for "luen" - direct match
         if surface_form == "luen" {
             analyses.push(MorphAnalysis {
@@ -626,6 +639,14 @@ impl FiniteStateLexicon {
         false
     }
 
+    /// Generate morphological gloss following Leipzig Glossing Rules conventions
+    ///
+    /// Glossing conventions used:
+    /// - Person and number combined for readability (1SG, 2SG, 3SG)
+    /// - Case abbreviations: NOM, GEN, PART, ILL, INESS, ELAT
+    /// - Tense/aspect: PRES, PAST
+    /// - Derivation: AGENT, ABSTR
+    /// - Morpheme boundaries marked with '.'
     fn generate_gloss(&self, stem: &str, suffix_cats: &[MorphCategory]) -> String {
         let mut gloss = stem.to_string();
 
@@ -689,7 +710,7 @@ impl FiniteStateLexicon {
     }
 }
 
-/// Build a simple FST for morphotactics (following lexc formalism)
+/// Build a simple FST for morphotactics using lexc formalism (Karttunen 1993)
 fn build_morphotactic_fst() -> VectorFst<TropicalWeight> {
     let mut fst = VectorFst::new();
     let start = fst.add_state();
@@ -735,8 +756,8 @@ fn build_morphotactic_fst() -> VectorFst<TropicalWeight> {
 fn main() -> Result<()> {
     println!("Finite State Morphology");
     println!("======================");
-    println!("Based on the Xerox finite-state morphology framework");
-    println!("Following two-level morphology (Koskenniemi 1983) and lexc formalism\n");
+    println!("Based on two-level morphology (Koskenniemi 1983)");
+    println!("Implemented with Xerox finite-state tools (Karttunen et al., 1990s)\n");
 
     // Initialize the finite state lexicon
     let lexicon = FiniteStateLexicon::new();
@@ -776,7 +797,7 @@ fn main() -> Result<()> {
         "kalaan",   // fish.ILL.SG
         "talo",     // house.NOM.SG
         "talon",    // house.GEN.SG
-        "taloa",    // house.PART.SG  
+        "taloa",    // house.PART.SG
         "talossa",  // house.INESS.SG
         "talosta",  // house.ELAT.SG
         "taloon",   // house.ILL.SG
@@ -877,7 +898,7 @@ fn main() -> Result<()> {
     // Example 4: Morphophonological alternations
     println!("\n4. Morphophonological Alternations");
     println!("----------------------------------");
-    println!("Two-level rules in action (following Koskenniemi/Karttunen):");
+    println!("Two-level rules in action (Koskenniemi 1983):");
 
     let alternation_examples = vec![
         ("happy + ness", "happiness", "y → i / _+ness"),
@@ -894,9 +915,10 @@ fn main() -> Result<()> {
     println!("\n5. Theoretical Framework");
     println!("------------------------");
     println!("Key components of finite-state morphology:");
-    println!("  • lexc: Language for defining lexicons and morphotactics");
-    println!("  • twolc: Two-level rule compiler (Karttunen, Koskenniemi, Kaplan)");
-    println!("  • xfst: Xerox finite-state tool for regular expressions");
+    println!("  • lexc: Lexicon compiler (Karttunen 1993, Xerox PARC)");
+    println!("  • twolc: Two-level rule compiler (Karttunen & Kaplan, Xerox PARC)");
+    println!("    Compiles Koskenniemi's two-level rules to FSTs");
+    println!("  • xfst: Extended finite-state tools (Karttunen et al., Xerox PARC)");
     println!("  • Composition of finite-state transducers");
     println!("  • Two-level constraints for morphophonological alternations");
 

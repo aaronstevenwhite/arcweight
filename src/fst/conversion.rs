@@ -1,7 +1,7 @@
-//! Comprehensive conversion matrix between FST types
+//! Conversion functions between FST types
 //!
 //! This module provides efficient conversion functions between different FST
-//! implementations, allowing users to seamlessly transform FSTs based on
+//! implementations, allowing users to transform FSTs based on
 //! their performance and memory requirements.
 //!
 //! # Conversion Matrix
@@ -228,7 +228,7 @@ where
 
 /// Convert any FST to CacheFst (simple caching wrapper)
 ///
-/// This function wraps any FST with a caching layer for improved
+/// This function wraps any FST with a caching layer for better
 /// performance on repeated access patterns.
 ///
 /// # Performance
@@ -255,7 +255,7 @@ where
 
 /// Convert any FST to EvictingCacheFst with custom configuration
 ///
-/// This function wraps any FST with an advanced caching layer that includes
+/// This function wraps any FST with a caching layer that includes
 /// configurable eviction policies and memory management.
 ///
 /// # Performance

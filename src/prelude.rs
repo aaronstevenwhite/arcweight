@@ -20,7 +20,7 @@
 //!
 //! All major semiring types and traits:
 //! - **Common weights:** [`TropicalWeight`], [`ProbabilityWeight`], [`BooleanWeight`]
-//! - **Advanced weights:** [`LogWeight`], [`RealWeight`], [`ProductWeight`], [`StringWeight`]
+//! - **Additional weights:** [`LogWeight`], [`RealWeight`], [`ProductWeight`], [`StringWeight`]
 //! - **Semiring traits:** [`Semiring`], [`StarSemiring`], [`DivisibleSemiring`]
 //!
 //! ### Algorithms

@@ -2,7 +2,7 @@
 name = "arcweight"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.85"
 authors = ["Aaron Steven White <aaron.white@rochester.edu>"]
 license = "Apache-2.0"
 description = "A high-performance, modular library for weighted finite state transducers with comprehensive examples and benchmarks"

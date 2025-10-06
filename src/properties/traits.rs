@@ -703,10 +703,8 @@ fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
     // Check for epsilon cycles using a single-pass DFS
     // This explores all reachable states once while checking for epsilon cycles
     if let Some(start_state) = fst.start() {
-        let mut visited: std::collections::HashSet<StateId> =
-            std::collections::HashSet::new();
-        let mut rec_stack: std::collections::HashSet<StateId> =
-            std::collections::HashSet::new();
+        let mut visited: std::collections::HashSet<StateId> = std::collections::HashSet::new();
+        let mut rec_stack: std::collections::HashSet<StateId> = std::collections::HashSet::new();
 
         // Single-pass DFS that detects epsilon cycles
         fn has_epsilon_cycle_dfs<W: Semiring, F: Fst<W>>(

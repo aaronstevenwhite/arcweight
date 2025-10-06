@@ -367,7 +367,7 @@ impl Default for SemiringProperties {
 
 /// Trait for weights that can be divided
 ///
-/// A divisible semiring supports division operation, enabling more sophisticated
+/// A divisible semiring supports division operation, enabling specialized
 /// algorithms like weight pushing and composition optimization. The division
 /// operation is the inverse of multiplication when it exists.
 ///
@@ -538,7 +538,7 @@ pub trait NaturallyOrderedSemiring: Semiring + Ord {}
 ///
 /// # Applications
 ///
-/// Invertible semirings enable advanced algorithms:
+/// Invertible semirings enable specialized algorithms:
 /// - **Weight pushing:** Redistributing weights for normalization
 /// - **Matrix operations:** Implementing linear algebra over semirings
 /// - **Formal series:** Manipulating power series with semiring coefficients
@@ -590,7 +590,7 @@ pub trait NaturallyOrderedSemiring: Semiring + Ord {}
 ///
 /// - [`DivisibleSemiring`] for weaker division operations
 /// - Field semirings for full ring/field structure
-/// - Advanced algorithms requiring inverse operations
+/// - Specialized algorithms requiring inverse operations
 pub trait InvertibleSemiring: Semiring {
     /// Compute multiplicative inverse
     ///

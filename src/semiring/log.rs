@@ -196,7 +196,7 @@ use ordered_float::OrderedFloat;
 ///
 /// # Integration with FST Algorithms
 ///
-/// Log weights work seamlessly with all FST algorithms while providing numerical stability:
+/// Log weights work with all FST algorithms while providing numerical stability:
 /// - **Shortest Path:** Finds maximum probability paths
 /// - **Forward-Backward:** Stable computation of path probabilities
 /// - **Composition:** Combines probabilistic models

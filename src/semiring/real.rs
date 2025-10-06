@@ -252,7 +252,7 @@ use std::str::FromStr;
 /// - **Composition:** Supports full composition with weight combination
 /// - **Determinization:** Maintains arithmetic structure through determinization
 /// - **Minimization:** Preserves mathematical relationships during minimization
-/// - **Weight Pushing:** Enables sophisticated normalization and optimization
+/// - **Weight Pushing:** Enables specialized normalization and optimization
 ///
 /// # See Also
 ///

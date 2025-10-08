@@ -24,6 +24,57 @@ Finite State Transducers (FSTs) are computational models that define rational re
 - 🔧 **Flexibility**: Extensible design with custom semirings and FST types
 - 📚 **Complete**: Comprehensive algorithm suite based on established theoretical foundations
 
+## Comparison with rustfst
+
+| Feature | ArcWeight | rustfst |
+|---------|-----------|---------|
+| **Primary Focus** | General weighted transducers for NLP | Full OpenFST reimplementation |
+| **Use Case** | NLP, speech, linguistics applications | Research, OpenFST migration |
+| **Architecture** | Clean, modular trait system | Complex, feature-rich |
+| **API Complexity** | Accessible, well-documented | Industrial-strength, academic |
+| **FST Types** | Vector, Const, Compact, Lazy, Cache | VectorFst, ConstFst |
+| **Semirings** | 8+ types with extensibility | 10+ types |
+| **Algorithms** | 20+ core operations | 40+ operations with variants |
+| **Composition** | Single-file (~500 lines) | Multi-file (33 files) |
+| **Documentation** | Modern, example-rich | Academic, reference-heavy |
+| **Code Style** | Rust idioms, type safety | OpenFST compatibility focus |
+| **Dependencies** | Minimal | Moderate |
+| **Learning Curve** | Gentle | Steep |
+
+### When to Choose Each Library
+
+**Choose ArcWeight when:**
+- Building NLP applications (spell checking, morphology, phonology)
+- Need clean, maintainable FST code with good documentation
+- Want modern Rust idioms and type safety
+- Require multiple FST implementations (vector, const, lazy, cached)
+- Value simplicity and accessibility over exhaustive features
+- Prefer streamlined implementations of core algorithms
+
+**Choose rustfst when:**
+- Migrating from OpenFST C++ codebase
+- Need maximum feature parity with OpenFST
+- Require specialized algorithms (lookahead composition, advanced matchers)
+- Working in research setting with OpenFST familiarity
+- Need Python bindings
+- Require every algorithmic variant from OpenFST
+
+### Architectural Philosophy
+
+**ArcWeight** prioritizes clarity and maintainability:
+- Trait-based design with clear separation of concerns
+- Single-file implementations for core algorithms
+- Comprehensive inline documentation with theoretical background
+- Modern Rust patterns (Result types, iterators, zero-cost abstractions)
+- Focus on essential functionality with clean abstractions
+
+**rustfst** prioritizes feature completeness:
+- Maximum OpenFST compatibility
+- Extensive algorithm variants and optimizations
+- Complex type hierarchies for specialized use cases
+- Academic rigor with research paper references
+- Comprehensive coverage of OpenFST functionality
+
 ## Features
 
 - 🚀 **High Performance**: Optimized implementations with parallel algorithms support

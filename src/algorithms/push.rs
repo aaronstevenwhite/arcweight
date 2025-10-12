@@ -16,12 +16,29 @@
 //! - ❌ `ProbabilityWeight` - Not weakly left divisible
 //! - ❌ String semirings - Generally not zero-sum-free
 //!
+//! # Algorithm Complexity
+//!
+//! Weight pushing performance depends on whether the input FST is acyclic or cyclic:
+//!
+//! ## Acyclic FSTs
+//! - **Time Complexity:** O(|V| + |E|)
+//! - **Method:** Topological sort + single forward pass
+//! - **Guaranteed Termination:** Yes, always terminates in linear time
+//!
+//! ## Cyclic FSTs
+//! - **Time Complexity:** O(max_iterations × (|V| + |E|))
+//! - **Method:** Bellman-Ford style iterative algorithm
+//! - **Default max_iterations:** 1000
+//! - **Convergence:** Depends on semiring properties (k-closed, etc.)
+//! - **Termination:** May not converge in polynomial time for arbitrary semirings
+//!
 //! # Convergence Requirements
 //!
 //! For cyclic FSTs, weight pushing requires:
 //! - Convergent weight sequences for global pushing
-//! - Acyclic structure for guaranteed termination
-//! - K-closed semiring property for epsilon cycles
+//! - K-closed semiring property ensures convergence
+//! - Iteration limit prevents infinite loops but may not guarantee correctness
+//! - For guaranteed correctness, use acyclic FSTs or ensure k-closed semiring
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId};

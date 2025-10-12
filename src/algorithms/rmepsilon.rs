@@ -39,7 +39,7 @@ use std::collections::{HashMap, VecDeque};
 ///
 /// - **Epsilon Closure:** For each state, compute all states reachable via epsilon transitions
 /// - **Direct Transitions:** Create direct arcs bypassing epsilon paths
-/// - **Time Complexity:** O(|V|² × |E|) in worst case due to closure computation
+/// - **Time Complexity:** O(|V| × (|V| + |E|)) = O(|V|² + |V| × |E|) in worst case
 /// - **Space Complexity:** O(|V|²) for storing epsilon closures
 /// - **Language Preservation:** L(remove_epsilons(T)) = L(T) exactly
 ///
@@ -233,11 +233,12 @@ use std::collections::{HashMap, VecDeque};
 ///
 /// # Performance Characteristics
 ///
-/// - **Time Complexity:** O(|V|² × |E|) worst case for dense epsilon networks
+/// - **Time Complexity:** O(|V| × (|V| + |E|)) worst case for dense epsilon networks
 /// - **Space Complexity:** O(|V|²) for storing epsilon closure information
 /// - **Practical Performance:** Often much better than worst case for sparse graphs
 /// - **Memory Access:** Sequential state processing improves cache locality
 /// - **Convergence:** Guaranteed for k-closed semirings with proper star operation
+/// - **Dense Graph Analysis:** For |E| = Θ(|V|²), complexity is O(|V|³)
 ///
 /// # Mathematical Properties
 ///

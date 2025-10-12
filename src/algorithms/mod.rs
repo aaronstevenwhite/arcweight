@@ -61,6 +61,8 @@
 //! # Ok::<(), arcweight::Error>(())
 //! ```
 
+mod arc_sum;
+mod arc_unique;
 mod closure;
 mod compose;
 mod concat;
@@ -76,12 +78,15 @@ mod randgen;
 mod replace;
 mod reverse;
 mod rmepsilon;
+mod shortest_distance;
 mod shortest_path;
 mod synchronize;
 mod topsort;
 mod union;
 mod weight_convert;
 
+pub use arc_sum::arc_sum;
+pub use arc_unique::arc_unique;
 pub use closure::{closure, closure_plus};
 pub use compose::{compose, compose_default, ComposeFilter, DefaultComposeFilter};
 pub use concat::concat;
@@ -97,6 +102,7 @@ pub use randgen::{randgen, RandGenConfig};
 pub use replace::{replace, ReplaceFst};
 pub use reverse::reverse;
 pub use rmepsilon::remove_epsilons;
+pub use shortest_distance::shortest_distance;
 pub use shortest_path::{shortest_path, shortest_path_single, ShortestPathConfig};
 pub use synchronize::synchronize;
 pub use topsort::topsort;

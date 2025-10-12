@@ -137,6 +137,18 @@ enum FstType {
 
 /// Write FST in OpenFST format
 ///
+/// # Complexity
+///
+/// **Time:** O(|V| + |E|) - Single pass through states and arcs
+/// **Space:** O(1) - Streaming write
+///
+/// # Format Compatibility
+///
+/// - **Magic:** 2125659606 (OpenFST standard)
+/// - **Type:** Vector FST with Tropical semiring
+/// - **Endianness:** Little-endian
+/// - **Weight:** IEEE 754 f32 (infinity = zero element)
+///
 /// # Errors
 ///
 /// Returns an error if:
@@ -184,6 +196,18 @@ where
 }
 
 /// Read FST from OpenFST format
+///
+/// # Complexity
+///
+/// **Time:** O(|V| + |E|) - Single pass creating states and arcs
+/// **Space:** O(|V| + |E|) - Storage for the output FST
+///
+/// # Correctness
+///
+/// **Guarantee:** Compatible with OpenFST vector FSTs
+/// - Reads files written by OpenFST tools (fstcompile, etc.)
+/// - Writes files readable by OpenFST tools (fstinfo, fstdraw, etc.)
+/// - Language preserved: L(read(write(T))) = L(T)
 ///
 /// # Errors
 ///

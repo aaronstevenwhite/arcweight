@@ -111,6 +111,11 @@ mod inner {
 
     /// Write FST in binary format
     ///
+    /// # Complexity
+    ///
+    /// **Time:** O(|V| + |E|) - Single pass through all states and arcs
+    /// **Space:** O(1) - Streaming write, no additional storage
+    ///
     /// # Errors
     ///
     /// Returns an error if:
@@ -157,6 +162,18 @@ mod inner {
     }
 
     /// Read FST from binary format
+    ///
+    /// # Complexity
+    ///
+    /// **Time:** O(|V| + |E|) - Single pass creating states and arcs
+    /// **Space:** O(|V| + |E|) - Storage for the output FST
+    ///
+    /// # Correctness
+    ///
+    /// **Guarantee:** deserialize(serialize(T)) = T
+    /// - All FST properties preserved exactly
+    /// - State IDs preserved (created in order 0..n-1)
+    /// - Language preserved: L(read(write(T))) = L(T)
     ///
     /// # Errors
     ///

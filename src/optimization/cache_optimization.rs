@@ -41,6 +41,11 @@ pub enum AccessPattern {
 impl CacheMetadata {
     /// Analyze an FST to generate cache optimization metadata
     ///
+    /// # Complexity
+    ///
+    /// **Time:** O(|V|) - Collects arc counts and computes statistics
+    /// **Space:** O(|V|) - Stores arc count distribution
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -236,6 +241,18 @@ pub mod layout_optimization {
     /// This function reorders states in an FST to improve cache performance
     /// by placing frequently accessed states closer together in memory.
     ///
+    /// # Complexity
+    ///
+    /// **Time:** O(|V| + |E| log(max_degree)) - BFS + sorting neighbors by in-degree
+    /// **Space:** O(|V| + |E|) - Adjacency lists and new FST
+    ///
+    /// # Correctness
+    ///
+    /// **Guarantee:** Creates isomorphic FST with L(T') = L(T)
+    /// - All states and arcs preserved
+    /// - State IDs remapped via old_to_new HashMap
+    /// - Start state and final weights preserved
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -349,6 +366,27 @@ pub mod layout_optimization {
     ///
     /// This function reorders arcs within each state to improve cache
     /// performance during arc iteration.
+    ///
+    /// # Complexity
+    ///
+    /// **Time:** O(|V| + |E| log(max_degree)) where max_degree is max arcs from any state
+    /// - For each state: collect arcs O(d), sort O(d log d), re-add O(d)
+    /// - Total: Σ d log d across all states
+    ///
+    /// **Space:** O(max_degree) - Temporary arc storage per state
+    ///
+    /// # Correctness
+    ///
+    /// **Guarantee:** FST structure preserved, L(T) unchanged
+    /// - Only reorders arcs within each state
+    /// - All arc properties (labels, weights, targets) preserved
+    ///
+    /// # Sorting Strategy
+    ///
+    /// Arcs sorted by:
+    /// 1. Target state cache group (states with similar IDs)
+    /// 2. Access frequency (more frequent targets first)
+    /// 3. Label (for deterministic ordering)
     pub fn optimize_arc_layout<W: Semiring>(fst: &mut VectorFst<W>) {
         use std::collections::HashMap;
 

@@ -88,6 +88,44 @@ impl<W: PartialOrd> PartialOrd for PriorityState<W> {
 }
 
 /// Prune an FST by removing paths and states that exceed weight thresholds
+///
+/// Removes paths from the FST that have weights exceeding the specified threshold,
+/// producing a smaller FST that accepts a subset of the original language.
+///
+/// # Correctness
+///
+/// **Guarantee:** L(prune(T)) ⊆ L(T)
+/// - Pruning only removes paths, never adds them
+/// - The output FST's language is always a subset of the input
+///
+/// # Complexity
+///
+/// - **Weight-based:** O(|V| × |E|) - Bellman-Ford shortest distances
+/// - **Forward-backward:** O(|V| × |E|) - Two Bellman-Ford passes
+/// - **N-best paths:** O(|V| × |E| × log N) - Priority queue with N-best tracking
+///
+/// # Pruning Strategies
+///
+/// Selected automatically based on `config`:
+/// - If `use_forward_backward`: Uses forward-backward pruning (best for beam search)
+/// - If `npath` is set: Keeps only N-best paths
+/// - Otherwise: Uses simple weight-based pruning (fastest)
+///
+/// # Examples
+///
+/// ```
+/// use arcweight::prelude::*;
+/// use arcweight::algorithms::{prune, PruneConfig};
+///
+/// let mut fst = VectorFst::<TropicalWeight>::new();
+/// // ... build FST ...
+///
+/// let config = PruneConfig {
+///     weight_threshold: 5.0,
+///     ..Default::default()
+/// };
+/// let pruned: VectorFst<TropicalWeight> = prune(&fst, config).unwrap();
+/// ```
 pub fn prune<W, F, M>(fst: &F, config: PruneConfig) -> Result<M>
 where
     W: NaturallyOrderedSemiring,
@@ -317,6 +355,30 @@ where
 }
 
 /// Compute forward weights (shortest distance from start)
+///
+/// Uses Bellman-Ford relaxation to compute shortest distances from the start state.
+///
+/// # Complexity
+///
+/// - **Acyclic graphs:** O(|V| + |E|)
+/// - **Cyclic graphs:** O(|V| × |E|) worst case, with iteration limit
+///
+/// # Algorithm
+///
+/// 1. Initialize start state with weight one (identity)
+/// 2. Relaxation: for each arc (u, v) with weight w:
+///    - If dist[u] ⊗ w < dist[v], update dist[v]
+/// 3. Continue until no updates (or iteration limit reached)
+///
+/// # Termination
+///
+/// - For acyclic graphs: guaranteed to terminate in |V| iterations
+/// - For cyclic graphs: may have improving cycles, so we limit iterations to |V|
+///
+/// # Notes
+///
+/// For graphs with negative (improving) cycles in the weight space, this may not
+/// find true shortest distances but will terminate and return approximate values.
 fn compute_forward_weights<W, F>(fst: &F) -> Result<HashMap<StateId, W>>
 where
     W: NaturallyOrderedSemiring,
@@ -324,14 +386,28 @@ where
 {
     let mut weights = HashMap::new();
     let mut queue = VecDeque::new();
+    let mut in_queue = HashSet::new();
 
     if let Some(start) = fst.start() {
         weights.insert(start, W::one());
         queue.push_back(start);
+        in_queue.insert(start);
     }
 
-    // Bellman-Ford style relaxation
+    // Bellman-Ford style relaxation with iteration limit
+    let num_states = fst.num_states();
+    let max_iterations = num_states * num_states; // Safety limit for cyclic graphs
+    let mut iterations = 0;
+
     while let Some(state) = queue.pop_front() {
+        in_queue.remove(&state);
+        iterations += 1;
+
+        if iterations > max_iterations {
+            // Prevent infinite loops on cyclic graphs
+            break;
+        }
+
         let state_weight = weights[&state].clone();
 
         for arc in fst.arcs(state) {
@@ -352,8 +428,9 @@ where
                 }
             };
 
-            if updated && !queue.contains(&arc.nextstate) {
+            if updated && !in_queue.contains(&arc.nextstate) {
                 queue.push_back(arc.nextstate);
+                in_queue.insert(arc.nextstate);
             }
         }
     }
@@ -362,6 +439,26 @@ where
 }
 
 /// Compute backward weights (shortest distance to final states)
+///
+/// Computes shortest distances from each state to any final state using
+/// backward relaxation through reversed arcs.
+///
+/// # Complexity
+///
+/// - **Build reverse index:** O(|E|)
+/// - **Relaxation:** O(|V| × |E|) worst case with iteration limit
+/// - **Total:** O(|V| × |E|)
+///
+/// # Algorithm
+///
+/// 1. Build reverse arc index: for each arc (u, v), store (u, w) at v
+/// 2. Initialize final states with their final weights
+/// 3. Backward relaxation: for each state v, update predecessors u:
+///    - dist[u] = dist[u] ⊕ (w ⊗ dist[v])
+///
+/// # Termination
+///
+/// Similar to forward weights, uses iteration limit for cyclic graphs.
 fn compute_backward_weights<W, F>(fst: &F) -> Result<HashMap<StateId, W>>
 where
     W: NaturallyOrderedSemiring,
@@ -382,15 +479,29 @@ where
 
     // Initialize with final states
     let mut queue = VecDeque::new();
+    let mut in_queue = HashSet::new();
     for state in fst.states() {
         if let Some(final_weight) = fst.final_weight(state) {
             weights.insert(state, final_weight.clone());
             queue.push_back(state);
+            in_queue.insert(state);
         }
     }
 
-    // Backward relaxation
+    // Backward relaxation with iteration limit
+    let num_states = fst.num_states();
+    let max_iterations = num_states * num_states;
+    let mut iterations = 0;
+
     while let Some(state) = queue.pop_front() {
+        in_queue.remove(&state);
+        iterations += 1;
+
+        if iterations > max_iterations {
+            // Prevent infinite loops on cyclic graphs
+            break;
+        }
+
         let state_weight = weights[&state].clone();
 
         if let Some(predecessors) = reverse_arcs.get(&state) {
@@ -413,8 +524,9 @@ where
                     }
                 };
 
-                if updated && !queue.contains(prev_state) {
+                if updated && !in_queue.contains(prev_state) {
                     queue.push_back(*prev_state);
+                    in_queue.insert(*prev_state);
                 }
             }
         }

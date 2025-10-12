@@ -197,6 +197,34 @@ impl<W: Semiring> ArcIterator<W> for OptimizedArcIterator<W> {
 }
 
 /// Bulk transform arcs using vectorized operations where possible
+///
+/// Processes FST states in cache-friendly chunks, applying a transformation
+/// to all arcs. This improves performance by batching operations.
+///
+/// # Complexity
+///
+/// **Time:** O(|V| + |E|) - Single pass through all states and arcs
+/// **Space:** O(max(CHUNK_SIZE × max_arcs)) - Temporary storage per chunk
+///
+/// # Parameters
+///
+/// - `fst`: Mutable FST to transform
+/// - `transform`: Function mapping Arc<W> → Arc<W>
+///
+/// # Examples
+///
+/// ```rust
+/// use arcweight::prelude::*;
+/// use arcweight::optimization::bulk_transform_arcs;
+///
+/// let mut fst = VectorFst::<TropicalWeight>::new();
+/// // ... build FST ...
+///
+/// // Scale all weights by 2.0
+/// bulk_transform_arcs(&mut fst, |arc| {
+///     Arc::new(arc.ilabel, arc.olabel, arc.weight.times(&TropicalWeight::new(2.0)), arc.nextstate)
+/// }).unwrap();
+/// ```
 pub fn bulk_transform_arcs<W, F>(fst: &mut VectorFst<W>, transform: F) -> crate::Result<()>
 where
     W: Semiring,

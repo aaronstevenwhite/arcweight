@@ -164,6 +164,11 @@ use std::str::FromStr;
 
 /// Write FST in text format to a writer
 ///
+/// # Complexity
+///
+/// **Time:** O(|V| + |E|) - Single pass through all states and arcs
+/// **Space:** O(1) - Streaming write
+///
 /// # Errors
 ///
 /// Returns an error if:
@@ -228,6 +233,19 @@ where
 }
 
 /// Read FST from text format from a reader
+///
+/// # Complexity
+///
+/// **Time:** O(|V| + |E|) - Single pass with HashMap lookups
+/// **Space:** O(|V| + |E|) - Storage for FST and state mapping
+///
+/// # Correctness
+///
+/// **Guarantee:** L(read(write(T))) = L(T)
+/// - Graph structure preserved (FST isomorphic to original)
+/// - All arcs with correct labels and weights preserved
+/// - **Note:** State IDs may be remapped (states created on-demand)
+/// - Language preserved exactly even with ID remapping
 ///
 /// # Errors
 ///

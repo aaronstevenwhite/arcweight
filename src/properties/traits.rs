@@ -690,7 +690,7 @@ fn compute_determinism<W: Semiring, F: Fst<W>>(fst: &F) -> (bool, bool) {
 /// and has no epsilon cycles, which guarantees functionality.
 ///
 /// # Complexity
-/// - Time: O(|V| + E_ε) where E_ε is the number of epsilon transitions
+/// - Time: O(|V| + |E|) due to determinism check (examines all arcs)
 /// - Space: O(|V|) for visited state tracking
 fn compute_functional<W: Semiring, F: Fst<W>>(fst: &F) -> bool {
     // Simple approximation: functional if input deterministic and no epsilon cycles

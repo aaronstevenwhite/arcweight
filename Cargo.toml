@@ -49,7 +49,7 @@ rand = "0.9"
 # development dependencies
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
-proptest = "1.4"
+proptest = "1.8"
 pretty_assertions = "1.4"
 approx = "0.5"
 rayon = "1.11"

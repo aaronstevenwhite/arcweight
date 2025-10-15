@@ -132,9 +132,9 @@ pub use crate::{
 
     // semirings
     semiring::{
-        BooleanWeight, DivisibleSemiring, InvertibleSemiring, LogWeight, MaxWeight, MinWeight,
-        NaturallyOrderedSemiring, ProbabilityWeight, ProductWeight, RealWeight, Semiring,
-        SemiringProperties, StarSemiring, StringWeight, TropicalWeight,
+        BooleanWeight, DivisibleSemiring, IntegerWeight, InvertibleSemiring, LogWeight,
+        MaxWeight, MinWeight, NaturallyOrderedSemiring, ProbabilityWeight, ProductWeight,
+        RealWeight, Semiring, SemiringProperties, StarSemiring, StringWeight, TropicalWeight,
     },
 
     // utilities

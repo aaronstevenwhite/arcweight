@@ -91,6 +91,7 @@
 //! for algorithms that require division operations.
 
 mod boolean;
+mod integer;
 mod log;
 mod minmax;
 mod probability;
@@ -101,6 +102,7 @@ mod traits;
 mod tropical;
 
 pub use boolean::BooleanWeight;
+pub use integer::IntegerWeight;
 pub use log::LogWeight;
 pub use minmax::{MaxWeight, MinWeight};
 pub use probability::ProbabilityWeight;

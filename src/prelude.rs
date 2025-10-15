@@ -105,10 +105,10 @@ pub use num_traits::{One, Zero};
 pub use crate::{
     // algorithms
     algorithms::{
-        arc_sum, arc_unique, closure, closure_plus, compose, compose_default, concat, connect,
-        determinize, minimize, project_input, project_output, prune, remove_epsilons, reverse,
-        shortest_distance, shortest_path, shortest_path_single, topsort, union, weight_convert,
-        ComposeFilter, DefaultComposeFilter, ShortestPathConfig,
+        arc_sort, arc_sum, arc_unique, closure, closure_plus, compose, compose_default, concat,
+        connect, determinize, minimize, project_input, project_output, prune, remove_epsilons,
+        reverse, shortest_distance, shortest_path, shortest_path_single, topsort, union,
+        weight_convert, ArcSortType, ComposeFilter, DefaultComposeFilter, ShortestPathConfig,
     },
 
     // core types

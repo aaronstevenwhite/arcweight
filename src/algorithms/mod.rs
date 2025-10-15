@@ -61,6 +61,7 @@
 //! # Ok::<(), arcweight::Error>(())
 //! ```
 
+mod arc_sort;
 mod arc_sum;
 mod arc_unique;
 mod closure;
@@ -85,6 +86,7 @@ mod topsort;
 mod union;
 mod weight_convert;
 
+pub use arc_sort::{arc_sort, ArcSortType};
 pub use arc_sum::arc_sum;
 pub use arc_unique::arc_unique;
 pub use closure::{closure, closure_plus};

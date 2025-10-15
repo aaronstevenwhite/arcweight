@@ -40,6 +40,12 @@
 //! - [`topsort()`] - Topological sort of states
 //! - [`weight_convert()`] - Convert between semiring types
 //!
+//! ## Advanced Algorithms
+//!
+//! - [`reweight()`] - Reweight FST using potential function
+//! - [`condense()`] - Condense strongly connected components
+//! - [`partition()`] - Partition states into equivalence classes
+//!
 //! ## Usage Examples
 //!
 //! Most algorithms follow the pattern of taking input FST(s) and configuration,
@@ -68,6 +74,7 @@ mod arc_unique;
 mod closure;
 mod compose;
 mod concat;
+mod condense;
 mod connect;
 mod determinize;
 mod difference;
@@ -75,12 +82,14 @@ mod encode;
 mod intersect;
 mod isomorphic;
 mod minimize;
+mod partition;
 mod project;
 mod prune;
 mod push;
 mod randgen;
 mod replace;
 mod reverse;
+mod reweight;
 mod rmepsilon;
 mod shortest_distance;
 mod shortest_path;
@@ -96,6 +105,7 @@ pub use arc_unique::arc_unique;
 pub use closure::{closure, closure_plus};
 pub use compose::{compose, compose_default, ComposeFilter, DefaultComposeFilter};
 pub use concat::concat;
+pub use condense::condense;
 pub use connect::connect;
 pub use determinize::determinize;
 pub use difference::difference;
@@ -103,12 +113,14 @@ pub use encode::{decode, encode, EncodeTable};
 pub use intersect::intersect;
 pub use isomorphic::isomorphic;
 pub use minimize::minimize;
+pub use partition::partition;
 pub use project::{project_input, project_output};
 pub use prune::{prune, PruneConfig};
 pub use push::{push_labels, push_weights};
 pub use randgen::{randgen, RandGenConfig};
 pub use replace::{replace, ReplaceFst};
 pub use reverse::reverse;
+pub use reweight::{reweight, ReweightType};
 pub use rmepsilon::remove_epsilons;
 pub use shortest_distance::shortest_distance;
 pub use shortest_path::{shortest_path, shortest_path_single, ShortestPathConfig};

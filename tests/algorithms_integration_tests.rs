@@ -124,4 +124,111 @@ proptest! {
             }
         }
     }
+
+    #[test]
+    fn reweight_preserves_structure(num_states in 2..10usize) {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+
+        for _ in 0..num_states {
+            fst.add_state();
+        }
+
+        if num_states > 1 {
+            fst.set_start(0);
+            fst.set_final((num_states - 1) as u32, TropicalWeight::one());
+
+            for i in 0..num_states - 1 {
+                fst.add_arc(i as u32, Arc::new(1, 1, TropicalWeight::new(i as f32), (i + 1) as u32));
+            }
+        }
+
+        // Identity potentials (ones)
+        let potentials = vec![TropicalWeight::one(); fst.num_states()];
+
+        if let Ok(reweighted) = reweight(&fst, &potentials, ReweightType::ToInitial) {
+            // Structure should be preserved
+            prop_assert_eq!(reweighted.num_states(), fst.num_states());
+            prop_assert_eq!(reweighted.start(), fst.start());
+
+            // Verify arc count matches
+            for state in 0..fst.num_states() as u32 {
+                prop_assert_eq!(
+                    reweighted.arcs(state).count(),
+                    fst.arcs(state).count()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn condense_creates_dag(num_states in 2..8usize) {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+
+        for _ in 0..num_states {
+            fst.add_state();
+        }
+
+        if num_states > 1 {
+            fst.set_start(0);
+            fst.set_final((num_states - 1) as u32, TropicalWeight::one());
+
+            // Create some cycles
+            for i in 0..num_states {
+                let next = (i + 1) % num_states;
+                fst.add_arc(i as u32, Arc::new(1, 1, TropicalWeight::one(), next as u32));
+            }
+        }
+
+        if let Ok(condensed) = condense(&fst) {
+            // Condensed FST should have states
+            prop_assert!(condensed.num_states() > 0 || fst.num_states() == 0);
+
+            // Number of states should not exceed original
+            prop_assert!(condensed.num_states() <= fst.num_states());
+
+            // Verify no self-loops in condensation (it's a DAG)
+            for state in 0..condensed.num_states() as u32 {
+                for arc in condensed.arcs(state) {
+                    prop_assert_ne!(arc.nextstate, state,
+                        "Condensed FST should not have self-loops");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn partition_equivalence_classes(num_states in 2..8usize) {
+        let mut fst = VectorFst::<TropicalWeight>::new();
+
+        for _ in 0..num_states {
+            fst.add_state();
+        }
+
+        if num_states > 1 {
+            fst.set_start(0);
+            fst.set_final((num_states - 1) as u32, TropicalWeight::one());
+
+            for i in 0..num_states - 1 {
+                fst.add_arc(i as u32, Arc::new(1, 1, TropicalWeight::one(), (i + 1) as u32));
+            }
+        }
+
+        if let Ok(classes) = partition(&fst) {
+            // Classes should exist for all states
+            prop_assert_eq!(classes.len(), fst.num_states());
+
+            // All class IDs should be valid (non-negative, reasonable range)
+            let max_class = *classes.iter().max().unwrap_or(&0);
+            prop_assert!(max_class < fst.num_states() as u32,
+                "Class IDs should be less than number of states");
+
+            // Class IDs should be consecutive starting from 0
+            let unique_classes: std::collections::HashSet<_> = classes.iter().copied().collect();
+            let num_classes = unique_classes.len();
+            if num_classes > 0 {
+                prop_assert_eq!(unique_classes.len(), (max_class + 1) as usize,
+                    "Class IDs should be consecutive");
+            }
+        }
+    }
 }

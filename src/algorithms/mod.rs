@@ -36,6 +36,7 @@
 //!
 //! - [`prune()`] - Prune arcs/states based on weight thresholds
 //! - [`replace()`] - Replace symbols with sub-FSTs
+//! - [`state_sort()`] - Sort states by BFS/DFS/topological order
 //! - [`topsort()`] - Topological sort of states
 //! - [`weight_convert()`] - Convert between semiring types
 //!
@@ -83,6 +84,7 @@ mod reverse;
 mod rmepsilon;
 mod shortest_distance;
 mod shortest_path;
+mod state_sort;
 mod synchronize;
 mod topsort;
 mod union;
@@ -110,6 +112,7 @@ pub use reverse::reverse;
 pub use rmepsilon::remove_epsilons;
 pub use shortest_distance::shortest_distance;
 pub use shortest_path::{shortest_path, shortest_path_single, ShortestPathConfig};
+pub use state_sort::{state_sort, StateSortType};
 pub use synchronize::synchronize;
 pub use topsort::topsort;
 pub use union::union;

@@ -108,8 +108,8 @@ pub use crate::{
         arc_sort, arc_sum, arc_unique, closure, closure_plus, compose, compose_default, concat,
         connect, decode, determinize, encode, isomorphic, minimize, project_input, project_output,
         prune, remove_epsilons, reverse, shortest_distance, shortest_path, shortest_path_single,
-        topsort, union, weight_convert, ArcSortType, ComposeFilter, DefaultComposeFilter,
-        EncodeTable, ShortestPathConfig,
+        state_sort, topsort, union, weight_convert, ArcSortType, ComposeFilter,
+        DefaultComposeFilter, EncodeTable, ShortestPathConfig, StateSortType,
     },
 
     // core types

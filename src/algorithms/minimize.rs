@@ -1,4 +1,43 @@
 //! Minimization algorithm
+//!
+//! ## Overview
+//!
+//! Reduces a deterministic FST to its unique canonical minimal form using Brzozowski's
+//! algorithm. Produces the FST with the minimum number of states that accepts the same
+//! weighted language as the input.
+//!
+//! ## Complexity
+//!
+//! - **Time:** O(2^V) worst case, O(V + E) typical case
+//!   - V = number of states in input FST
+//!   - E = number of arcs in input FST
+//!   - Four determinization steps dominate complexity
+//!   - Worst case rare; requires extensive nondeterminism after reversal
+//! - **Space:** O(2^V) for subset construction during determinization
+//!
+//! ## Algorithm
+//!
+//! Brzozowski's minimization (1962):
+//! 1. Reverse the FST
+//! 2. Determinize (merges states with identical suffixes)
+//! 3. Reverse again
+//! 4. Determinize again (merges states with identical prefixes)
+//! 5. Remove unreachable/non-coaccessible states
+//!
+//! Result: Unique canonical minimal FST for the language
+//!
+//! ## Use Cases
+//!
+//! - **After construction:** Minimize hand-built or programmatically generated FSTs
+//! - **After union/concatenation:** These operations often create redundant states
+//! - **Storage optimization:** Before serializing FSTs for deployment
+//! - **Composition preprocessing:** Smaller FSTs compose more efficiently
+//!
+//! ## References
+//!
+//! - J. A. Brzozowski (1962). "Canonical regular expressions and minimal state graphs
+//!   for definite events." Mathematical Theory of Automata, 12:529-561.
+//! - Mehryar Mohri (2009). "Weighted Automata Algorithms." Handbook of Weighted Automata.
 
 use crate::algorithms::{connect, determinize, reverse};
 use crate::fst::{Fst, MutableFst};
@@ -9,28 +48,45 @@ use core::hash::Hash;
 /// Minimize a deterministic FST to canonical minimal form
 ///
 /// Reduces the FST to the minimum number of states while preserving the accepted
-/// language. Uses Brzozowski's algorithm which is guaranteed to produce the unique
-/// minimal FST for any regular language.
+/// weighted language. Uses Brzozowski's algorithm which is guaranteed to produce
+/// the unique canonical minimal FST for any regular language.
 ///
-/// # Algorithm Details
+/// Requires [`DivisibleSemiring`] for weight normalization during internal determinization.
+/// Works on both deterministic and nondeterministic FSTs (non-deterministic inputs are
+/// determinized as part of the algorithm).
 ///
-/// - **Algorithm:** Brzozowski's minimization (1962)
-/// - **Steps:** reverse → determinize → reverse → determinize → connect
-/// - **Time Complexity:** O(2ⁿ) worst case due to determinization steps
-/// - **Space Complexity:** O(2ⁿ) for subset construction
-/// - **Optimality:** Produces the unique minimal automaton
+/// # Complexity
 ///
-/// # Prerequisites
+/// - **Time:** O(2^V) worst case, O(V + E) typical case
+///   - V = number of states in input FST
+///   - E = number of arcs in input FST
+///   - Dominated by four determinization steps
+///   - Worst case: exponential subset construction (rare in practice)
+///   - Typical case: near-linear with sparse nondeterminism
+/// - **Space:** O(2^V) for subset storage during determinization
+///   - Temporary FSTs created at each step
+///   - Peak memory: largest intermediate determinized FST
 ///
-/// - **Input FST:** Should ideally be deterministic (non-deterministic FSTs are determinized)
-/// - **Semiring:** Must be [`DivisibleSemiring`] for weight normalization during determinization
-/// - **Connected:** Works best on accessible and coaccessible FSTs
+/// # Algorithm
 ///
-/// # Implementation Notes
+/// Brzozowski's minimization (1962):
+/// 1. **Reverse:** Swap initial and final states, reverse all arcs
+/// 2. **Determinize:** Merge states with identical suffixes
+/// 3. **Reverse:** Swap initial and final states again
+/// 4. **Determinize:** Merge states with identical prefixes
+/// 5. **Connect:** Remove unreachable and non-coaccessible states
 ///
-/// The algorithm works by exploiting the fact that determinizing the reverse of an FST
-/// merges states that have identical suffixes, while determinizing again merges states
-/// with identical prefixes. This process results in the canonical minimal form.
+/// **Key insight:** Double reversal + determinization merges all equivalent states,
+/// producing the unique minimal automaton.
+///
+/// # Performance Notes
+///
+/// - **Deterministic input:** Much faster when input is already deterministic
+/// - **Size reduction:** Effectiveness depends on redundancy in original FST
+/// - **Memory usage:** Creates four intermediate FSTs (reverse, det, reverse, det)
+/// - **Alternative algorithms:** Direct minimization (Hopcroft, Moore) may be faster for special cases
+/// - **Preprocessing:** Consider [`connect`] before minimization to remove dead states
+/// - **Best for:** FSTs with significant redundancy (post-union, post-concatenation)
 ///
 /// # Examples
 ///
@@ -138,20 +194,6 @@ use core::hash::Hash;
 ///          dict.num_states(), minimized.num_states());
 /// ```
 ///
-/// # Performance Considerations
-///
-/// - **Deterministic Input:** Much faster when input is already deterministic
-/// - **Size Reduction:** Effectiveness depends on redundancy in original FST
-/// - **Memory Usage:** Can temporarily create large intermediate FSTs during determinization
-/// - **Alternative:** Consider direct minimization algorithms for special cases
-///
-/// # When to Use
-///
-/// - **After construction:** Minimize hand-built or programmatically generated FSTs
-/// - **After union/concatenation:** These operations often create redundant states
-/// - **Storage optimization:** Before serializing FSTs for deployment
-/// - **Composition preprocessing:** Smaller FSTs compose more efficiently
-///
 /// # Errors
 ///
 /// Returns [`Error::Algorithm`](crate::Error::Algorithm) if:
@@ -163,11 +205,20 @@ use core::hash::Hash;
 ///
 /// # See Also
 ///
-/// - [`determinize()`] for resolving nondeterminism before minimization
-/// - [`connect()`] for removing unreachable states as preprocessing
-/// - [`reverse()`] for the reversal operation used internally
-/// - [Working with FSTs - Minimization](../../docs/working-with-fsts/optimization-operations.md#minimization) for usage patterns
-/// - [Core Concepts](../../docs/core-concepts/algorithms.md#minimization) for theoretical background
+/// - [`determinize`] - Core operation used internally (applied twice)
+/// - [`reverse`] - Reversal operation used internally (applied twice)
+/// - [`connect`] - Final cleanup step to remove unreachable states
+/// - [`DivisibleSemiring`] - Required trait for weight normalization
+/// - [`TropicalWeight`] - Compatible semiring for shortest-path problems
+/// - [`LogWeight`] - Compatible semiring for probabilistic computations
+/// - [`compose`] - Often benefits from minimization preprocessing
+///
+/// [`determinize`]: crate::algorithms::determinize::determinize
+/// [`reverse`]: crate::algorithms::reverse::reverse
+/// [`connect`]: crate::algorithms::connect::connect
+/// [`compose`]: crate::algorithms::compose::compose
+/// [`TropicalWeight`]: crate::semiring::TropicalWeight
+/// [`LogWeight`]: crate::semiring::LogWeight
 pub fn minimize<W, F, M>(fst: &F) -> Result<M>
 where
     W: DivisibleSemiring + Hash + Eq + Ord,

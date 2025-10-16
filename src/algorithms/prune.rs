@@ -367,7 +367,7 @@ where
 ///
 /// 1. Initialize start state with weight one (identity)
 /// 2. Relaxation: for each arc (u, v) with weight w:
-///    - If dist[u] ⊗ w < dist[v], update dist[v]
+///    - If dist\[u\] ⊗ w < dist\[v\], update dist\[v\]
 /// 3. Continue until no updates (or iteration limit reached)
 ///
 /// # Termination
@@ -454,7 +454,7 @@ where
 /// 1. Build reverse arc index: for each arc (u, v), store (u, w) at v
 /// 2. Initialize final states with their final weights
 /// 3. Backward relaxation: for each state v, update predecessors u:
-///    - dist[u] = dist[u] ⊕ (w ⊗ dist[v])
+///    - dist\[u\] = dist\[u\] ⊕ (w ⊗ dist\[v\])
 ///
 /// # Termination
 ///

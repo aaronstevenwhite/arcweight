@@ -65,7 +65,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Output Label Tracking
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type OutputWeight = GallicWeight<TropicalWeight, LeftGallic>;
 ///
@@ -81,7 +81,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Shortest Path with Output Sequence
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type PathWeight = GallicWeight<TropicalWeight, LeftGallic>;
 ///

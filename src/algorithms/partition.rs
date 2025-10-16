@@ -38,6 +38,13 @@
 //! - **Analysis:** Understand FST structure and symmetries
 //! - **Optimization:** Preprocessing for other algorithms
 //!
+//! ## References
+//!
+//! - John Hopcroft (1971). "An n log n Algorithm for Minimizing States in a Finite Automaton."
+//!   Theory of Machines and Computations, pp. 189-196.
+//! - Robert Paige and Robert Tarjan (1987). "Three Partition Refinement Algorithms."
+//!   SIAM Journal on Computing, 16(6):973-989.
+//!
 //! ## Examples
 //!
 //! ### Simple Partition
@@ -58,8 +65,8 @@
 //! let classes = partition(&fst)?;
 //!
 //! // s1 and s2 are equivalent (both final with same weight, no outgoing arcs)
-//! assert_eq!(classes[s1], classes[s2]);
-//! assert_ne!(classes[s0], classes[s1]);
+//! assert_eq!(classes[s1 as usize], classes[s2 as usize]);
+//! assert_ne!(classes[s0 as usize], classes[s1 as usize]);
 //! # Ok::<(), arcweight::Error>(())
 //! ```
 //!
@@ -79,7 +86,7 @@
 //!
 //! // Already minimal: each state in own equivalence class
 //! assert_eq!(classes.len(), 2);
-//! assert_ne!(classes[s0], classes[s1]);
+//! assert_ne!(classes[s0 as usize], classes[s1 as usize]);
 //! # Ok::<(), arcweight::Error>(())
 //! ```
 
@@ -93,23 +100,40 @@ use std::collections::{HashMap, HashSet};
 /// Uses iterative partition refinement based on bisimulation equivalence.
 /// Returns a vector mapping each state ID to its equivalence class ID.
 ///
+/// # Complexity
+///
+/// - **Time:** O(E log V) where V = number of states, E = number of arcs
+///   - Initial partition by final weights: O(V)
+///   - Refinement iterations: O(log V) iterations
+///   - Each iteration processes all arcs: O(E)
+/// - **Space:** O(V + E) for partition and signatures
+///   - Partition mapping: O(V)
+///   - Arc signatures per iteration: O(E)
+///   - Temporary class storage: O(V)
+///
 /// # Algorithm
 ///
-/// 1. **Initialize:** Partition by final weights
-/// 2. **Refine:** Split classes based on arc signatures
-/// 3. **Iterate:** Continue until no further refinement possible
+/// Hopcroft-style partition refinement (1971):
+/// 1. **Initialize:** Partition states by final weights
+///    - States with equal final weights start in same class
+///    - Non-final states form separate initial class
+/// 2. **Refine:** For each class, compute arc signature for each state
+///    - Signature = sorted list of (label, weight, dest_class) triples
+///    - Split class if states have different signatures
+/// 3. **Iterate:** Repeat refinement until partition stabilizes (fixed point)
+/// 4. **Return:** Vector mapping state_id → class_id
 ///
-/// Two states are in the same equivalence class if they:
-/// - Have the same final weight (or both non-final)
-/// - Have identical arc signatures (same labels/weights to same classes)
+/// **Bisimulation equivalence:** Two states s, t equivalent if:
+/// - final_weight(s) = final_weight(t)
+/// - ∀ arc from s: ∃ matching arc from t to equivalent state
 ///
-/// # Time Complexity
+/// # Performance Notes
 ///
-/// O(|E| log |V|) - logarithmic refinement depth
-///
-/// # Space Complexity
-///
-/// O(|V| + |E|) - partition storage and arc signatures
+/// - **Logarithmic iterations:** Typically converges in O(log V) iterations
+/// - **Fast for simple FSTs:** Minimal FSTs converge immediately
+/// - **Signature computation:** Dominates per-iteration cost
+/// - **Cache friendly:** Sequential state and arc access
+/// - **Deterministic output:** Same FST always produces same partition
 ///
 /// # Examples
 ///
@@ -130,8 +154,8 @@ use std::collections::{HashMap, HashSet};
 ///
 /// // s0 is non-final, s1 and s2 are final with different weights
 /// assert_eq!(classes.len(), 3);
-/// assert_ne!(classes[s0], classes[s1]);
-/// assert_ne!(classes[s1], classes[s2]);
+/// assert_ne!(classes[s0 as usize], classes[s1 as usize]);
+/// assert_ne!(classes[s1 as usize], classes[s2 as usize]);
 /// # Ok::<(), arcweight::Error>(())
 /// ```
 ///
@@ -144,6 +168,17 @@ use std::collections::{HashMap, HashSet};
 /// # Errors
 ///
 /// Returns error if FST structure is invalid.
+///
+/// # See Also
+///
+/// - [`minimize`] - Uses partition as core subroutine
+/// - [`condense`] - Alternative for grouping states (SCCs vs equivalence)
+/// - [`isomorphic`] - Test if two FSTs accept same language
+/// - [Semiring trait](crate::semiring::Semiring) - Weight comparison for equivalence
+///
+/// [`minimize`]: crate::algorithms::minimize::minimize
+/// [`condense`]: crate::algorithms::condense::condense
+/// [`isomorphic`]: crate::algorithms::isomorphic::isomorphic
 pub fn partition<W, F>(fst: &F) -> Result<Vec<StateId>>
 where
     W: Semiring + Eq + std::hash::Hash,

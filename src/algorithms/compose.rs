@@ -1,4 +1,29 @@
 //! FST composition algorithm
+//!
+//! ## Overview
+//!
+//! Composition is a fundamental operation for combining two weighted finite-state
+//! transducers (FSTs) where the output of the first FST is matched against the input
+//! of the second FST. For FSTs T₁: Σ* → Γ* and T₂: Γ* → Δ*, their composition
+//! T₁ ∘ T₂: Σ* → Δ* computes all valid transformations through both transducers.
+//!
+//! ## Complexity
+//!
+//! - **Time:** O(V₁V₂ + E₁E₂) where Vᵢ = states in FST i, Eᵢ = arcs in FST i
+//! - **Space:** O(V₁V₂) for state pair storage
+//!
+//! ## Use Cases
+//!
+//! - **NLP pipelines:** Chain tokenization → POS tagging → parsing
+//! - **Speech recognition:** Pronunciation → acoustic model → language model
+//! - **Machine translation:** Source → interlingua → target language
+//! - **Spell checking:** Input → error model → dictionary
+//!
+//! ## References
+//!
+//! - Mehryar Mohri, Fernando Pereira, and Michael Riley (2008).
+//!   "Speech Recognition with Weighted Finite-State Transducers."
+//!   Handbook on Speech Processing and Speech Communication.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};
@@ -60,21 +85,50 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 /// is matched against the input of the second FST. The result accepts sequences
 /// that are transformed by the first FST into sequences accepted by the second.
 ///
-/// **Mathematical Definition:** For FSTs $T₁: Σ* → Γ* and T₂: Γ* → Δ*$,
-/// their composition $T₁ ∘ T₂: Σ* → Δ*$ satisfies:
-/// $(T₁ ∘ T₂)(x) = ⊕_{y ∈ Γ*} T_$(x,y) ⊗ T₂(y)$
+/// **Mathematical Definition:** For FSTs T₁: Σ* → Γ* and T₂: Γ* → Δ*,
+/// their composition T₁ ∘ T₂: Σ* → Δ* computes:
+/// ```text
+/// (T₁ ∘ T₂)(x) = ⊕_{y ∈ Γ*} T₁(x,y) ⊗ T₂(y)
+/// where:
+///   x ∈ Σ* = input sequence
+///   y ∈ Γ* = intermediate sequence
+///   ⊕ = semiring addition (sum over all paths)
+///   ⊗ = semiring multiplication (combine weights)
+/// ```
 ///
-/// # Performance
+/// # Complexity
 ///
-/// - **Time Complexity:** $O(|Q₁| × |Q₂| × |δ₁| × |δ₂|)$ worst case
-/// - **Space Complexity:** $O(|Q₁| × |Q₂|)$ for state pairs
-/// - **Optimization:** Use [`ConstFst`] for read-only inputs to improve cache locality
-/// - **Memory:** Consider [`compose_default`] for typical use cases
+/// - **Time:** O(V₁V₂E₁E₂) worst case, O(VE) average case
+///   - V₁, V₂ = number of states in each FST
+///   - E₁, E₂ = number of arcs in each FST
+///   - Worst case: dense cross-product of all state-arc pairs
+///   - Average case: sparse composition with few matching labels
+/// - **Space:** O(V₁V₂) for reachable state pairs
+///   - HashMap for state pair mapping
+///   - Queue for BFS traversal
 ///
-/// # Implementation Notes
+/// # Algorithm
 ///
-/// The algorithm uses on-the-fly construction to avoid creating the full cross-product
-/// of states. State pairs are created only when reachable and necessary.
+/// On-the-fly composition using breadth-first state exploration:
+/// 1. Create start state from (start₁, start₂, filter_start)
+/// 2. While queue non-empty:
+///    - Pop state triple (s₁, s₂, filter_state)
+///    - If both s₁, s₂ are final: mark composed state as final with w₁ ⊗ w₂
+///    - For each arc pair (a₁ from s₁, a₂ from s₂):
+///      - Apply filter to check if arcs compose
+///      - If match: create/reuse destination state, add composed arc
+/// 3. Result contains only reachable states from start
+///
+/// Based on Mohri, Pereira, and Riley (2008) with lazy state construction.
+///
+/// # Performance Notes
+///
+/// - **On-the-fly construction:** Avoids creating unreachable state pairs
+/// - **Label sparsity:** Performance improves with few matching labels between FSTs
+/// - **Filter overhead:** Custom filters add per-arc-pair overhead
+/// - **Memory pattern:** BFS traversal provides good cache locality
+/// - **Optimization tip:** Pre-sort arcs by label for faster label matching
+/// - **Best for:** Sparse FSTs with limited label overlap (e.g., NLP pipelines)
 ///
 /// # Examples
 ///
@@ -199,12 +253,16 @@ impl<W: Semiring> ComposeFilter<W> for DefaultComposeFilter {
 ///
 /// # See Also
 ///
-/// - [`compose_default`] for the most common use case
-/// - [Composition Tutorial](../../docs/working-with-fsts/core-operations.md#composition) for detailed examples
-/// - [Core Concepts](../../docs/core-concepts/algorithms.md#composition) for mathematical background
-/// - [`ComposeFilter`] for implementing custom composition logic
+/// - [`compose_default`] - Convenience function using standard label matching
+/// - [`ComposeFilter`] - Trait for implementing custom composition logic
+/// - [`DefaultComposeFilter`] - Standard label-based composition filter
+/// - [`determinize`] - Often applied after composition to reduce nondeterminism
+/// - [`minimize`] - Reduce composed FST size
+/// - [Fst trait](crate::fst::Fst) - Core FST interface
+/// - [Semiring trait](crate::semiring::Semiring) - Weight algebra
 ///
-/// [`ConstFst`]: crate::fst::ConstFst
+/// [`determinize`]: crate::algorithms::determinize::determinize
+/// [`minimize`]: crate::algorithms::minimize::minimize
 pub fn compose<W, F1, F2, M, CF>(fst1: &F1, fst2: &F2, filter: CF) -> Result<M>
 where
     W: Semiring,
@@ -265,15 +323,21 @@ where
 
 /// Compose two FSTs using the default composition filter
 ///
-/// This is a convenience function that uses `DefaultComposeFilter` for standard
+/// This is a convenience function that uses [`DefaultComposeFilter`] for standard
 /// label-based composition. Use this for most common composition scenarios where
 /// the output labels of the first FST should match the input labels of the second FST.
 ///
-/// # Performance
+/// # Complexity
 ///
-/// - **Time Complexity:** O(|Q₁| × |Q₂| × |δ₁| × |δ₂|) worst case
-/// - **Space Complexity:** O(|Q₁| × |Q₂|) for state pairs
-/// - **Best Practice:** Use this function unless you need custom epsilon handling
+/// - **Time:** O(V₁V₂E₁E₂) worst case, O(VE) average case
+///   - V₁, V₂ = number of states in each FST
+///   - E₁, E₂ = number of arcs in each FST
+/// - **Space:** O(V₁V₂) for reachable state pairs
+///
+/// # Algorithm
+///
+/// Delegates to [`compose`] with [`DefaultComposeFilter`], which matches arcs where
+/// `arc1.olabel == arc2.ilabel` and combines weights via semiring multiplication (⊗).
 ///
 /// # Examples
 ///
@@ -310,9 +374,14 @@ where
 ///
 /// # See Also
 ///
-/// - [`compose`] for custom composition filters
-/// - [Working with FSTs - Composition](../../docs/working-with-fsts/core-operations.md#composition) for usage patterns
-/// - [Examples](../../docs/examples/README.md) for real-world composition examples
+/// - [`compose`] - Full composition with custom filters
+/// - [`ComposeFilter`] - Trait for custom composition logic
+/// - [`DefaultComposeFilter`] - The filter used by this function
+/// - [`determinize`] - Often applied after composition
+/// - [`minimize`] - Reduce composed FST size
+///
+/// [`determinize`]: crate::algorithms::determinize::determinize
+/// [`minimize`]: crate::algorithms::minimize::minimize
 pub fn compose_default<W, F1, F2, M>(fst1: &F1, fst2: &F2) -> Result<M>
 where
     W: Semiring,

@@ -58,7 +58,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Non-Deterministic FST Operations
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type NonDetWeight = GallicWeight<TropicalWeight, UnionGallic>;
 ///
@@ -74,7 +74,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Flexible Label Tracking
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-/// use arcweight::semiring::ProbabilityWeight;
+/// use arcweight::semiring::{ProbabilityWeight, Semiring};
 ///
 /// type FlexWeight = GallicWeight<ProbabilityWeight, UnionGallic>;
 ///
@@ -84,13 +84,13 @@ use crate::semiring::{Semiring, SemiringProperties};
 ///
 /// let combined = seq1.plus(&seq2);
 /// assert_eq!(combined.labels(), &[1, 2]); // Extracts common prefix
-/// assert_eq!(*combined.weight().value(), 0.9); // 0.6 + 0.3
+/// assert!((*combined.weight().value() - 0.9).abs() < 1e-10); // 0.6 + 0.3
 /// ```
 ///
 /// ## Default Variant for Type Aliases
 /// ```rust
 /// use arcweight::semiring::gallic::GallicWeight;
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// // UnionGallic is the default when variant not specified
 /// type SimpleGallic = GallicWeight<TropicalWeight>;

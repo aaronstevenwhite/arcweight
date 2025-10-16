@@ -58,7 +58,7 @@ impl Default for ShortestPathConfig {
 #[derive(Clone, Debug)]
 struct Path<W: Semiring> {
     /// Sequence of (state, arc) pairs representing the path
-    /// The arc at position i goes FROM states[i] TO states[i+1]
+    /// The arc at position i goes FROM states\[i\] TO states\[i+1\]
     states: Vec<StateId>,
     arcs: Vec<Arc<W>>,
     /// Total weight of the path

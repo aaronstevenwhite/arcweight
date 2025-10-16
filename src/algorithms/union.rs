@@ -2,6 +2,11 @@
 //!
 //! Constructs the union of two weighted finite-state transducers by creating
 //! a new FST that accepts the combined language of both input FSTs.
+//!
+//! ## References
+//!
+//! - Hopcroft, J. E., and Ullman, J. D. (1979). "Introduction to Automata Theory,
+//!   Languages, and Computation." Addison-Wesley.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};

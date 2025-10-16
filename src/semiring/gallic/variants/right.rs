@@ -58,7 +58,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Right-to-Left Processing
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, RightGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type RightWeight = GallicWeight<TropicalWeight, RightGallic>;
 ///

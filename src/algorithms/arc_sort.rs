@@ -79,6 +79,14 @@
 //! assert_eq!(labels, vec![1, 2, 3]);
 //! # Ok::<(), arcweight::Error>(())
 //! ```
+//!
+//! ## References
+//!
+//! - Mohri, M., Pereira, F., and Riley, M. (2008). "Speech Recognition with Weighted
+//!   Finite-State Transducers." Springer Handbook of Speech Processing, pp. 559-584.
+//! - Allauzen, C., Riley, M., Schalkwyk, J., Skut, W., and Mohri, M. (2007).
+//!   "OpenFst: A General and Efficient Weighted Finite-State Transducer Library."
+//!   Implementation and Application of Automata, LNCS 4783, pp. 11-23.
 
 use crate::arc::Arc;
 use crate::fst::{MutableFst, StateId};
@@ -220,17 +228,34 @@ pub enum ArcSortType {
 ///
 /// # Complexity
 ///
-/// - **Time:** O(|V| + |E| log |E|)
+/// - **Time:** O(|V| + |E| log |E|) where V = states, E = arcs
 ///   - Iterate over all states: O(|V|)
-///   - For each state with k arcs:
-///     - Collect arcs: O(k)
-///     - Sort: O(k log k)
-///     - Delete + add back: O(k)
-///   - Total per state: O(k log k)
-///   - Summed across all states: Σ(k_i log k_i) ≤ O(|E| log |E|)
+///   - For each state with k arcs: O(k log k) sorting
+///   - Total: Σᵢ kᵢ log kᵢ ≤ O(|E| log |E|) across all states
+/// - **Space:** O(max_degree) where max_degree = maximum arcs from any state
+///   - Worst case: O(|E|) if single state has all arcs
 ///
-/// - **Space:** O(max_degree) where max_degree is the maximum number of
-///   arcs from any state. In worst case: O(|E|)
+/// # Algorithm
+///
+/// In-place arc reordering via standard sorting:
+/// 1. Iterate through all states in the FST
+/// 2. For each state:
+///    - Collect all outgoing arcs into temporary vector
+///    - Sort using stable sort with specified comparator (ByInput, ByOutput, etc.)
+///    - Delete all arcs from state
+///    - Re-add arcs in sorted order
+/// 3. Result: arcs within each state are ordered, FST structure preserved
+///
+/// Uses Rust's stable sort (TimSort) which has O(n log n) worst case,
+/// O(n) best case on already-sorted data.
+///
+/// # Performance Notes
+///
+/// - **Already sorted arcs:** O(|V| + |E|) with stable sort optimization
+/// - **Cache benefits:** Sorted arcs improve sequential access patterns
+/// - **Composition:** Pre-sorting by ilabel (left FST) or olabel (right FST) enables binary search
+/// - **Binary search:** O(log k) arc lookup vs O(k) linear scan per state
+/// - **Best practice:** Sort once after construction, before composition operations
 ///
 /// # Examples
 ///
@@ -329,6 +354,13 @@ pub enum ArcSortType {
 /// assert_eq!(s1_labels, vec![4, 5]);
 /// # Ok::<(), arcweight::Error>(())
 /// ```
+///
+/// # See Also
+///
+/// - [`ArcSortType`] - Enumeration of available sorting strategies
+/// - [`compose`] - Benefits from pre-sorted arcs for efficient label matching
+///
+/// [`compose`]: crate::algorithms::compose::compose
 pub fn arc_sort<W, F>(fst: &mut F, sort_type: ArcSortType) -> Result<()>
 where
     W: Semiring + Clone,

@@ -1,28 +1,57 @@
 //! Determinization algorithm
 //!
-//! Converts a nondeterministic weighted FST to a deterministic one using subset construction.
+//! ## Overview
 //!
-//! # Semiring Requirements
+//! Converts a nondeterministic weighted FST to a deterministic one using weighted subset
+//! construction. Ensures each state has at most one outgoing arc per input label.
+//!
+//! ## Complexity
+//!
+//! - **Time:** O(2^V) worst case, O(V + E) average case
+//!   - V = number of states in input FST
+//!   - E = number of arcs in input FST
+//!   - Worst case: full subset construction (rare in practice)
+//!   - Average case: sparse subsets with few nondeterministic states
+//! - **Space:** O(2^V) for subset storage
+//!
+//! ## Semiring Requirements
 //!
 //! This operation requires the semiring to be **weakly left divisible**, implemented as
-//! the `DivisibleSemiring` trait. This enables weight normalization during subset construction:
+//! the [`DivisibleSemiring`] trait. This enables weight normalization during subset construction:
 //! - Each subset's minimum weight is divided out to prevent exponential weight growth
 //! - Division operations must be well-defined and consistent
+//! - Weights must implement [`Ord`] to find minimum weights for normalization
 //!
-//! Additionally, the weights must be `Ord` to enable finding minimum weights for normalization.
+//! ### Supported Semirings
 //!
-//! # Supported Semirings
+//! - ✅ [`TropicalWeight`] - Implements `DivisibleSemiring + Ord`
+//! - ✅ [`LogWeight`] - Implements `DivisibleSemiring + Ord`
+//! - ❌ [`ProbabilityWeight`] - Not weakly left divisible
+//! - ❌ [`BooleanWeight`] - No natural division operation
 //!
-//! - ✅ `TropicalWeight` - Implements `DivisibleSemiring + Ord`
-//! - ✅ `LogWeight` - Implements `DivisibleSemiring + Ord`  
-//! - ❌ `ProbabilityWeight` - Not weakly left divisible
-//! - ❌ `BooleanWeight` - No natural division operation
+//! ## Algorithm
 //!
-//! # Notes
+//! Weighted subset construction (Mohri, 1997):
+//! 1. Start with singleton subset {start_state: 1̄}
+//! 2. For each subset S in queue:
+//!    - Accumulate final weights: w_final = ⊕_{s ∈ S} weight(s) ⊗ final_weight(s)
+//!    - Group outgoing arcs by input label
+//!    - For each label ℓ: compute next subset by following all arcs labeled ℓ
+//!    - Normalize subset: divide all weights by minimum to prevent growth
+//!    - Create/reuse state for normalized subset
+//! 3. Result: deterministic FST with same weighted language
 //!
-//! Even with a compatible semiring, not all weighted FSTs can be determinized due to
-//! structural requirements like the "twins property". The algorithm will return an error
-//! if determinization is not possible for the given FST.
+//! ## References
+//!
+//! - Mehryar Mohri (1997). "Finite-State Transducers in Language and Speech Processing."
+//!   Computational Linguistics, 23(2):269-311.
+//! - Mohri, M. (2009). "Weighted Automata Algorithms." Handbook of Weighted Automata.
+//!
+//! [`DivisibleSemiring`]: crate::semiring::DivisibleSemiring
+//! [`TropicalWeight`]: crate::semiring::TropicalWeight
+//! [`LogWeight`]: crate::semiring::LogWeight
+//! [`ProbabilityWeight`]: crate::semiring::ProbabilityWeight
+//! [`BooleanWeight`]: crate::semiring::BooleanWeight
 
 use crate::arc::Arc;
 use crate::fst::{Fst, Label, MutableFst, StateId};
@@ -82,28 +111,48 @@ impl<W: Semiring> WeightedSubset<W> {
 /// Determinize a weighted FST using subset construction
 ///
 /// Converts a nondeterministic FST into a deterministic one that accepts the same
-/// weighted language. Uses weighted subset construction with normalization to prevent
-/// exponential weight growth.
+/// weighted language. Ensures each state has at most one outgoing arc per input label,
+/// combining paths via semiring addition (⊕) and preserving weights through normalization.
 ///
-/// # Algorithm Details
+/// Requires [`DivisibleSemiring`] for weight normalization during subset construction.
+/// Compatible with [`TropicalWeight`] and [`LogWeight`].
 ///
-/// - **Base Algorithm:** Weighted subset construction (Mohri, 1997)
-/// - **Time Complexity:** O(2ⁿ) worst case, often much better in practice
-/// - **Space Complexity:** O(2ⁿ) for subset storage
-/// - **Weight Normalization:** Divides out minimum weight from each subset
+/// # Complexity
 ///
-/// # Semiring Requirements
+/// - **Time:** O(2^V) worst case, O(V + E) typical case
+///   - V = number of states in input FST
+///   - E = number of arcs in input FST
+///   - Worst case: exponential blowup (rare, requires extensive nondeterminism)
+///   - Typical case: linear or near-linear with sparse nondeterminism
+/// - **Space:** O(2^V) for subset storage (HashMap of subsets)
+///   - Each unique subset becomes one state in result
+///   - Memory dominated by subset representation
 ///
-/// The algorithm requires [`DivisibleSemiring`] for weight normalization:
-/// - **Division:** Must support `divide()` operation for normalizing weights
-/// - **Ordering:** Must implement `Ord` for finding minimum weights
-/// - **Twins Property:** FST structure must satisfy determinization requirements
+/// # Algorithm
 ///
-/// # Implementation Notes
+/// Weighted subset construction with normalization (Mohri, 1997):
+/// 1. Initialize: Create start state from {start_state: 1̄}
+/// 2. Process queue of (subset, state) pairs:
+///    - Compute final weight: w_f = ⊕_{s ∈ subset} w_s ⊗ final_weight(s)
+///    - Group arcs by input label: for each label ℓ
+///      * Compute destination subset: {(next_s, w_s ⊗ arc.weight) | arc with label ℓ}
+///      * Normalize: divide all weights by min weight in subset
+///      * Create/lookup state for normalized subset
+///      * Add arc with label ℓ and normalization weight
+/// 3. Return deterministic FST with same weighted language
 ///
-/// The algorithm maintains subsets of states with associated weights, ensuring
-/// that each subset represents a unique deterministic state. Weight normalization
-/// prevents the accumulation of large weight values during subset construction.
+/// # Performance Notes
+///
+/// - **Subset explosion:** Rare but possible with extensive nondeterminism
+/// - **Early stopping:** Consider weight pruning for very large FSTs
+/// - **Normalization overhead:** Division per subset, critical for correctness
+/// - **Label sparsity:** Fewer labels per state improves performance
+/// - **Preprocessing:** Remove epsilon arcs before determinization for best results
+/// - **Memory pattern:** HashMap lookups dominate; good cache locality with BTreeMap subsets
+///
+/// [`DivisibleSemiring`]: crate::semiring::DivisibleSemiring
+/// [`TropicalWeight`]: crate::semiring::TropicalWeight
+/// [`LogWeight`]: crate::semiring::LogWeight
 ///
 /// # Examples
 ///
@@ -175,13 +224,6 @@ impl<W: Semiring> WeightedSubset<W> {
 /// }
 /// ```
 ///
-/// # Performance Considerations
-///
-/// - **Subset Explosion:** Can create exponentially many states in worst case
-/// - **Early Termination:** Use weight/state thresholds for large FSTs
-/// - **Memory Management:** Consider streaming approaches for very large inputs
-/// - **Preprocessing:** Remove epsilon transitions before determinization
-///
 /// # Errors
 ///
 /// Returns [`Error::Algorithm`] if:
@@ -193,10 +235,15 @@ impl<W: Semiring> WeightedSubset<W> {
 ///
 /// # See Also
 ///
-/// - [`minimize()`](crate::algorithms::minimize()) for reducing deterministic FST size
-/// - [`remove_epsilons()`](crate::algorithms::remove_epsilons()) for preprocessing before determinization
-/// - [Working with FSTs - Determinization](../../docs/working-with-fsts/optimization-operations.md#determinization) for usage patterns
-/// - [Core Concepts](../../docs/core-concepts/algorithms.md#determinization) for theoretical background
+/// - [`minimize`] - Reduce deterministic FST size (often applied after determinization)
+/// - [`DivisibleSemiring`] - Required trait for weight normalization
+/// - [`TropicalWeight`] - Compatible semiring (min-plus algebra)
+/// - [`LogWeight`] - Compatible semiring (log-space probabilities)
+/// - [`compose`] - Often combined with determinization in FST pipelines
+/// - [Semiring trait](crate::semiring::Semiring) - Mathematical foundation
+///
+/// [`minimize`]: crate::algorithms::minimize::minimize
+/// [`compose`]: crate::algorithms::compose::compose
 pub fn determinize<W, F, M>(fst: &F) -> Result<M>
 where
     W: DivisibleSemiring + Hash + Eq + Ord,

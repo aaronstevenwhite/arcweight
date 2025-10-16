@@ -2,6 +2,13 @@
 //!
 //! Removes unreachable and non-productive states from weighted finite-state transducers,
 //! ensuring all remaining states are both accessible from the start and can reach final states.
+//!
+//! ## References
+//!
+//! - Hopcroft, J. E., and Ullman, J. D. (1979). "Introduction to Automata Theory,
+//!   Languages, and Computation." Addison-Wesley.
+//! - Mohri, M. (2009). "Weighted Automata Algorithms." Handbook of Weighted
+//!   Automata, Springer, pp. 213-254.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId};
@@ -273,11 +280,11 @@ use std::collections::{HashMap, HashSet};
 ///
 /// # See Also
 ///
-/// - [`crate::algorithms::minimize()`] for further state reduction after connection
-/// - [`crate::algorithms::determinize()`] for resolving nondeterminism
-/// - [`crate::algorithms::prune()`] for weight-based state pruning
-/// - [Working with FSTs - Connect](../../docs/working-with-fsts/optimization-operations.md#connection) for usage patterns
-/// - [Core Concepts](../../docs/core-concepts/algorithms.md#connect) for theoretical background
+/// - [`minimize`] - Further state reduction after connection
+/// - [`determinize`] - Resolving nondeterminism
+///
+/// [`minimize`]: crate::algorithms::minimize::minimize
+/// [`determinize`]: crate::algorithms::determinize::determinize
 pub fn connect<W, F, M>(fst: &F) -> Result<M>
 where
     W: Semiring,

@@ -2,6 +2,11 @@
 //!
 //! Constructs the concatenation of two weighted finite-state transducers by
 //! sequentially chaining them to form a single FST that accepts T₁ followed by T₂.
+//!
+//! ## References
+//!
+//! - Hopcroft, J. E., and Ullman, J. D. (1979). "Introduction to Automata Theory,
+//!   Languages, and Computation." Addison-Wesley.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};

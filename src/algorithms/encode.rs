@@ -1,8 +1,28 @@
 //! FST encoding and decoding
 //!
+//! ## Overview
+//!
 //! Encoding transforms a weighted transducer into an unweighted acceptor by
-//! mapping (ilabel, olabel, weight) tuples to single encoded labels. This
-//! enables running certain algorithms that work only on acceptors.
+//! mapping (ilabel, olabel, weight) tuples to single encoded labels. Decoding
+//! reverses the transformation, recovering the original weighted transducer.
+//!
+//! ## Complexity
+//!
+//! - **Encode:** O(V + E) where V = states, E = arcs
+//! - **Decode:** O(V + E) for reconstruction
+//! - **Space:** O(E) for encoding table
+//!
+//! ## Use Cases
+//!
+//! - **Algorithm compatibility:** Run acceptor-only algorithms on transducers
+//! - **Determinization:** Some FST operations require acceptor form
+//! - **Minimization:** Certain minimization algorithms work on acceptors
+//! - **Analysis:** Simplify FST structure temporarily for analysis
+//!
+//! ## References
+//!
+//! - Cyril Allauzen et al. (2007). "OpenFst: A General and Efficient Weighted
+//!   Finite-State Transducer Library." CIAA 2007.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, Label, MutableFst, VectorFst};
@@ -122,13 +142,27 @@ impl<W: Semiring + Hash + Eq + Clone> Default for EncodeTable<W> {
 ///    - Create new arc with (encoded_label, encoded_label, One, nextstate)
 /// 3. Copy final weights as One (original final weight encoded separately if needed)
 ///
-/// # Time Complexity
+/// # Complexity
 ///
-/// O(V + E) - single pass through FST
+/// - **Time:** O(|V| + |E|) where V = states, E = arcs
+///   - Single pass through FST: O(|V| + |E|)
+///   - Hash table lookups: O(1) average case per arc
+/// - **Space:** O(|E|) for encoding table (bounded by unique arc tuples)
 ///
-/// # Space Complexity
+/// # Algorithm
 ///
-/// O(E) - encoding table size bounded by number of unique arc types
+/// Bijective encoding via hash table:
+/// 1. Create empty encoding table mapping (i, o, w) ↦ label
+/// 2. For each arc, lookup or insert tuple in table, assign unique label
+/// 3. Build encoded FST with integer labels, tropical weights = 1̄
+/// 4. Return encoded FST and table for decoding
+///
+/// # Performance Notes
+///
+/// - **Hash efficiency:** O(1) average lookups for tuple-to-label mapping
+/// - **Memory:** Table size = number of unique (ilabel, olabel, weight) tuples
+/// - **Best case:** All arcs identical → table size = 1
+/// - **Worst case:** All arcs unique → table size = |E|
 ///
 /// # Examples
 ///
@@ -150,6 +184,11 @@ impl<W: Semiring + Hash + Eq + Clone> Default for EncodeTable<W> {
 /// assert_eq!(arcs.len(), 2);
 /// assert_eq!(arcs[0].ilabel, arcs[1].ilabel);
 /// ```
+///
+/// # See Also
+///
+/// - [`decode`] - Inverse operation to restore original FST
+/// - [`EncodeTable`] - Bidirectional mapping for encode/decode
 pub fn encode<W, F>(fst: &F) -> Result<(VectorFst<TropicalWeight>, EncodeTable<W>)>
 where
     W: Semiring + Hash + Eq + Clone,
@@ -199,9 +238,27 @@ where
 /// Uses the encoding table to map encoded labels back to
 /// (ilabel, olabel, weight) tuples.
 ///
-/// # Time Complexity
+/// # Complexity
 ///
-/// O(V + E) - single pass through encoded FST
+/// - **Time:** O(|V| + |E|) where V = states, E = arcs
+///   - Single pass through FST: O(|V| + |E|)
+///   - Table lookups: O(1) per arc
+/// - **Space:** O(|V| + |E|) for result FST
+///
+/// # Algorithm
+///
+/// Inverse mapping via encoding table:
+/// 1. Create result FST with same state structure
+/// 2. For each encoded arc with label ℓ:
+///    - Lookup (i, o, w) = table\[ℓ\]
+///    - Create arc with original labels and weight
+/// 3. Copy final weights unchanged
+///
+/// # Performance Notes
+///
+/// - **Table lookups:** O(1) reverse mapping from labels to tuples
+/// - **Correctness:** decode(encode(T)) ≅ T (isomorphic)
+/// - **Memory:** No additional table storage needed (uses provided table)
 ///
 /// # Examples
 ///
@@ -228,6 +285,11 @@ where
 /// assert_eq!(orig_arcs[0].olabel, dec_arcs[0].olabel);
 /// assert_eq!(orig_arcs[0].weight, dec_arcs[0].weight);
 /// ```
+///
+/// # See Also
+///
+/// - [`encode`] - Creates encoded FST and table
+/// - [`EncodeTable`] - Bidirectional mapping structure
 pub fn decode<W>(
     fst: &VectorFst<TropicalWeight>,
     table: &EncodeTable<W>,

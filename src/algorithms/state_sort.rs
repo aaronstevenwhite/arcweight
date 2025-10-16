@@ -74,6 +74,15 @@
 //! assert_eq!(sorted.start(), Some(0));
 //! # Ok::<(), arcweight::Error>(())
 //! ```
+//!
+//! ## References
+//!
+//! - Moore, E. F. (1959). "The shortest path through a maze." Proceedings of
+//!   the International Symposium on the Theory of Switching.
+//! - Kahn, A. B. (1962). "Topological sorting of large networks." Communications
+//!   of the ACM, 5(11): 558-562.
+//! - Tarjan, R. E. (1972). "Depth-first search and linear graph algorithms."
+//!   SIAM Journal on Computing, 1(2): 146-160.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst, StateId, VectorFst};
@@ -168,20 +177,35 @@ pub enum StateSortType {
 /// while preserving all arcs, labels, weights, and finality. The start state
 /// always becomes state 0.
 ///
+/// # Complexity
+///
+/// - **Time:** O(|V| + |E|) where V = states, E = arcs
+///   - Traversal (BFS/DFS/Topological): O(|V| + |E|)
+///   - State renumbering and copying: O(|V| + |E|)
+/// - **Space:** O(|V|) for state mapping and traversal queue/stack
+///
 /// # Algorithm
 ///
-/// 1. Traverse FST using specified order (BFS/DFS/topological)
-/// 2. Build state renumbering map: old_id → new_id
-/// 3. Create new FST with renumbered states
-/// 4. Copy arcs with updated state IDs
+/// Generic state renumbering with traversal strategies:
+/// 1. **Breadth-First:** Use queue for level-order traversal from start state
+/// 2. **Depth-First:** Use recursive DFS to visit states depth-first
+/// 3. **Topological:** Use DFS with cycle detection for DAG ordering
+/// 4. Build renumbering map: old_id → new_id based on visit order
+/// 5. Create output FST with states and arcs in new order
 ///
-/// # Time Complexity
+/// Based on Moore (1959) "The shortest path through a maze" for BFS,
+/// Tarjan (1972) "Depth-first search and linear graph algorithms" for DFS,
+/// and Kahn (1962) "Topological sorting of large networks" for topological ordering.
 ///
-/// O(V + E) - single traversal plus copying
+/// # Performance Notes
 ///
-/// # Space Complexity
+/// - **BFS:** Best for cache locality; parent states precede children
+/// - **DFS:** Efficient for deep paths; good for linear chains
+/// - **Topological:** Enables forward-arc-only algorithms on DAGs
+/// - **Memory:** BFS uses queue (O(width)), DFS uses stack (O(depth))
+/// - **Preprocessing:** Consider [`connect`] first to remove unreachable states
 ///
-/// O(V) - state mapping and queue/stack
+/// [`connect`]: crate::algorithms::connect::connect
 ///
 /// # Errors
 ///
@@ -234,6 +258,13 @@ pub enum StateSortType {
 /// assert_eq!(sorted.start(), Some(0));
 /// # Ok::<(), arcweight::Error>(())
 /// ```
+///
+/// # See Also
+///
+/// - [`connect`] - Removes unreachable states before sorting
+/// - [`StateSortType`] - Enumeration of available sorting strategies
+///
+/// [`connect`]: crate::algorithms::connect::connect
 pub fn state_sort<W, F>(fst: &F, sort_type: StateSortType) -> Result<VectorFst<W>>
 where
     W: Semiring + Clone,

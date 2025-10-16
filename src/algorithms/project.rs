@@ -2,6 +2,11 @@
 //!
 //! Extracts input or output labels from weighted finite-state transducers,
 //! converting transducers into acceptors that recognize single label sequences.
+//!
+//! ## References
+//!
+//! - Mohri, M., Pereira, F., and Riley, M. (2008). "Speech Recognition with Weighted
+//!   Finite-State Transducers." Springer Handbook of Speech Processing, pp. 559-584.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};

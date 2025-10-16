@@ -58,13 +58,13 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// // Invalid: different label sequences → zero weight
 /// let path3 = FunctionalWeight::from_labels(&[1, 2, 4], TropicalWeight::new(1.5));
 /// let invalid = path1.plus(&path3);
-/// assert!(invalid.weight().is_zero()); // Zero weight indicates error
+/// assert!(Semiring::is_zero(invalid.weight())); // Zero weight indicates error
 /// ```
 ///
 /// ## Determinization with Output Constraints
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, RestrictGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type DetWeight = GallicWeight<TropicalWeight, RestrictGallic>;
 ///

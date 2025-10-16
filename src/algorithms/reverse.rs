@@ -2,6 +2,11 @@
 //!
 //! Constructs the reverse of a weighted finite-state transducer by reversing
 //! all transitions and swapping start/final states while preserving the accepted language.
+//!
+//! ## References
+//!
+//! - Mohri, M. (2009). "Weighted Automata Algorithms." Handbook of Weighted
+//!   Automata, Springer, pp. 213-254.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};

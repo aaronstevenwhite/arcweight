@@ -24,7 +24,7 @@ use num_traits::{One, Zero};
 /// # Mathematical Structure
 ///
 /// A Gallic weight `(s, w)` consists of:
-/// - `s`: A sequence of labels (Vec<Label>)
+/// - `s`: A sequence of labels (`Vec<Label>`)
 /// - `w`: A weight from semiring W
 ///
 /// Operations depend on the variant `V` (see [`GallicVariant`]):
@@ -62,7 +62,7 @@ use num_traits::{One, Zero};
 ///
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type PathWeight = GallicWeight<TropicalWeight, MinGallic>;
 ///
@@ -79,7 +79,7 @@ use num_traits::{One, Zero};
 ///
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// let seg1 = GallicWeight::<TropicalWeight, UnionGallic>::from_labels(
 ///     &[1, 2],
@@ -99,7 +99,7 @@ use num_traits::{One, Zero};
 ///
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic, MinGallic, RestrictGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// // Left: Uses longest common prefix
 /// type LeftWeight = GallicWeight<TropicalWeight, LeftGallic>;
@@ -132,7 +132,7 @@ use num_traits::{One, Zero};
 /// use arcweight::semiring::gallic::{
 ///     GallicWeight, LeftGallic, RightGallic, MinGallic, RestrictGallic
 /// };
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type LeftGallicWeight<W> = GallicWeight<W, LeftGallic>;
 /// type RightGallicWeight<W> = GallicWeight<W, RightGallic>;
@@ -184,7 +184,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, LeftGallic>::new(
     ///     vec![1, 2, 3],
@@ -205,7 +205,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, UnionGallic>::from_labels(
     ///     &[1, 2, 3],
@@ -222,7 +222,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, MinGallic>::from_label(
     ///     42,
@@ -240,7 +240,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, LeftGallic>::empty(
     ///     TropicalWeight::new(3.0)
@@ -257,7 +257,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, UnionGallic>::from_labels(
     ///     &[10, 20, 30],
@@ -275,7 +275,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, LeftGallic>::from_labels(
     ///     &[1, 2],
@@ -293,7 +293,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let gallic_weight = GallicWeight::<TropicalWeight, MinGallic>::from_labels(
     ///     &[1, 2, 3],
@@ -313,7 +313,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, UnionGallic>::from_labels(
     ///     &[5, 6],
@@ -332,7 +332,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, LeftGallic>::from_labels(
     ///     &[1],
@@ -351,7 +351,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic, MinGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let left_weight = GallicWeight::<TropicalWeight, LeftGallic>::from_labels(
     ///     &[1, 2, 3],
@@ -373,7 +373,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, UnionGallic>::from_labels(
     ///     &[1, 2, 3],
@@ -398,7 +398,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, LeftGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, LeftGallic>::from_labels(
     ///     &[1, 2],
@@ -421,7 +421,7 @@ impl<W: Semiring, V: GallicVariant> GallicWeight<W, V> {
     ///
     /// ```rust
     /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-    /// use arcweight::semiring::TropicalWeight;
+    /// use arcweight::semiring::{Semiring, TropicalWeight};
     ///
     /// let weight = GallicWeight::<TropicalWeight, MinGallic>::from_labels(
     ///     &[1, 2],

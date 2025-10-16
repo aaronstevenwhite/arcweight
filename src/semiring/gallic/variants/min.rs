@@ -64,7 +64,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Viterbi Decoding with State Sequence
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-/// use arcweight::semiring::LogWeight;
+/// use arcweight::semiring::{LogWeight, Semiring};
 ///
 /// type ViterbiWeight = GallicWeight<LogWeight, MinGallic>;
 ///
@@ -82,7 +82,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Optimal Translation with Alignment
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type TranslationWeight = GallicWeight<TropicalWeight, MinGallic>;
 ///
@@ -100,7 +100,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 /// ## Path Concatenation
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type PathWeight = GallicWeight<TropicalWeight, MinGallic>;
 ///
@@ -129,7 +129,7 @@ use crate::semiring::{Semiring, SemiringProperties};
 ///
 /// ```rust
 /// use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-/// use arcweight::semiring::TropicalWeight;
+/// use arcweight::semiring::{Semiring, TropicalWeight};
 ///
 /// type MinWeight = GallicWeight<TropicalWeight, MinGallic>;
 ///

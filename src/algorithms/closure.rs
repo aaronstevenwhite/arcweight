@@ -1,7 +1,32 @@
 //! Kleene closure algorithms
 //!
+//! ## Overview
+//!
 //! Implements Kleene star (T*) and Kleene plus (T+) operations for weighted finite-state
 //! transducers, enabling repetition patterns and iterative language constructions.
+//!
+//! ## Operations
+//!
+//! - **Kleene Star (T*):** Accepts zero or more repetitions: L(T*) = {ε} ∪ L(T) ∪ L(T²) ∪ ...
+//! - **Kleene Plus (T+):** Accepts one or more repetitions: L(T+) = L(T) ∪ L(T²) ∪ L(T³) ∪ ...
+//!
+//! ## Complexity
+//!
+//! - **Time:** O(V + E) where V = states, E = arcs (single copy + constant overhead)
+//! - **Space:** O(V + E) plus one additional state
+//!
+//! ## Use Cases
+//!
+//! - **Regular expressions:** Build pattern matchers (a*, a+)
+//! - **Language modeling:** Repetition patterns in NLP
+//! - **Morphological analysis:** Reduplication and iterative morphemes
+//! - **Parser construction:** List patterns, optional repetitions
+//!
+//! ## References
+//!
+//! - Stephen Cole Kleene (1956). "Representation of Events in Nerve Nets and Finite Automata."
+//!   Automata Studies, Princeton University Press.
+//! - Mehryar Mohri (2009). "Weighted Automata Algorithms." Handbook of Weighted Automata.
 
 use crate::arc::Arc;
 use crate::fst::{Fst, MutableFst};
@@ -12,37 +37,41 @@ use crate::Result;
 ///
 /// Creates a new FST that accepts zero or more repetitions of the input FST.
 /// The result accepts the empty string plus any concatenation of strings
-/// from the original language, with weights combined through semiring operations.
+/// from the original language: L(T*) = {ε} ∪ L(T) ∪ L(T²) ∪ L(T³) ∪ ...
 ///
-/// # Algorithm Details
+/// Requires [`StarSemiring`] for proper weight computation in infinite repetition.
 ///
-/// - **Kleene Star Operation:** T* = ε ∪ T ∪ T² ∪ T³ ∪ ...
-/// - **Time Complexity:** O(|V| + |E|) for copying original FST plus constant overhead
-/// - **Space Complexity:** O(|V| + |E|) plus one additional state
-/// - **Language Relationship:** L(T*) = {ε} ∪ L(T) ∪ L(T²) ∪ L(T³) ∪ ...
+/// # Complexity
 ///
-/// # Semiring Requirements
+/// - **Time:** O(V + E) where V = number of states, E = number of arcs
+///   - Copy original FST: O(V + E)
+///   - Add one new state: O(1)
+///   - Add epsilon transitions: O(1) to start + O(F) from finals (F = # final states)
+/// - **Space:** O(V + E + 1) for new FST with one additional state
+///   - Original structure preserved
+///   - Minimal overhead for star operation
 ///
-/// The input FST must use a [`StarSemiring`] that provides:
-/// - **Star Operation:** Defines meaning of infinite repetition
-/// - **Closure Properties:** Ensures proper weight computation for iteration
-/// - **Convergence:** Guarantees star operation terminates appropriately
+/// # Algorithm
 ///
-/// # Mathematical Foundation
+/// Kleene star construction (1956):
+/// 1. **Create new start/final state:** Accepts empty string with weight 1̄
+/// 2. **Epsilon to original start:** Connect new state → old start
+/// 3. **Copy original FST:** Preserve all states, arcs, and final weights
+/// 4. **Epsilon from finals:** Connect old final states → new start
+/// 5. **Result:** Enables 0-or-more repetitions through epsilon cycles
 ///
-/// For an FST T over a star semiring, T* represents the reflexive transitive closure:
-/// - **Empty String:** T* always accepts ε with weight 1̄
-/// - **Single Iteration:** T* includes all strings from L(T)
-/// - **Multiple Iterations:** T* includes all concatenations T·T, T·T·T, etc.
-/// - **Weight Computation:** Uses semiring star operation for infinite sums
+/// **Mathematical foundation:** T* represents reflexive transitive closure
+/// - Empty string always accepted: ε ∈ L(T*)
+/// - Arbitrary repetitions: T^n ∈ L(T*) for all n ≥ 0
+/// - Weight computation via star semiring operation: ⊕_{n=0}^∞ T^n
 ///
-/// # Algorithm Steps
+/// # Performance Notes
 ///
-/// 1. **Copy Original FST:** Preserve all states, arcs, and structure from T
-/// 2. **New Start/Final State:** Create state that accepts empty string (weight 1̄)
-/// 3. **Epsilon to Start:** Connect new state to original start via epsilon arc
-/// 4. **Epsilon from Finals:** Connect original final states back to new start
-/// 5. **Iteration Loops:** Enable unlimited repetition through epsilon cycles
+/// - **Linear time:** Single pass over original FST
+/// - **Minimal overhead:** Adds only one state plus O(F) epsilon arcs
+/// - **Epsilon transitions:** Consider epsilon removal for deterministic execution
+/// - **Post-processing:** Often combined with determinization and minimization
+/// - **Cache friendly:** Sequential FST copy operation
 ///
 /// # Examples
 ///
@@ -239,12 +268,18 @@ use crate::Result;
 ///
 /// # See Also
 ///
-/// - [`closure_plus`] for Kleene plus operation (T+) excluding empty string
-/// - [`crate::algorithms::concat()`] for sequential FST combination
-/// - [`crate::algorithms::union()`] for parallel FST combination
-/// - [`remove_epsilons()`](crate::algorithms::remove_epsilons()) for epsilon removal
-/// - [Working with FSTs: Closure Operations](../../docs/working-with-fsts/advanced-topics.md#closure-operations) for usage patterns
-/// - [Core Concepts](../../docs/core-concepts/algorithms.md#closure) for mathematical theory
+/// - [`closure_plus`] - Kleene plus operation (T+) for one-or-more repetitions
+/// - [`concat`] - Sequential FST combination (T₁ · T₂)
+/// - [`union`] - Parallel FST combination (T₁ ∪ T₂)
+/// - [`StarSemiring`] - Required trait for star operation
+/// - [`determinize`] - Often applied after closure to resolve nondeterminism
+/// - [`minimize`] - Reduce closure result size
+///
+/// [`concat`]: crate::algorithms::concat::concat
+/// [`union`]: crate::algorithms::union::union
+/// [`StarSemiring`]: crate::semiring::StarSemiring
+/// [`determinize`]: crate::algorithms::determinize::determinize
+/// [`minimize`]: crate::algorithms::minimize::minimize
 pub fn closure<W, F, M>(fst: &F) -> Result<M>
 where
     W: StarSemiring,

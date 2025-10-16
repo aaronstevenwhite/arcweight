@@ -1,7 +1,92 @@
 //! FST isomorphism testing
 //!
-//! Checks if two FSTs are structurally identical (isomorphic), potentially
-//! with different state numbering.
+//! Determines if two FSTs are structurally identical up to state renumbering.
+//!
+//! ## Overview
+//!
+//! Two FSTs are isomorphic if there exists a bijection f: V₁ → V₂ that preserves:
+//! - Start states: f(start₁) = start₂
+//! - Final weights: ∀s ∈ V₁, finalWeight(s) = finalWeight(f(s))
+//! - Arc structure: ∀arc (s, i, o, w, t) ∈ E₁, ∃arc (f(s), i, o, w, f(t)) ∈ E₂
+//!
+//! This is essential for testing FST transformations that preserve structure
+//! but may renumber states (e.g., minimization, state sorting).
+//!
+//! ## Algorithm
+//!
+//! Simultaneous BFS traversal with state mapping verification:
+//! 1. Quick rejection: check state counts, arc counts, start state existence
+//! 2. Initialize bijection with start state pair: f(start₁) = start₂
+//! 3. BFS from start states, building and verifying mapping
+//! 4. At each state pair: verify finality, arc counts, arc correspondence
+//!
+//! ## Complexity
+//!
+//! - **Time:** O(|V| + |E|) - single BFS pass through both FSTs
+//! - **Space:** O(|V|) - state mapping hash table and BFS queue
+//!
+//! ## Use Cases
+//!
+//! - **Transformation Testing:** Verify FST operations preserve structure
+//! - **Minimization Verification:** Confirm minimal FSTs are equivalent
+//! - **Normalization:** Check if differently-ordered FSTs are identical
+//! - **Debugging:** Validate FST construction and manipulation
+//!
+//! ## Examples
+//!
+//! ### Isomorphic FSTs
+//!
+//! ```
+//! use arcweight::prelude::*;
+//!
+//! // Create two structurally identical FSTs
+//! let mut fst1 = VectorFst::<TropicalWeight>::new();
+//! let s0 = fst1.add_state();
+//! let s1 = fst1.add_state();
+//! fst1.set_start(s0);
+//! fst1.set_final(s1, TropicalWeight::new(1.0));
+//! fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
+//!
+//! let mut fst2 = VectorFst::<TropicalWeight>::new();
+//! let t0 = fst2.add_state();
+//! let t1 = fst2.add_state();
+//! fst2.set_start(t0);
+//! fst2.set_final(t1, TropicalWeight::new(1.0));
+//! fst2.add_arc(t0, Arc::new(1, 1, TropicalWeight::new(0.5), t1));
+//!
+//! assert!(isomorphic(&fst1, &fst2)?);
+//! # Ok::<(), arcweight::Error>(())
+//! ```
+//!
+//! ### Non-Isomorphic FSTs
+//!
+//! ```
+//! use arcweight::prelude::*;
+//!
+//! let mut fst1 = VectorFst::<TropicalWeight>::new();
+//! let s0 = fst1.add_state();
+//! let s1 = fst1.add_state();
+//! fst1.set_start(s0);
+//! fst1.set_final(s1, TropicalWeight::new(1.0));
+//! fst1.add_arc(s0, Arc::new(1, 1, TropicalWeight::new(0.5), s1));
+//!
+//! let mut fst2 = VectorFst::<TropicalWeight>::new();
+//! let t0 = fst2.add_state();
+//! let t1 = fst2.add_state();
+//! fst2.set_start(t0);
+//! fst2.set_final(t1, TropicalWeight::new(2.0)); // Different weight
+//! fst2.add_arc(t0, Arc::new(1, 1, TropicalWeight::new(0.5), t1));
+//!
+//! assert!(!isomorphic(&fst1, &fst2)?);
+//! # Ok::<(), arcweight::Error>(())
+//! ```
+//!
+//! ## References
+//!
+//! - Hopcroft, J. E., and Karp, R. M. (1971). "An n^5/2 algorithm for maximum matchings
+//!   in bipartite graphs." SIAM Journal on Computing, 2(4): 225-231.
+//! - Booth, K. S., and Colbourn, C. J. (1977). "Problems polynomially equivalent to
+//!   graph isomorphism." Technical Report CS-77-04, University of Waterloo.
 
 use crate::fst::{Fst, StateId};
 use crate::semiring::Semiring;
@@ -10,29 +95,40 @@ use std::collections::{HashMap, VecDeque};
 
 /// Checks if two FSTs are isomorphic.
 ///
-/// Two FSTs are isomorphic if there exists a bijection between their states
-/// that preserves:
-/// - The start state
-/// - Final states and their weights
-/// - All arcs (labels, weights, and connectivity)
+/// Two FSTs are isomorphic if there exists a bijection f: V₁ → V₂ between their
+/// states that preserves start states, final weights, and all arc structure. This
+/// is the fundamental operation for verifying FST transformations like minimization
+/// and state sorting that preserve language but may renumber states.
 ///
-/// This is useful for testing FST equivalence after transformations that may
-/// renumber states (e.g., minimization, state sorting).
+/// # Complexity
+///
+/// - **Time:** O(|V| + |E|) where V = states in each FST, E = arcs in each FST
+///   - Quick rejection tests: O(1)
+///   - BFS traversal: O(|V| + |E|)
+///   - Arc sorting per state: O(k log k) where k = arcs per state
+/// - **Space:** O(|V|) for state mapping hash table and BFS queue
 ///
 /// # Algorithm
 ///
-/// Uses simultaneous BFS from start states to build and verify a state mapping:
-/// 1. Quick rejection tests (state count, arc count, start state exists)
-/// 2. BFS traversal building bijection f: S₁ → S₂
-/// 3. At each step, verify arc correspondence and finality
+/// Simultaneous BFS with bijection construction and verification:
+/// 1. **Reject quickly:** Check |V₁| = |V₂|, |E₁| = |E₂|, both have start states
+/// 2. **Initialize:** Map start₁ → start₂, enqueue (start₁, start₂)
+/// 3. **BFS Loop:** For each state pair (s₁, s₂):
+///    - Verify final weights match: finalWeight(s₁) = finalWeight(s₂)
+///    - Verify arc counts match: |arcs(s₁)| = |arcs(s₂)|
+///    - Sort arcs from both states by (ilabel, olabel, weight, nextstate)
+///    - For each arc pair: verify labels and weights match, extend bijection
+/// 4. **Success:** All states visited with consistent bijection
 ///
-/// # Time Complexity
+/// Based on graph isomorphism testing with linear-time verification for labeled graphs.
 ///
-/// O(V + E) - single pass through both FSTs
+/// # Performance Notes
 ///
-/// # Space Complexity
-///
-/// O(V) - state mapping and queue
+/// - **Early rejection:** Most non-isomorphic FSTs rejected in O(1) by count checks
+/// - **Arc sorting:** Dominates runtime for states with many arcs (O(k log k) per state)
+/// - **Hash lookups:** O(1) average case for bijection verification
+/// - **Best case:** O(|V|) for linear chains with pre-sorted arcs
+/// - **Worst case:** O(|V| + |E| log degree) for dense FSTs with unsorted arcs
 ///
 /// # Examples
 ///
@@ -78,6 +174,14 @@ use std::collections::{HashMap, VecDeque};
 ///
 /// assert!(!isomorphic(&fst1, &fst2).unwrap());
 /// ```
+///
+/// # See Also
+///
+/// - [`minimize`] - Produces minimal FST (verify with isomorphic test)
+/// - [`state_sort`] - Renumbers states (preserves isomorphism)
+///
+/// [`minimize`]: crate::algorithms::minimize::minimize
+/// [`state_sort`]: crate::algorithms::state_sort::state_sort
 pub fn isomorphic<W, F1, F2>(fst1: &F1, fst2: &F2) -> Result<bool>
 where
     W: Semiring + PartialEq,

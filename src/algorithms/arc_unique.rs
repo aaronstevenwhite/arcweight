@@ -52,6 +52,14 @@
 //! assert_eq!(fst.num_arcs(s0), 1);
 //! # Ok::<(), arcweight::Error>(())
 //! ```
+//!
+//! ## References
+//!
+//! - Mohri, M. (2009). "Weighted Automata Algorithms." Handbook of Weighted
+//!   Automata, Springer, pp. 213-254.
+//! - Allauzen, C., Riley, M., Schalkwyk, J., Skut, W., and Mohri, M. (2007).
+//!   "OpenFst: A General and Efficient Weighted Finite-State Transducer Library."
+//!   Implementation and Application of Automata, LNCS 4783, pp. 11-23.
 
 use crate::arc::Arc;
 use crate::fst::{MutableFst, StateId};
@@ -182,6 +190,22 @@ use std::collections::HashSet;
 /// assert_eq!(fst.num_states(), 0);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
+///
+/// # Performance Notes
+///
+/// - **No duplicates:** O(|E|) with minimal overhead for unique arcs
+/// - **Many duplicates:** Reduces arc count and improves FST performance
+/// - **Hash operations:** O(1) average case for duplicate detection
+/// - **Memory:** HashSet storage proportional to unique arcs per state
+/// - **Best practice:** Apply after operations that may accidentally duplicate arcs
+///
+/// # See Also
+///
+/// - [`arc_sum`] - Combines duplicate arcs by summing weights
+/// - [`arc_sort`] - Sorts arcs for easier duplicate detection
+///
+/// [`arc_sum`]: crate::algorithms::arc_sum::arc_sum
+/// [`arc_sort`]: crate::algorithms::arc_sort::arc_sort
 pub fn arc_unique<W, F>(fst: &mut F) -> Result<()>
 where
     W: Semiring + Clone + Eq + std::hash::Hash,

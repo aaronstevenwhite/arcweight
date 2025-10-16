@@ -67,10 +67,23 @@ const MAX_ITERATIONS: usize = 1000;
 ///
 /// This function computes the shortest distance from the start state to each
 /// state in the FST, where "shortest" is defined according to the semiring's
-/// addition operation (which typically represents a generalized "sum").
+/// addition operation (⊕), which typically represents a generalized "sum".
+/// For [`TropicalWeight`](crate::semiring::TropicalWeight), this computes minimum distances; for [`ProbabilityWeight`](crate::semiring::ProbabilityWeight),
+/// it computes total probabilities; for [`BooleanWeight`](crate::semiring::BooleanWeight), it computes reachability.
 ///
 /// For **acyclic FSTs**, uses a single forward pass in topological order.
 /// For **cyclic FSTs** with k-closed semirings, iterates until convergence.
+///
+/// # Complexity
+///
+/// - **Time (Acyclic):** O(V + E) where V = number of states, E = number of arcs
+///   - Topological sort: O(V + E)
+///   - Single forward pass: O(V + E)
+/// - **Time (Cyclic):** O(k(V + E)) where k = iterations until convergence
+///   - Each iteration: O(V + E) for weight relaxation
+///   - Convergence check: O(V)
+///   - Maximum iterations: 1000 (configurable via `MAX_ITERATIONS`)
+/// - **Space:** O(V) for distance vector storage
 ///
 /// # Algorithm
 ///
@@ -78,30 +91,27 @@ const MAX_ITERATIONS: usize = 1000;
 /// shortest-distance problems."
 ///
 /// **Acyclic case:**
-/// 1. Compute topological ordering of states
-/// 2. Initialize distance[start] = One, others = Zero
+/// 1. Compute topological ordering of states via DFS
+/// 2. Initialize distance\[start\] = 1̄, others = 0̄
 /// 3. Process states in topological order
-/// 4. For each outgoing arc: distance[dest] ⊕= distance[src] ⊗ arc.weight
+/// 4. For each outgoing arc: distance\[dest\] ⊕= distance\[src\] ⊗ arc.weight
 ///
 /// **Cyclic case (k-closed semiring):**
-/// 1. Initialize distance[start] = One, others = Zero
+/// 1. Initialize distance\[start\] = 1̄, others = 0̄
 /// 2. Iterate until convergence (or max iterations):
-///    - For each state, for each arc: distance[dest] ⊕= distance[src] ⊗ arc.weight
+///    - For each state, for each arc: distance\[dest\] ⊕= distance\[src\] ⊗ arc.weight
 /// 3. Check for convergence when distances stabilize
 ///
-/// # Complexity
+/// # Performance Notes
 ///
-/// - **Acyclic:** O(|V| + |E|) - single topological pass
-///   - O(|V| + |E|) for topological sort
-///   - O(|V| + |E|) for distance computation
-///   - Total: O(|V| + |E|)
-///
-/// - **Cyclic:** O(k × (|V| + |E|)) where k is iterations until convergence
-///   - Each iteration: O(|V| + |E|) for relaxation
-///   - Convergence check: O(|V|)
-///   - Total: O(k × (|V| + |E|))
-///
-/// - **Space:** O(|V|) for distance vector
+/// - **Acyclic FSTs:** Optimal performance with single linear pass
+/// - **Cyclic FSTs:** Convergence speed depends on:
+///   - Graph structure (strongly connected components)
+///   - Semiring properties (k-closed ensures convergence)
+///   - Weight distribution (smaller weights converge faster in tropical)
+/// - **Memory efficient:** Single distance vector, no additional queue storage
+/// - **Cache friendly:** Sequential state access in topological order
+/// - For large cyclic FSTs, consider using [`connect`](crate::algorithms::connect::connect) first to remove unreachable states
 ///
 /// # Examples
 ///
@@ -165,6 +175,15 @@ const MAX_ITERATIONS: usize = 1000;
 /// // distances[s1] = 0.7 (sum: 0.3 + 0.4)
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
+///
+/// # See Also
+///
+/// - [`connect`](crate::algorithms::connect::connect) - Remove unreachable and non-coaccessible states before computing distances
+/// - [`TropicalWeight`](crate::semiring::TropicalWeight) - Semiring for shortest path problems (min-plus)
+/// - [`LogWeight`](crate::semiring::LogWeight) - Semiring for probabilistic computations in log domain
+/// - [`ProbabilityWeight`](crate::semiring::ProbabilityWeight) - Semiring for direct probability computations
+/// - [`BooleanWeight`](crate::semiring::BooleanWeight) - Semiring for reachability analysis
+/// - [Semiring trait](crate::semiring::Semiring) - Mathematical foundation
 ///
 /// # Errors
 ///

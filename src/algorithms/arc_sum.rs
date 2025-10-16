@@ -50,6 +50,13 @@
 //! assert_eq!(fst.num_arcs(s0), 1);
 //! # Ok::<(), arcweight::Error>(())
 //! ```
+//!
+//! ## References
+//!
+//! - Mohri, M. (2009). "Weighted Automata Algorithms." Handbook of Weighted
+//!   Automata, Springer, pp. 213-254.
+//! - Allauzen, C., Riley, M., and Mohri, M. (2004). "A filter-based algorithm
+//!   for ε-removal." Proceedings of CIAA, pp. 65-76.
 
 use crate::arc::Arc;
 use crate::fst::{Label, MutableFst, StateId};
@@ -179,6 +186,22 @@ type ArcKey = (Label, Label, StateId);
 /// assert_eq!(fst.num_arcs(s0), 2);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
+///
+/// # Performance Notes
+///
+/// - **No duplicates:** O(|E|) with no redundant work for unique arcs
+/// - **Many duplicates:** Significantly reduces arc count and memory usage
+/// - **Hash lookups:** O(1) average case for grouping by (ilabel, olabel, nextstate)
+/// - **Memory:** Temporary storage proportional to max arcs per state
+/// - **Best practice:** Apply after FST construction or operations that create duplicates
+///
+/// # See Also
+///
+/// - [`arc_unique`] - Removes duplicate arcs instead of summing weights
+/// - [`determinize`] - May benefit from arc_sum preprocessing
+///
+/// [`arc_unique`]: crate::algorithms::arc_unique::arc_unique
+/// [`determinize`]: crate::algorithms::determinize::determinize
 pub fn arc_sum<W, F>(fst: &mut F) -> Result<()>
 where
     W: Semiring + Clone,

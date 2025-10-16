@@ -11,9 +11,9 @@
 //!
 //! ## Algorithm
 //!
-//! Given potentials V[s] for each state s, reweighting applies:
-//! - Arc weight: w'(e) = V[source(e)]⁻¹ ⊗ w(e) ⊗ V[dest(e)]
-//! - Final weight: ρ'[s] = V[s]⁻¹ ⊗ ρ[s]
+//! Given potentials V\[s\] for each state s, reweighting applies:
+//! - Arc weight: w'(e) = V\[source(e)\]⁻¹ ⊗ w(e) ⊗ V\[dest(e)\]
+//! - Final weight: ρ'\[s\] = V\[s\]⁻¹ ⊗ ρ\[s\]
 //!
 //! This maintains path weights: any path from start to final state has the
 //! same total weight before and after reweighting.
@@ -38,6 +38,12 @@
 //! - **Normalization:** Normalize probability distributions on arcs
 //! - **Stochastic FSTs:** Ensure proper probability distributions
 //! - **Numerical Stability:** Reduce accumulation of very large/small weights
+//!
+//! ## References
+//!
+//! - Mehryar Mohri and Michael Riley (2001). "A Weight Pushing Algorithm for
+//!   Large Vocabulary Speech Recognition." Proceedings of Eurospeech.
+//! - Mehryar Mohri (2009). "Weighted Automata Algorithms." Handbook of Weighted Automata.
 //!
 //! ## Examples
 //!
@@ -108,16 +114,16 @@ use crate::{Error, Result};
 pub enum ReweightType {
     /// Reweight toward initial state
     ///
-    /// Applies formula: w'(e) = V[source(e)]⁻¹ ⊗ w(e) ⊗ V[dest(e)]
-    /// and ρ'[s] = V[s]⁻¹ ⊗ ρ[s]
+    /// Applies formula: w'(e) = V\[source(e)\]⁻¹ ⊗ w(e) ⊗ V\[dest(e)\]
+    /// and ρ'\[s\] = V\[s\]⁻¹ ⊗ ρ\[s\]
     ///
     /// Useful for pushing weights backward from final states.
     ToInitial,
 
     /// Reweight toward final states
     ///
-    /// Applies formula: w'(e) = V[dest(e)]⁻¹ ⊗ w(e) ⊗ V[source(e)]
-    /// and ρ'[s] = V[s] ⊗ ρ[s]
+    /// Applies formula: w'(e) = V\[dest(e)\]⁻¹ ⊗ w(e) ⊗ V\[source(e)\]
+    /// and ρ'\[s\] = V\[s\] ⊗ ρ\[s\]
     ///
     /// Useful for pushing weights forward from initial state.
     ToFinal,
@@ -125,34 +131,47 @@ pub enum ReweightType {
 
 /// Reweights an FST using a potential function on states.
 ///
-/// Given potentials V[s] for each state s, reweights arcs and final
+/// Given potentials V\[s\] for each state s, reweights arcs and final
 /// weights to maintain path equivalence while redistributing weight
 /// according to the potential function. This is the core operation
 /// for weight pushing algorithms.
 ///
+/// # Complexity
+///
+/// - **Time:** O(V + E) where V = number of states, E = number of arcs
+///   - Single pass over all states: O(V)
+///   - Single pass over all arcs: O(E)
+///   - Potential lookups: O(1) per operation
+/// - **Space:** O(V + E) for output FST with same structure
+///   - New FST structure identical to input
+///   - No additional temporary storage needed
+///
 /// # Algorithm
 ///
-/// For `ReweightType::ToInitial`:
-/// - Arc weight: w'(e) = V[source(e)]⁻¹ ⊗ w(e) ⊗ V[dest(e)]
-/// - Final weight: ρ'[s] = V[s]⁻¹ ⊗ ρ[s]
+/// Weight redistribution via potential function:
 ///
-/// For `ReweightType::ToFinal`:
-/// - Arc weight: w'(e) = V[dest(e)]⁻¹ ⊗ w(e) ⊗ V[source(e)]
-/// - Final weight: ρ'[s] = V[s] ⊗ ρ[s]
+/// **For `ReweightType::ToInitial`:**
+/// 1. For each arc e = (s, t, w): compute w'(e) = V\[s\]⁻¹ ⊗ w ⊗ V\[t\]
+/// 2. For each final state s with weight ρ\[s\]: compute ρ'\[s\] = V\[s\]⁻¹ ⊗ ρ\[s\]
+/// 3. Maintains path weights: any path P has weight(P') = weight(P)
 ///
-/// # Requirements
+/// **For `ReweightType::ToFinal`:**
+/// 1. For each arc e = (s, t, w): compute w'(e) = V\[t\]⁻¹ ⊗ w ⊗ V\[s\]
+/// 2. For each final state s with weight ρ\[s\]: compute ρ'\[s\] = V\[s\] ⊗ ρ\[s\]
+/// 3. Maintains path weights: any path P has weight(P') = weight(P)
 ///
-/// - Potentials vector must have length equal to `fst.num_states()`
+/// **Requirements:**
+/// - Potentials vector length must equal `fst.num_states()`
 /// - All potential values must be valid (non-zero for division)
-/// - Semiring must support division (implement `DivisibleSemiring`)
+/// - Semiring must implement [`DivisibleSemiring`] for division operations
 ///
-/// # Time Complexity
+/// # Performance Notes
 ///
-/// O(|V| + |E|) - single pass over all states and arcs
-///
-/// # Space Complexity
-///
-/// O(|V| + |E|) - creates new FST with same structure
+/// - **Linear complexity:** Single pass makes this very fast for large FSTs
+/// - **Memory overhead:** Creates new FST; consider in-place version for tight memory
+/// - **Division operations:** May be slow for complex semirings (log, probability)
+/// - **No convergence:** Always completes in one pass (unlike iterative algorithms)
+/// - **Cache friendly:** Sequential traversal of states and arcs
 ///
 /// # Examples
 ///
@@ -181,6 +200,18 @@ pub enum ReweightType {
 /// - Potentials vector length doesn't match number of states
 /// - Division by potential fails (zero or undefined)
 /// - FST structure is invalid
+///
+/// # See Also
+///
+/// - [`shortest_distance`] - Compute potentials for weight pushing
+/// - [`DivisibleSemiring`] - Required trait for division operations
+/// - [`TropicalWeight`] - Compatible semiring for shortest-path applications
+/// - [`LogWeight`] - Compatible semiring for probabilistic applications
+/// - [`ReweightType`] - Direction of reweighting (to initial or final)
+///
+/// [`shortest_distance`]: crate::algorithms::shortest_distance::shortest_distance
+/// [`TropicalWeight`]: crate::semiring::TropicalWeight
+/// [`LogWeight`]: crate::semiring::LogWeight
 pub fn reweight<W, F>(
     fst: &F,
     potentials: &[W],

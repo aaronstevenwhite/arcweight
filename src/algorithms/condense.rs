@@ -41,6 +41,13 @@
 //! - **Minimization:** Preprocessing step for certain minimization algorithms
 //! - **Visualization:** Simplify FST representation by hiding internal SCC structure
 //!
+//! ## References
+//!
+//! - Robert Tarjan (1972). "Depth-First Search and Linear Graph Algorithms."
+//!   SIAM Journal on Computing, 1(2):146-160.
+//! - Thomas H. Cormen et al. (2009). "Introduction to Algorithms," 3rd Edition.
+//!   Section 22.5: Strongly Connected Components.
+//!
 //! ## Examples
 //!
 //! ### Acyclic FST (Each State is Own SCC)
@@ -101,23 +108,42 @@ use std::collections::HashMap;
 /// Condenses strongly connected components (SCCs) into single states.
 ///
 /// Each SCC is replaced by a representative state, with arcs adjusted
-/// appropriately. The resulting FST is a DAG of SCCs.
+/// appropriately. The resulting FST is a DAG of SCCs. This transformation
+/// reveals the high-level structure of the FST by collapsing cyclic regions.
+///
+/// # Complexity
+///
+/// - **Time:** O(V + E) where V = number of states, E = number of arcs
+///   - Single DFS traversal: O(V + E)
+///   - SCC identification via Tarjan's algorithm: O(V + E)
+///   - Condensation graph construction: O(V + E)
+/// - **Space:** O(V) for DFS stack and auxiliary structures
+///   - Discovery times array: O(V)
+///   - Low-link values array: O(V)
+///   - SCC stack: O(V) worst case
+///   - SCC mapping: O(V)
 ///
 /// # Algorithm
 ///
-/// Uses Tarjan's algorithm for finding SCCs in O(V + E) time:
-/// 1. DFS traversal with discovery times
-/// 2. Track low-link values for back edges
-/// 3. Use stack to identify SCCs when backtracking
-/// 4. Build condensation graph mapping SCCs to states
+/// Tarjan's strongly connected components algorithm (1972):
+/// 1. Initialize DFS with discovery times and low-link values
+/// 2. For each unvisited state:
+///    - Perform DFS, pushing states onto stack
+///    - Track low-link value = min reachable discovery time
+///    - When backtracking, if low-link\[v\] == discovery\[v\]: found SCC root
+///    - Pop stack until v, all popped states form one SCC
+/// 3. Build condensation graph:
+///    - Create one state per SCC
+///    - Add arcs between SCCs (combining weights via ⊕ for duplicates)
+///    - Set final weights for SCCs containing final states
 ///
-/// # Time Complexity
+/// # Performance Notes
 ///
-/// O(|V| + |E|) - single DFS traversal
-///
-/// # Space Complexity
-///
-/// O(|V|) - stack and auxiliary data structures
+/// - **Linear time:** Optimal O(V + E) complexity for SCC detection
+/// - **Single pass:** No iteration or convergence needed
+/// - **Cache friendly:** Sequential DFS traversal
+/// - **Acyclic output:** Result is always a DAG, enabling topological algorithms
+/// - **Weight combination:** Arcs between same SCC pairs combined using semiring addition (⊕)
 ///
 /// # Examples
 ///
@@ -143,6 +169,17 @@ use std::collections::HashMap;
 /// # Errors
 ///
 /// Returns error if FST structure is invalid.
+///
+/// # See Also
+///
+/// - [`connect`] - Remove unreachable states (often applied after condensation)
+/// - [`shortest_distance`] - Works efficiently on condensed (acyclic) FSTs
+/// - [`state_sort`] - Topological sort works on condensed DAGs
+/// - [Semiring trait](crate::semiring::Semiring) - Weight combination for duplicate arcs
+///
+/// [`connect`]: crate::algorithms::connect::connect
+/// [`shortest_distance`]: crate::algorithms::shortest_distance::shortest_distance
+/// [`state_sort`]: crate::algorithms::state_sort::state_sort
 pub fn condense<W, F>(fst: &F) -> Result<VectorFst<W>>
 where
     W: Semiring,

@@ -8,7 +8,7 @@
 //! # Overview
 //!
 //! A Gallic weight `(s, w)` combines:
-//! - **s**: A sequence of labels (Vec<Label>)
+//! - **s**: A sequence of labels (`Vec<Label>`)
 //! - **w**: A weight from an arbitrary semiring W
 //!
 //! The Gallic semiring is parameterized by a **variant** that determines how
@@ -103,7 +103,7 @@
 //!
 //! ```rust
 //! use arcweight::semiring::gallic::{GallicWeight, MinGallic};
-//! use arcweight::semiring::TropicalWeight;
+//! use arcweight::semiring::{Semiring, TropicalWeight};
 //!
 //! type PathWeight = GallicWeight<TropicalWeight, MinGallic>;
 //!
@@ -120,7 +120,7 @@
 //!
 //! ```rust
 //! use arcweight::semiring::gallic::{GallicWeight, UnionGallic};
-//! use arcweight::semiring::TropicalWeight;
+//! use arcweight::semiring::{Semiring, TropicalWeight};
 //!
 //! let seg1 = GallicWeight::<TropicalWeight, UnionGallic>::from_labels(
 //!     &[1, 2],

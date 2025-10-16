@@ -209,7 +209,7 @@ impl<W: Semiring> ArcIterator<W> for OptimizedArcIterator<W> {
 /// # Parameters
 ///
 /// - `fst`: Mutable FST to transform
-/// - `transform`: Function mapping Arc<W> → Arc<W>
+/// - `transform`: Function mapping `Arc<W>` → `Arc<W>`
 ///
 /// # Examples
 ///

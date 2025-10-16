@@ -4,7 +4,6 @@
 [![Documentation](https://docs.rs/arcweight/badge.svg)](https://docs.rs/arcweight)
 [![Build Status](https://github.com/aaronstevenwhite/arcweight/workflows/CI/badge.svg)](https://github.com/aaronstevenwhite/arcweight/actions)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![codecov](https://codecov.io/gh/aaronstevenwhite/arcweight/branch/main/graph/badge.svg)](https://codecov.io/gh/aaronstevenwhite/arcweight)
 
 A high-performance Rust library for weighted finite-state transducers with comprehensive semiring support.
 

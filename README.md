@@ -4,6 +4,7 @@
 [![Documentation](https://docs.rs/arcweight/badge.svg)](https://docs.rs/arcweight)
 [![Build Status](https://github.com/aaronstevenwhite/arcweight/workflows/CI/badge.svg)](https://github.com/aaronstevenwhite/arcweight/actions)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17371992.svg)](https://doi.org/10.5281/zenodo.17371992)
 
 A high-performance Rust library for weighted finite-state transducers with comprehensive semiring support.
 
@@ -139,6 +140,7 @@ If you use ArcWeight in your research, please cite:
   author = {White, Aaron Steven},
   title = {ArcWeight: A Rust Library for Weighted Finite-State Transducers},
   url = {https://github.com/aaronstevenwhite/arcweight},
+  doi = {10.5281/zenodo.17371992},
   year = {2025}
 }
 ```

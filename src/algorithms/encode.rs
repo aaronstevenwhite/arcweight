@@ -290,10 +290,7 @@ where
 ///
 /// - [`encode`] - Creates encoded FST and table
 /// - [`EncodeTable`] - Bidirectional mapping structure
-pub fn decode<W>(
-    fst: &VectorFst<TropicalWeight>,
-    table: &EncodeTable<W>,
-) -> Result<VectorFst<W>>
+pub fn decode<W>(fst: &VectorFst<TropicalWeight>, table: &EncodeTable<W>) -> Result<VectorFst<W>>
 where
     W: Semiring + Clone + Hash + Eq,
 {

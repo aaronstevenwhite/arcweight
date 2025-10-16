@@ -455,10 +455,7 @@ mod tests {
             IntegerWeight::from_str("-100").unwrap(),
             IntegerWeight::new(-100)
         );
-        assert_eq!(
-            IntegerWeight::from_str("0").unwrap(),
-            IntegerWeight::zero()
-        );
+        assert_eq!(IntegerWeight::from_str("0").unwrap(), IntegerWeight::zero());
     }
 
     #[test]

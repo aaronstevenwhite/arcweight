@@ -252,14 +252,12 @@ where
             let new_final_weight = match reweight_type {
                 ReweightType::ToInitial => {
                     // ρ'[s] = V[s]⁻¹ ⊗ ρ[s]
-                    final_weight
-                        .divide(&potentials[state_idx])
-                        .ok_or_else(|| {
-                            Error::InvalidOperation(format!(
-                                "Cannot divide by potential at state {}",
-                                state
-                            ))
-                        })?
+                    final_weight.divide(&potentials[state_idx]).ok_or_else(|| {
+                        Error::InvalidOperation(format!(
+                            "Cannot divide by potential at state {}",
+                            state
+                        ))
+                    })?
                 }
                 ReweightType::ToFinal => {
                     // ρ'[s] = V[s] ⊗ ρ[s]
@@ -274,15 +272,12 @@ where
             let new_weight = match reweight_type {
                 ReweightType::ToInitial => {
                     // w'(e) = V[source(e)]⁻¹ ⊗ w(e) ⊗ V[dest(e)]
-                    let temp = arc
-                        .weight
-                        .divide(&potentials[state_idx])
-                        .ok_or_else(|| {
-                            Error::InvalidOperation(format!(
-                                "Cannot divide by source potential at state {}",
-                                state
-                            ))
-                        })?;
+                    let temp = arc.weight.divide(&potentials[state_idx]).ok_or_else(|| {
+                        Error::InvalidOperation(format!(
+                            "Cannot divide by source potential at state {}",
+                            state
+                        ))
+                    })?;
                     temp.times(&potentials[arc.nextstate as usize])
                 }
                 ReweightType::ToFinal => {

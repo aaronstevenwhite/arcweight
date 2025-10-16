@@ -67,7 +67,10 @@ fn test_state_sort_composition_compatibility() {
     assert_eq!(composed.num_states(), composed_orig.num_states());
 
     let composed_arcs: usize = composed.states().map(|s| composed.num_arcs(s)).sum();
-    let composed_orig_arcs: usize = composed_orig.states().map(|s| composed_orig.num_arcs(s)).sum();
+    let composed_orig_arcs: usize = composed_orig
+        .states()
+        .map(|s| composed_orig.num_arcs(s))
+        .sum();
     assert_eq!(composed_arcs, composed_orig_arcs);
 }
 
@@ -81,11 +84,26 @@ fn test_state_sort_multiple_strategies_equivalent() {
     fst.set_final(states[4], TropicalWeight::new(2.0));
 
     // Create branching structure
-    fst.add_arc(states[0], Arc::new(1, 1, TropicalWeight::new(0.1), states[1]));
-    fst.add_arc(states[0], Arc::new(2, 2, TropicalWeight::new(0.2), states[2]));
-    fst.add_arc(states[1], Arc::new(3, 3, TropicalWeight::new(0.3), states[3]));
-    fst.add_arc(states[2], Arc::new(4, 4, TropicalWeight::new(0.4), states[3]));
-    fst.add_arc(states[3], Arc::new(5, 5, TropicalWeight::new(0.5), states[4]));
+    fst.add_arc(
+        states[0],
+        Arc::new(1, 1, TropicalWeight::new(0.1), states[1]),
+    );
+    fst.add_arc(
+        states[0],
+        Arc::new(2, 2, TropicalWeight::new(0.2), states[2]),
+    );
+    fst.add_arc(
+        states[1],
+        Arc::new(3, 3, TropicalWeight::new(0.3), states[3]),
+    );
+    fst.add_arc(
+        states[2],
+        Arc::new(4, 4, TropicalWeight::new(0.4), states[3]),
+    );
+    fst.add_arc(
+        states[3],
+        Arc::new(5, 5, TropicalWeight::new(0.5), states[4]),
+    );
 
     // Sort with all strategies
     let bfs = state_sort(&fst, StateSortType::BreadthFirst).unwrap();
@@ -149,20 +167,36 @@ fn test_state_sort_complex_fst() {
         if i < 5 {
             fst.add_arc(
                 states[i],
-                Arc::new((i + 1) as u32, (i + 1) as u32, TropicalWeight::new(0.1 * i as f32), states[i + 1]),
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::new(0.1 * i as f32),
+                    states[i + 1],
+                ),
             );
         }
         if i < 8 {
             fst.add_arc(
                 states[i],
-                Arc::new((i + 10) as u32, (i + 10) as u32, TropicalWeight::new(0.2 * i as f32), states[i + 2]),
+                Arc::new(
+                    (i + 10) as u32,
+                    (i + 10) as u32,
+                    TropicalWeight::new(0.2 * i as f32),
+                    states[i + 2],
+                ),
             );
         }
     }
 
     // Additional final paths
-    fst.add_arc(states[5], Arc::new(20, 20, TropicalWeight::new(0.5), states[9]));
-    fst.add_arc(states[6], Arc::new(21, 21, TropicalWeight::new(0.6), states[9]));
+    fst.add_arc(
+        states[5],
+        Arc::new(20, 20, TropicalWeight::new(0.5), states[9]),
+    );
+    fst.add_arc(
+        states[6],
+        Arc::new(21, 21, TropicalWeight::new(0.6), states[9]),
+    );
 
     // Sort with all strategies
     for sort_type in [
@@ -206,12 +240,8 @@ fn test_state_sort_preserves_language() {
     let sorted = state_sort(&fst, StateSortType::BreadthFirst).unwrap();
 
     // Verify same number of paths
-    let orig_paths: usize = fst.states()
-        .filter(|&s| fst.is_final(s))
-        .count();
-    let sorted_paths: usize = sorted.states()
-        .filter(|&s| sorted.is_final(s))
-        .count();
+    let orig_paths: usize = fst.states().filter(|&s| fst.is_final(s)).count();
+    let sorted_paths: usize = sorted.states().filter(|&s| sorted.is_final(s)).count();
 
     assert_eq!(orig_paths, sorted_paths);
 

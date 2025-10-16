@@ -416,7 +416,9 @@ fn compute_topological_order<W: Semiring, F: Fst<W>>(fst: &F) -> Result<Vec<Stat
             if !visited.contains(&arc.nextstate) {
                 dfs(fst, arc.nextstate, visited, finished, order)?;
             } else if !finished.contains(&arc.nextstate) {
-                return Err(Error::Algorithm("FST has cycles, cannot perform topological sort".into()));
+                return Err(Error::Algorithm(
+                    "FST has cycles, cannot perform topological sort".into(),
+                ));
             }
         }
 
@@ -622,7 +624,12 @@ mod tests {
         for i in 0..4 {
             fst.add_arc(
                 states[i],
-                Arc::new((i + 1) as u32, (i + 1) as u32, TropicalWeight::one(), states[i + 1]),
+                Arc::new(
+                    (i + 1) as u32,
+                    (i + 1) as u32,
+                    TropicalWeight::one(),
+                    states[i + 1],
+                ),
             );
         }
 
@@ -857,9 +864,9 @@ mod tests {
             assert_eq!(sorted.start(), Some(0));
 
             // Verify epsilon arc is preserved
-            let has_epsilon = sorted.states().any(|s| {
-                sorted.arcs(s).any(|arc| arc.ilabel == 0 && arc.olabel == 0)
-            });
+            let has_epsilon = sorted
+                .states()
+                .any(|s| sorted.arcs(s).any(|arc| arc.ilabel == 0 && arc.olabel == 0));
             assert!(has_epsilon);
         }
     }

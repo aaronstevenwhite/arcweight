@@ -224,10 +224,7 @@ mod tests {
     #[test]
     fn test_longest_common_prefix() {
         // Identical sequences
-        assert_eq!(
-            longest_common_prefix(&[1, 2, 3], &[1, 2, 3]),
-            vec![1, 2, 3]
-        );
+        assert_eq!(longest_common_prefix(&[1, 2, 3], &[1, 2, 3]), vec![1, 2, 3]);
 
         // Partial overlap
         assert_eq!(
@@ -252,10 +249,7 @@ mod tests {
     #[test]
     fn test_longest_common_suffix() {
         // Identical sequences
-        assert_eq!(
-            longest_common_suffix(&[1, 2, 3], &[1, 2, 3]),
-            vec![1, 2, 3]
-        );
+        assert_eq!(longest_common_suffix(&[1, 2, 3], &[1, 2, 3]), vec![1, 2, 3]);
 
         // Partial overlap
         assert_eq!(

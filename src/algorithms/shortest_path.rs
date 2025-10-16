@@ -393,8 +393,7 @@ where
                         .fold(W::one(), |w, (_, arc)| w.times(&arc.weight));
 
                     Path {
-                        states: [&prev_path.states[0..spur_index], &spur_path.states[..]]
-                            .concat(),
+                        states: [&prev_path.states[0..spur_index], &spur_path.states[..]].concat(),
                         arcs: [&prev_path.arcs[0..spur_index], &spur_path.arcs[..]].concat(),
                         weight: root_weight.times(&spur_path.weight),
                         final_state: spur_path.final_state,
@@ -1141,7 +1140,10 @@ mod tests {
 
         // Should find paths to both final states, with s3 path first (lower weight)
         assert!(result.start().is_some());
-        assert!(result.is_final(2) || result.is_final(3), "Should have at least one final state");
+        assert!(
+            result.is_final(2) || result.is_final(3),
+            "Should have at least one final state"
+        );
     }
 
     #[test]
@@ -1173,7 +1175,10 @@ mod tests {
         let result_all: VectorFst<TropicalWeight> = shortest_path(&fst, config_all).unwrap();
         let start = result_all.start().unwrap();
         let arc_count_all = result_all.num_arcs(start);
-        assert_eq!(arc_count_all, 2, "Should have 2 paths without unique filtering");
+        assert_eq!(
+            arc_count_all, 2,
+            "Should have 2 paths without unique filtering"
+        );
 
         // With unique filtering, should only get 1 path (the cheaper one)
         let config_unique = ShortestPathConfig {
@@ -1203,12 +1208,7 @@ mod tests {
         for i in 0..20 {
             fst.add_arc(
                 s0,
-                Arc::new(
-                    i as u32,
-                    i as u32,
-                    TropicalWeight::new(i as f32),
-                    s1,
-                ),
+                Arc::new(i as u32, i as u32, TropicalWeight::new(i as f32), s1),
             );
         }
 

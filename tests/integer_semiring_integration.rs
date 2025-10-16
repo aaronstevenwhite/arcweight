@@ -319,7 +319,8 @@ fn test_integer_weight_conversion() {
     let integer_fst: VectorFst<IntegerWeight> =
         weight_convert(&tropical_fst, |w: &TropicalWeight| {
             IntegerWeight::new(w.value().floor() as i64)
-        }).unwrap();
+        })
+        .unwrap();
 
     assert_eq!(integer_fst.num_states(), tropical_fst.num_states());
     assert_eq!(integer_fst.num_arcs_total(), tropical_fst.num_arcs_total());

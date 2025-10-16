@@ -293,8 +293,7 @@ where
         // Relax all outgoing arcs
         for arc in fst.arcs(state) {
             let new_dist = dist.times(&arc.weight);
-            distance[arc.nextstate as usize] =
-                distance[arc.nextstate as usize].plus(&new_dist);
+            distance[arc.nextstate as usize] = distance[arc.nextstate as usize].plus(&new_dist);
         }
     }
 
@@ -308,11 +307,7 @@ where
 ///   - Each iteration: O(|V| + |E|)
 ///   - Convergence check: O(|V|)
 /// - Space: O(|V|)
-fn shortest_distance_cyclic<W, F>(
-    fst: &F,
-    start: StateId,
-    num_states: usize,
-) -> Result<Vec<W>>
+fn shortest_distance_cyclic<W, F>(fst: &F, start: StateId, num_states: usize) -> Result<Vec<W>>
 where
     W: Semiring + Clone + PartialEq,
     F: Fst<W>,
@@ -365,10 +360,7 @@ where
 }
 
 /// Check if distances have converged between iterations
-fn distances_converged<W: Semiring + Clone + PartialEq>(
-    current: &[W],
-    previous: &[W],
-) -> bool {
+fn distances_converged<W: Semiring + Clone + PartialEq>(current: &[W], previous: &[W]) -> bool {
     current.iter().zip(previous.iter()).all(|(c, p)| c == p)
 }
 

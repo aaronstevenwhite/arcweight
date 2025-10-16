@@ -227,12 +227,7 @@ where
 
         for arc in arcs {
             // Create a hashable key from the arc
-            let key = (
-                arc.ilabel,
-                arc.olabel,
-                arc.weight.clone(),
-                arc.nextstate,
-            );
+            let key = (arc.ilabel, arc.olabel, arc.weight.clone(), arc.nextstate);
 
             if seen.insert(key) {
                 // First occurrence - keep it

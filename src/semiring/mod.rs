@@ -57,6 +57,12 @@
 //! - Combines two semirings into a Cartesian product
 //! - **Use case:** Multi-objective optimization
 //!
+//! ### [`GallicWeight`](gallic::GallicWeight) - Gallic Semiring
+//! - Combines label sequences with weights
+//! - **Multiple variants:** LeftGallic, RightGallic, MinGallic, RestrictGallic, UnionGallic
+//! - **Use case:** FST composition, output label tracking
+//! - **Example:** Advanced transducer algorithms, label-weighted shortest paths
+//!
 //! ## Choosing a Semiring
 //!
 //! ```
@@ -91,6 +97,7 @@
 //! for algorithms that require division operations.
 
 mod boolean;
+pub mod gallic;
 mod integer;
 mod log;
 mod minmax;
@@ -111,3 +118,9 @@ pub use real::RealWeight;
 pub use string::StringWeight;
 pub use traits::*;
 pub use tropical::TropicalWeight;
+
+// Re-export gallic types for convenience
+pub use gallic::{
+    GallicWeight, LeftGallic, LeftGallicWeight, MinGallic, MinGallicWeight, RestrictGallic,
+    RestrictGallicWeight, RightGallic, RightGallicWeight, StandardGallicWeight, UnionGallic,
+};

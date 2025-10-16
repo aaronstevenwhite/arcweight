@@ -139,7 +139,7 @@ If you use ArcWeight in your research, please cite:
   author = {White, Aaron Steven},
   title = {ArcWeight: A Rust Library for Weighted Finite-State Transducers},
   url = {https://github.com/aaronstevenwhite/arcweight},
-  year = {2024}
+  year = {2025}
 }
 ```
 
